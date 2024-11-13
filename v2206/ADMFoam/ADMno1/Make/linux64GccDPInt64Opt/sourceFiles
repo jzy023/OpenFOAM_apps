@@ -1,0 +1,9 @@
+SOURCE = \
+ADMno1Parameter.C \
+ADMno1.C \
+ADMno1Helpers.C \
+ADMno1Gas.C \
+ADMno1RR.C \
+ADMno1AcidBase.C \
+
+# sources

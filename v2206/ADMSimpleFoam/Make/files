@@ -1,0 +1,3 @@
+ADMSimpleFoam.C
+
+EXE = $(FOAM_APPBIN)/ADMSimpleFoam

@@ -1,0 +1,27 @@
+{
+    "files.associations": {
+        "bashrc": "shellscript",
+        "myPimpleFoam.C": "cpp",
+        "ADMno1Parameter.C": "cpp",
+        "admIn.C": "cpp",
+        "admIni.C": "cpp",
+        "admSoluables.C": "cpp",
+        "admSolFields.C": "cpp",
+        "admSolFields copy.C": "cpp",
+        "ADMno1.C": "cpp",
+        "adModelTemplates.C": "cpp",
+        "ADM1Templates.C": "cpp",
+        "ADMno1Templates.C": "cpp",
+        "ADMno1RR.C": "cpp",
+        "ADMno1Helpers.C": "cpp",
+        "ADMno1Gas.C": "cpp",
+        "random": "cpp",
+        "ADMPimpleFoam.C": "cpp",
+        "ADMFoam.C": "cpp",
+        "ADMAcidBase.C": "cpp",
+        "ADMno1AcidBase.C": "cpp",
+        "chrono": "cpp",
+        "limits": "cpp"
+    },
+    "C_Cpp.errorSquiggles": "disabled"
+}
