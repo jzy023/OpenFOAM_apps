@@ -48,6 +48,7 @@ namespace Foam
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 class ADMno1
+// inherite from other classes
 :
     public IOdictionary
 {

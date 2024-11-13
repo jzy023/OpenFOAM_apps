@@ -731,7 +731,7 @@ void admPara::setParaDim
 
     Ka_.setDimension(ds);
 
-    for (label i = 0; i < 26; i++)
+    for(label i = 0; i < 26; i++)
     {
         INFLOW_[i].dimensions().reset(ds);
     }
