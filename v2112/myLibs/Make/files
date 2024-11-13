@@ -1,6 +1,0 @@
-myDelta/myDelta.C
-myDFSEMInlet/myDFSEMInletFvPatchVectorField.C
-myDFSEMInlet/eddy/myEddy.C
-myDFSEMInlet/eddy/myEddyIO.C
-
-LIB = $(FOAM_USER_LIBBIN)/libMy

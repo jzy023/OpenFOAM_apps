@@ -1,6 +1,0 @@
-SOURCE = \
-myDFSEMInletFvPatchVectorField.C \
-eddy/myEddy.C \
-eddy/myEddyIO.C \
-
-# sources

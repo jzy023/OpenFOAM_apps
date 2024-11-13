@@ -1,9 +1,0 @@
-{
-    "files.associations": {
-        "bashrc": "shellscript",
-        "DPMFoam.C": "cpp",
-        "myDPMFoam.C": "cpp",
-        "DPMIncompressibleTurbulenceModel.C": "cpp",
-        "ADMEqn.C": "cpp"
-    }
-}

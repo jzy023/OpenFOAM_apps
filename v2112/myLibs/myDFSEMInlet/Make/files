@@ -1,5 +1,0 @@
-myDFSEMInletFvPatchVectorField.C
-eddy/myEddy.C
-eddy/myEddyIO.C
-
-LIB = $(FOAM_USER_LIBBIN)/libMyDFSEM

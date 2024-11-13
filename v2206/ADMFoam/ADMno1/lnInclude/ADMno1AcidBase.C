@@ -1,1 +1,0 @@
-../ADMno1AcidBase.C

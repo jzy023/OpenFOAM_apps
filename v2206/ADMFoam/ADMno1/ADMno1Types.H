@@ -50,10 +50,8 @@ Description
 
 
 
-/** =======================================================================
- * STOI Components
- * @brief    ADM-1 Table 6.2, raction first order prameters [d^-1]
- */
+//- STOI Components
+// ADM-1 Table 6.2, raction first order prameters [d^-1]
 struct decayRate
 {
     dimensionedScalar dis;	   //[1/d]
@@ -118,10 +116,7 @@ struct decayRate
     {};
 };
 
-/** =======================================================================
- * @brief Henry's Law coefficients [M bar^-1]
- * 
- */
+//- Henry's Law coefficients [M bar^-1]
 // TODO: check dimension
 struct gasHenryCoe
 {
@@ -146,9 +141,7 @@ struct gasHenryCoe
 
 };
 
-/** =======================================================================
- * @brief    ADM-1 Table 6.2, default Yields of biomass (Y) [COD/COD]
- */
+//- ADM-1 Table 6.2, default Yields of biomass (Y) [COD/COD]
 struct yieldBiomass
 {
     dimensionedScalar su;  //[COD/COD]
@@ -180,9 +173,7 @@ struct yieldBiomass
     {};   
 };
 
-/** =======================================================================
- * @brief    ADM-1 Table 6.1, default Yields of product (f) [kgCOD/kgCOD]
- */
+//- ADM-1 Table 6.1, default Yields of product (f) [kgCOD/kgCOD]
 struct yieldProduct
 {
     dimensionedScalar si_xc;  //[kgCOD/kgCOD]
@@ -238,11 +229,9 @@ struct yieldProduct
     {};
 };
 
-/** =======================================================================
- * @brief    default Carbon contents of substrates
- * 		    _bac and _biom are interchangeable
- * 		    Kmole/KgCOD
- */
+//- Default Carbon contents of substrates
+//  Kmole/KgCOD
+//  (_bac and _biom in literature are interchangeable )
 struct carbonContent
 {
     dimensionedScalar xc;  //[kmol/kgCOD]
@@ -298,10 +287,7 @@ struct carbonContent
     {};
 };
 
-/** =======================================================================
- * Inhibition calcilations
- * @brief    default Inhibition parameters for (KI)
- */
+//- Default Inhibition parameters for (KI)
 struct inhibitionParaI
 {
     dimensionSet ds;
@@ -338,9 +324,7 @@ struct inhibitionParaI
     }
 };
 
-/** =======================================================================
- * @brief    default Inhibition parameters for [Ks]
- */
+//- Default Inhibition parameters for [Ks]
 struct inhibitionParaS
 {
     dimensionSet ds;
@@ -397,10 +381,7 @@ struct inhibitionParaS
     }
 };
 
-/** =======================================================================
- * @brief structure to keep the Acid base Kinematic Para [kAB_][/M/day]
- *
- */
+//- Structure to keep the Acid base Kinematic Para [kAB_][/M/day]
 struct admAcidBaseKinetic
 {
     dimensionedScalar va;  //[m3/kmol/day]
@@ -429,9 +410,7 @@ struct admAcidBaseKinetic
     {};
 };
 
-/** =======================================================================
- * @brief structure to keep the Acid base Equilibrium Para [M]
- */
+//- Structure to keep the Acid base Equilibrium Para [M]
 struct admAcidBaseEq
 {
     dimensionSet ds;
@@ -479,9 +458,7 @@ struct admAcidBaseEq
     }
 };
 
-/** =======================================================================
- * @brief pH Limits
- */
+//- pH Limits 
 struct limPH
 {
     dimensionedScalar ULaa;
@@ -510,9 +487,7 @@ struct limPH
     {};
 };
 
-/** =======================================================================
- * @brief Nitrogen content
- */
+//- Nitrogen content
 // TODO: check dimensions
 struct nitrogenContent
 {

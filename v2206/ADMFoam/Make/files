@@ -1,3 +1,0 @@
-ADMFoam.C
-
-EXE = $(FOAM_APPBIN)/ADMFoam
