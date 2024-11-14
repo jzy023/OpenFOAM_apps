@@ -37,9 +37,6 @@ License
 const Foam::word Foam::ADMno1::propertiesName("admno1Properties");
 
 
-// * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
-
-
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 Foam::ADMno1::ADMno1
@@ -74,6 +71,7 @@ Foam::ADMno1::ADMno1
     // =============================================================
     para_(ADMno1Dict.get<word>("mode")),
     Sc_(ADMno1Dict.lookupOrDefault("Sc", 1.0)),
+    Sct_(ADMno1Dict.lookupOrDefault("Sct", 0.2)),
     R_(ADMno1Dict.lookupOrDefault("R", 0.083145)),
     KP_(ADMno1Dict.lookupOrDefault("Kpip", 5e4)),
     // Vfrac_(ADMno1Dict.lookupOrDefault("Vfrac", 0.0294118)), // 100/3400
@@ -654,33 +652,10 @@ void Foam::ADMno1::calcThermal
 }
 
 
-void Foam::ADMno1::calcTC()
-{
-
-    forAll(dYPtrs_, i)
-    {
-        if (i == 7)
-        {
-            continue;
-        }
-        
-        tc_ = min
-        (
-            min(mag(YPtrs_[i]/dYPtrs_[i])), 
-            tc_
-        );
-    }
-    
-    Info<< "time scale: " << tc_.value() << endl;
-}
-
-
 //- Functions for gas transfer calculations
 void Foam::ADMno1::gasPressure()
 {
     //- gas pressure
-    // volScalarField Ph2o = GPtrs_[0];
-
     volScalarField Ph2o
     (
         IOobject
@@ -707,21 +682,28 @@ void Foam::ADMno1::gasPressure()
 
 void Foam::ADMno1::gasPhaseRate()
 {
+    GRPtrs_[0] = 
+    (
+        para_.DTOS() * para_.kLa() 
+      * (YPtrs_[7].internalField() - R_ * TopDummy_.internalField() * GPtrs_[0].internalField() * KHh2_)
+    );
 
-    GRPtrs_[0] = para_.DTOS() * para_.kLa() 
-               * (YPtrs_[7].internalField() - R_ * TopDummy_.internalField() * GPtrs_[0].internalField() * KHh2_);
+    GRPtrs_[1] = 
+    (
+        para_.DTOS() * para_.kLa() 
+      * (YPtrs_[8].internalField() - R_ * TopDummy_.internalField() * GPtrs_[1].internalField() * KHch4_)
+    );
 
-    GRPtrs_[1] = para_.DTOS() * para_.kLa() 
-               * (YPtrs_[8].internalField() - R_ * TopDummy_.internalField() * GPtrs_[1].internalField() * KHch4_);
-
-    GRPtrs_[2] = para_.DTOS() * para_.kLa() // Sco2 instead of SIC
-               * (MPtrs_[0].internalField() - R_ * TopDummy_.internalField() * GPtrs_[2].internalField() * KHco2_);
+    GRPtrs_[2] = 
+    (
+        para_.DTOS() * para_.kLa() // Sco2 instead of SIC
+      * (MPtrs_[0].internalField() - R_ * TopDummy_.internalField() * GPtrs_[2].internalField() * KHco2_)
+    );
 }
 
 
 void Foam::ADMno1::gasSourceRate()
 {
-
     // field of cell volume for mesh 
     scalarField volMeshField = GPtrs_[0].mesh().V().field();            
 
@@ -755,7 +737,8 @@ void Foam::ADMno1::gasSourceRate()
     kp.dimensions().reset(dimVolume/dimTime/dimPressure);
 
     // TODO: actual volume would have effect on normalized kp
-    kp.field() = para_.DTOS() * KP_ * (volMeshField / (Vgas_ + Vliq_).value()); // <---- this would be calculated
+    // (Vgas_ + Vliq_) <---- this would be calculated
+    kp.field() = para_.DTOS() * KP_ * (volMeshField / (Vgas_ + Vliq_).value());
 
     //  volScalarField qGasLocal = kp * (Pgas - Pext_) * (Pgas / Pext_); 
     volScalarField qGasLocal = kp * (Pgas_ - Pext_);
@@ -764,11 +747,23 @@ void Foam::ADMno1::gasSourceRate()
         if ( qGasLocal.field()[i] < 0.0 ) { qGasLocal.field()[i] = 1e-16; }
     }
 
-    dGPtrs_[0].field() = GRPtrs_[0].field() * volLiq / volGas - GPtrs_[0].field() * qGasLocal.field() / volGas;
+    dGPtrs_[0].field() = 
+    (
+        (GRPtrs_[0].field() * volLiq / volGas) 
+      - (GPtrs_[0].field() * qGasLocal.field() / volGas)
+    );
 
-    dGPtrs_[1].field() = GRPtrs_[1].field() * volLiq / volGas - GPtrs_[1].field() * qGasLocal.field() / volGas;
+    dGPtrs_[1].field() = 
+    (
+        (GRPtrs_[1].field() * volLiq / volGas) 
+      - (GPtrs_[1].field() * qGasLocal.field() / volGas)
+    );
 
-    dGPtrs_[2].field() = GRPtrs_[2].field() * volLiq / volGas - GPtrs_[2].field() * qGasLocal.field() / volGas;
+    dGPtrs_[2].field() = 
+    (
+        (GRPtrs_[2].field() * volLiq / volGas) 
+      - (GPtrs_[2].field() * qGasLocal.field() / volGas)
+    );
 };
 
 
@@ -815,8 +810,11 @@ volScalarField::Internal Foam::ADMno1::fSh2
 
     // volScalarField conv(fvc::div(flux, Sh2Temp));
     volScalarField conv = para_.DTOS() * (Qin_/Vliq_) * (para_.INFLOW(7) - Sh2Temp);
-    volScalarField::Internal GRSh2Temp = para_.DTOS() * para_.kLa() 
-                                       * (Sh2Temp.internalField() - R_ * TopDummy_.internalField() * GPtrs_[0].internalField() * KHh2_);
+    volScalarField::Internal GRSh2Temp = 
+    (
+        para_.DTOS() * para_.kLa() 
+      * (Sh2Temp.internalField() - R_ * TopDummy_.internalField() * GPtrs_[0].internalField() * KHh2_)
+    );
 
     //     reaction + convection - fGasRhoH2(paraPtr, Sh2);
     return concPerComponent(7, KRPtrs_temp) + conv - GRSh2Temp;
@@ -858,8 +856,11 @@ volScalarField::Internal Foam::ADMno1::dfSh2
     dKRPtrs_temp[8] = KRPtrs_[8]/IPtrs_[5]*dI_h2c4;
     dKRPtrs_temp[9] = KRPtrs_[9]/IPtrs_[6]*dI_h2pro;
 
-    dKRPtrs_temp[11] = para_.kDec().m_h2 * YPtrs_[22].internalField() * IPtrs_[2] * IPtrs_[3] * para_.KS().h2
-                     / ((para_.KS().h2 + Sh2Temp.internalField()) * (para_.KS().h2 + Sh2Temp.internalField()));
+    dKRPtrs_temp[11] = 
+    (
+        para_.kDec().m_h2 * YPtrs_[22].internalField() * IPtrs_[2] * IPtrs_[3] * para_.KS().h2
+      / ((para_.KS().h2 + Sh2Temp.internalField()) * (para_.KS().h2 + Sh2Temp.internalField()))
+    );
 
     // volScalarField dConv(fvc::div(flux));
     dimensionedScalar dConv = - para_.DTOS() * (Qin_/Vliq_);
@@ -1391,10 +1392,6 @@ void Foam::ADMno1::correct
 
     //- Sh2 calculations
     calcSh2(flux);
-
-    // //- 
-    // // calcTC();
-
 }
 
 

@@ -5,4 +5,4 @@ ADMno1Gas.C
 ADMno1RR.C
 ADMno1AcidBase.C
 
-LIB = $(FOAM_USER_LIBBIN)/libADM
+LIB = $(FOAM_USER_LIBBIN)/libADMOrig

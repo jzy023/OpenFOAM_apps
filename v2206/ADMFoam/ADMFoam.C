@@ -135,7 +135,6 @@ int main(int argc, char *argv[])
 
             #include "UEqn.H"
             #include "TEqn.H"
-            // #include "ADMPartEqn.H"
 
             // --- Pressure corrector loop
             while (pimple.correct())
@@ -153,7 +152,6 @@ int main(int argc, char *argv[])
 
         // --- ADM calculation
         #include "ADMEqn.H"
-
 
         runTime.write();
 

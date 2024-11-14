@@ -3,8 +3,12 @@ Info<< "ADM convection-diffusion calculation" << endl;
 
 
 //TODO: turbulent diff and different diff compared to particulate species
-volScalarField Deff = turbulence->nu() / reaction->Sc();
 // volScalarField DpartEff = Deff / 10.0;
+volScalarField Deff = 
+(
+    (turbulence->nu() / reaction->Sc())
+  + (turbulence->nut() / reaction->Sct())
+);
 
 {
     // <<< TEST ---------------------------------------------------------------- //
@@ -65,7 +69,7 @@ volScalarField Deff = turbulence->nu() / reaction->Sc();
               - fvm::laplacian(Deff, Yi)
              ==
                 fvOptions(Yi)
-            //   + reaction->R(i)
+              + reaction->R(i)
             );
 
             YiEqn.relax();
@@ -114,7 +118,7 @@ volScalarField Deff = turbulence->nu() / reaction->Sc();
           - fvm::laplacian(Deff, Gi)
          ==
             fvOptions(Gi)
-        //   + reaction->RG(i)
+          + reaction->RG(i)
         );
 
         GiEqn.relax();

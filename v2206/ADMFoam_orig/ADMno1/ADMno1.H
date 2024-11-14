@@ -65,6 +65,9 @@ private:
     //- Schmidt number
     scalar Sc_;
 
+    //- Turbulent Schmidt number
+    scalar Sct_;
+
     //- Gas constant
     scalar R_;
 
@@ -308,6 +311,9 @@ public:
     //- Inline Member Functions
     //- Return Schmidt number
     inline scalar Sc();
+
+    //- Return turbulent Schmidt number
+    inline scalar Sct();
 
     //- Return a pointer of admno1 parameters
     inline admPara* paraPtr();

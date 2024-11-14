@@ -77,7 +77,7 @@ volScalarField rhok
     1.0 - beta*(T - TRef)
 );
 
-// kinematic turbulent thermal thermal conductivity m2/s
+// Kinematic turbulent thermal thermal conductivity m2/s
 Info<< "Reading field alphat\n" << endl;
 volScalarField alphat
 (

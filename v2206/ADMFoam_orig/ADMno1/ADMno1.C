@@ -74,6 +74,7 @@ Foam::ADMno1::ADMno1
     // =============================================================
     para_(ADMno1Dict.get<word>("mode")),
     Sc_(ADMno1Dict.lookupOrDefault("Sc", 1.0)),
+    Sct_(ADMno1Dict.lookupOrDefault("Sct", 0.2)),
     R_(ADMno1Dict.lookupOrDefault("R", 0.083145)),
     KP_(ADMno1Dict.lookupOrDefault("Kpip", 5e4)),
     // Vfrac_(ADMno1Dict.lookupOrDefault("Vfrac", 0.0294118)), // 100/3400
@@ -650,7 +651,6 @@ void Foam::ADMno1::calcThermal
     // Info<< "Kaco2: " << max(Kaco2_.field()) << endl;
     // Info<< "KaIN_: " << max(KaIN_.field()) << endl;
     // Info<< "KaW_: " << max(KaW_.field()) << endl;
-
 }
 
 

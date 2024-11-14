@@ -30,6 +30,11 @@ inline scalar Foam::ADMno1::Sc()
     return Sc_;
 }
 
+inline scalar Foam::ADMno1::Sct()
+{
+    return Sct_;
+}
+
 inline admPara* Foam::ADMno1::paraPtr()
 {
     return &para_;
