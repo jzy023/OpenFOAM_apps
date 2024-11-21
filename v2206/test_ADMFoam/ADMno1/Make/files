@@ -1,0 +1,5 @@
+ADMno1Parameter.C
+ADMno1.C
+ADMno1Helpers.C
+
+LIB = $(FOAM_USER_LIBBIN)/libADM
