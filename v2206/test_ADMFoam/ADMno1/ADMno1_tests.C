@@ -752,6 +752,17 @@ void Foam::ADMno1::gasTest(volScalarField& Ptotal)
       * (MPtrs_[0].internalField() - R_ * TopDummy_.internalField() * GPtrs_test[2].internalField() * KHco2_) // Sco2 instead of SIC
     );
 
+    // volScalarField volMeshField = GPtrs_[0].mesh().V();            
+    // volScalarField GRMass = GRPtrs_test * volMeshField;
+    // volScalarField GRMolar = GRMass / molarMass;
+    // volScalarField volGasRate = GRMolar * R * T / P; <- (P_rgh or P?)
+    
+    
+    
+    
+    
+    // ==================================================================================
+
     //
     // field of cell volume for mesh 
     // scalarField volMeshField = GPtrs_[0].mesh().V().field();            
@@ -764,6 +775,7 @@ void Foam::ADMno1::gasTest(volScalarField& Ptotal)
     // dGPtrs_test[0].field() = GRPtrs_test[0].field() * volLiq / volGas;
     // dGPtrs_test[1].field() = GRPtrs_test[1].field() * volLiq / volGas;
     // dGPtrs_test[2].field() = GRPtrs_test[2].field() * volLiq / volGas;
+
 
 }
 
