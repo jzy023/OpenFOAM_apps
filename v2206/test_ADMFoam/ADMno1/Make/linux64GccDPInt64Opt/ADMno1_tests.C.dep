@@ -1,5 +1,6 @@
-$(OBJECTS_DIR)/ADMno1Parameter.C.dep: \
-ADMno1Parameter.C \
+$(OBJECTS_DIR)/ADMno1_tests.C.dep: \
+ADMno1_tests.C \
+ADMno1.H \
 ADMno1Parameter.H \
 ADMno1Types.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/IOdictionary.H \
@@ -864,5 +865,8 @@ $(WM_PROJECT_DIR)/src/ODE/lnInclude/ODESystem.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/simpleMatrix.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/simpleMatrix.C \
 ADMno1ParameterI.H \
+ADMno1Helpers.H \
+ADMno1I.H \
+ADMno1Templates.C \
 
 #END

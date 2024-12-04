@@ -1,6 +1,7 @@
 SOURCE = \
 ADMno1Parameter.C \
-ADMno1.C \
 ADMno1Helpers.C \
+ADMno1.C \
+ADMno1_tests.C \
 
 # sources

@@ -354,6 +354,38 @@ public:
                                   // Foam::tmp<Foam::fvScalarMatrix>
                                   // Foam::combustionModels::laminar<ReactionThermo>::R(volScalarField& Y) const
 
+
+
+
+    //- testing
+    volScalarField Vfrac_test;
+
+    volScalarField Vgas_test;
+
+    PtrList<volScalarField> GPtrs_test;
+
+    PtrList<volScalarField::Internal> GRPtrs_test;
+
+    PtrList<volScalarField::Internal> dGPtrs_test;
+
+    void correct
+    (
+        const surfaceScalarField &flux, 
+        volScalarField& T,
+        volScalarField& Ptotal
+    );
+
+    void gasTest(volScalarField& Ptotal);
+
+    //- Return GPtrs_test
+    PtrList<volScalarField>& G_test();
+
+    //- Return dGPtrs_test
+    PtrList<volScalarField::Internal>& dG_test();
+
+    //- Return components consumption rate matrix, i.e. source term.
+    tmp<fvScalarMatrix> RG_test(label i) const;
+
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

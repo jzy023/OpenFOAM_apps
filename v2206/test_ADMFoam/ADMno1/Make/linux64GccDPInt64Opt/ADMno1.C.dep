@@ -149,6 +149,7 @@ $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/tokenList.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/wordList.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/SubList.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/SubListI.H \
+$(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/IOobjectOption.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/dictionaryI.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/dictionaryTemplates.C \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/primitiveEntry.H \
@@ -246,7 +247,6 @@ $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/dimensionedScalarFwd.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/scalarField.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/Field.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/scalarList.H \
-$(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/FieldBase.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/VectorSpace.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/VectorSpaceI.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/VectorSpaceOps.H \
@@ -327,14 +327,13 @@ $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/polyMesh.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/primitiveMesh.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/edgeList.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/edge.H \
-$(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/linePointRef.H \
-$(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/point.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/line.H \
-$(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/PointHit.H \
+$(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/point.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/point2D.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/vector2D.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/Vector2D.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/Vector2DI.H \
+$(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/pointHit.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/lineI.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/pointField.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/primitiveFields.H \
@@ -355,7 +354,6 @@ $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/faceList.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/face.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/faceListFwd.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/intersection.H \
-$(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/pointHit.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/ListListOps.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/ListListOps.C \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/faceI.H \
@@ -395,6 +393,10 @@ $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/PrimitivePatchClear.C \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/PrimitivePatchBdryFaces.C \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/PrimitivePatchBdryPoints.C \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/PrimitivePatchLocalPointOrder.C \
+$(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/CircularBuffer.H \
+$(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/CircularBufferI.H \
+$(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/CircularBuffer.C \
+$(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/CircularBufferIO.C \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/PrimitivePatchMeshData.C \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/PrimitivePatchMeshEdges.C \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/PrimitivePatchPointAddressing.C \
@@ -405,6 +407,7 @@ $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/SubField.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/SubFieldI.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/polyBoundaryMeshTemplates.C \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/boundBox.H \
+$(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/triangleFwd.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/boundBoxI.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/boundBoxTemplates.C \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/pointZoneMesh.H \
@@ -587,6 +590,8 @@ $(WM_PROJECT_DIR)/src/finiteVolume/lnInclude/fvPatchFieldMapper.H \
 $(WM_PROJECT_DIR)/src/finiteVolume/lnInclude/fvPatchFieldNew.C \
 $(WM_PROJECT_DIR)/src/finiteVolume/lnInclude/calculatedFvPatchField.H \
 $(WM_PROJECT_DIR)/src/finiteVolume/lnInclude/calculatedFvPatchField.C \
+$(WM_PROJECT_DIR)/src/finiteVolume/lnInclude/zeroGradientFvPatchField.H \
+$(WM_PROJECT_DIR)/src/finiteVolume/lnInclude/zeroGradientFvPatchField.C \
 $(WM_PROJECT_DIR)/src/finiteVolume/lnInclude/calculatedFvPatchFields.H \
 $(WM_PROJECT_DIR)/src/finiteVolume/lnInclude/volFieldsI.H \
 $(WM_PROJECT_DIR)/src/finiteVolume/lnInclude/surfaceFields.H \
@@ -645,7 +650,6 @@ $(WM_PROJECT_DIR)/src/meshTools/lnInclude/AMIPatchToPatchInterpolation.H \
 $(WM_PROJECT_DIR)/src/meshTools/lnInclude/AMIInterpolation.H \
 $(WM_PROJECT_DIR)/src/meshTools/lnInclude/searchableSurface.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/pointIndexHit.H \
-$(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/PointIndexHit.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/volumeType.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/treeBoundBoxList.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/treeBoundBox.H \
@@ -658,7 +662,12 @@ $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/treeBoundBoxTemplates.C \
 $(WM_PROJECT_DIR)/src/meshTools/lnInclude/faceAreaIntersect.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/plane.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/planeI.H \
-$(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/triPoints.H \
+$(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/triangle.H \
+$(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/barycentric2D.H \
+$(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/Barycentric2D.H \
+$(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/Barycentric2DI.H \
+$(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/triangleI.H \
+$(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/triangle.C \
 $(WM_PROJECT_DIR)/src/meshTools/lnInclude/faceAreaIntersectI.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/pointList.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/indexedOctree.H \
@@ -669,16 +678,8 @@ $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/fstreamPointer.H \
 $(WM_PROJECT_DIR)/src/OSspecific/POSIX/lnInclude/memInfo.H \
 $(WM_PROJECT_DIR)/src/meshTools/lnInclude/treeDataPrimitivePatch.H \
 $(WM_PROJECT_DIR)/src/meshTools/lnInclude/treeDataPrimitivePatch.C \
-$(WM_PROJECT_DIR)/src/meshTools/lnInclude/triangleFuncs.H \
 $(WM_PROJECT_DIR)/src/meshTools/lnInclude/triSurfaceTools.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/triadFieldFwd.H \
-$(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/triPointRef.H \
-$(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/triangle.H \
-$(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/barycentric2D.H \
-$(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/Barycentric2D.H \
-$(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/Barycentric2DI.H \
-$(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/triangleI.H \
-$(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/triangle.C \
 $(WM_PROJECT_DIR)/src/meshTools/lnInclude/surfaceLocation.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/triFace.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/triFaceI.H \
@@ -725,6 +726,7 @@ $(WM_PROJECT_DIR)/src/meshTools/lnInclude/ConstantField.C \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/uniformDimensionedFields.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/UniformDimensionedField.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/UniformDimensionedField.C \
+$(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/uniformDimensionedFieldsFwd.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/vectorList.H \
 $(WM_PROJECT_DIR)/src/meshTools/lnInclude/cyclicACMIPolyPatchI.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/lduPrimitiveProcessorInterface.H \
@@ -820,8 +822,6 @@ $(WM_PROJECT_DIR)/src/finiteVolume/lnInclude/fixedValueFvPatchFields.H \
 $(WM_PROJECT_DIR)/src/finiteVolume/lnInclude/fixedValueFvPatchField.H \
 $(WM_PROJECT_DIR)/src/finiteVolume/lnInclude/fixedValueFvPatchField.C \
 $(WM_PROJECT_DIR)/src/finiteVolume/lnInclude/zeroGradientFvPatchFields.H \
-$(WM_PROJECT_DIR)/src/finiteVolume/lnInclude/zeroGradientFvPatchField.H \
-$(WM_PROJECT_DIR)/src/finiteVolume/lnInclude/zeroGradientFvPatchField.C \
 $(WM_PROJECT_DIR)/src/finiteVolume/lnInclude/fixedFluxPressureFvPatchScalarField.H \
 $(WM_PROJECT_DIR)/src/finiteVolume/lnInclude/fvPatchFields.H \
 $(WM_PROJECT_DIR)/src/finiteVolume/lnInclude/fixedGradientFvPatchFields.H \

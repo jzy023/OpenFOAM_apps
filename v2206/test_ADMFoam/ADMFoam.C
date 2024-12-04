@@ -96,11 +96,12 @@ int main(int argc, char *argv[])
 
         Info<< "Time = " << runTime.timeName() << nl << endl;
 
-        // ADM1 reaction source terms
-        reaction->clear();
-        // reaction->correct(phi, T);
-        PtrList<volScalarField>& YPtrs = reaction->Y();
-        PtrList<volScalarField>& GPtrs = reaction->G();
+        // // ADM1 reaction source terms
+        // reaction->clear();
+        // reaction->correct(phi, T, );
+        // // reaction->correct(phi, T);
+        // PtrList<volScalarField>& YPtrs = reaction->Y();
+        // PtrList<volScalarField>& GPtrs = reaction->G();
 
         // --- Pressure-velocity PIMPLE corrector loop
         while (pimple.loop())
@@ -150,6 +151,14 @@ int main(int argc, char *argv[])
 
         }
 
+        // ADM1 reaction source terms
+        reaction->clear();
+        reaction->correct(phi, T, p);
+        // Info<< p.field() << endl;
+        // reaction->correct(phi, T);
+        PtrList<volScalarField>& YPtrs = reaction->Y();
+        PtrList<volScalarField>& GPtrs = reaction->G();
+        PtrList<volScalarField>& GPtrs_test = reaction->G_test();
         // --- ADM calculation
         #include "ADMEqn.H"
 

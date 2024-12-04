@@ -61,4 +61,30 @@ volScalarField Deff =
 
         fvOptions.correct(Gi);
     }
+
+
+
+    //- testing  Gas Phase 
+    // forAll(GPtrs_test, i)
+    // {
+    //     volScalarField& Gi = GPtrs_test[i];
+
+    //     fvScalarMatrix Gi_testEqn
+    //     (
+    //         fvm::ddt(Gi)
+    //       + fvm::div(phi, Gi)
+    //       - fvm::laplacian(Deff, Gi)
+    //      ==
+    //         fvOptions(Gi)
+    //       + reaction->RG_test(i)
+    //     );
+
+    //     Gi_testEqn.relax();
+
+    //     fvOptions.constrain(Gi_testEqn);
+
+    //     Gi_testEqn.solve(mesh.solver("Yi"));
+
+    //     fvOptions.correct(Gi);
+    // }
 }

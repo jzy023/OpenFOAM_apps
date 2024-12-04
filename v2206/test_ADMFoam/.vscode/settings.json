@@ -22,7 +22,8 @@
         "ADMno1AcidBase.C": "cpp",
         "chrono": "cpp",
         "limits": "cpp",
-        "overPimpleDyMFoam.C": "cpp"
+        "overPimpleDyMFoam.C": "cpp",
+        "ADMno1_tests.C": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

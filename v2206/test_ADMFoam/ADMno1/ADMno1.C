@@ -39,562 +39,580 @@ const Foam::word Foam::ADMno1::propertiesName("admno1Properties");
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::ADMno1::ADMno1
-(
-    volScalarField& T,
-    const fvMesh& mesh,
-    const IOdictionary& ADMno1Dict
-)
-:
-    IOdictionary(ADMno1Dict),
-    // DEBUG =======================================================
-    Qin_
-    (
-        "Qin", 
-        dimVolume/dimTime,
-        ADMno1Dict.lookupOrDefault("qin", 0.00)
-        // ADMno1Dict.lookupOrDefault("qin", 178.4674) // benchmark 
-    ),
-    Vgas_
-    (
-        "Vgas", 
-        dimVolume,
-        // 100 // <<< Rosen et al.
-        300
-    ),
-    Vliq_
-    (
-        "Vliq", 
-        dimVolume, 
-        3400
-    ),
-    // =============================================================
-    para_(ADMno1Dict.get<word>("mode")),
-    Sc_(ADMno1Dict.lookupOrDefault("Sc", 1.0)),
-    Sct_(ADMno1Dict.lookupOrDefault("Sct", 0.2)),
-    R_(ADMno1Dict.lookupOrDefault("R", 0.083145)),
-    KP_(ADMno1Dict.lookupOrDefault("Kpip", 5e4)),
-    // Vfrac_(ADMno1Dict.lookupOrDefault("Vfrac", 0.0294118)), // 100/3400
-    Vfrac_(ADMno1Dict.lookupOrDefault("Vfrac", 0.0882353)), // 300/3400
-    Pext_
-    (
-        "Pext", 
-        dimPressure,
-        ADMno1Dict.lookupOrDefault("Pext", 1.013)
-    ),
-    Pgas_
-    (
-        IOobject
-        (
-            "Pgas",
-            mesh.time().timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::AUTO_WRITE
-        ),
-        mesh,
-        Pext_
-    ),
-    TopDummy_(T),
-    fac_
-    (
-        IOobject
-        (
-            "fac",
-            mesh.time().timeName(),
-            mesh,
-            IOobject::READ_IF_PRESENT,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        dimensionedScalar
-        (
-            "facDefault", 
-            dimless, 
-            ADMno1Dict.lookupOrDefault("fac", 1)
-        )
-    ),
-    KHh2_(fac_),
-    KHch4_(fac_),
-    KHco2_(fac_),
-    KaW_(fac_),
-    KaIN_(fac_),                    
-    Kaco2_(fac_),
-    pH_
-    (
-        IOobject
-        (
-            "pH",
-            mesh.time().timeName(),
-            mesh,
-            IOobject::READ_IF_PRESENT,
-            IOobject::AUTO_WRITE
-        ),
-        mesh,
-        dimensionedScalar
-        (
-            "pHDefault", 
-            dimless, 
-            ADMno1Dict.lookupOrDefault("pH", 7.26)
-        )
-    ),
-    ShP_
-    (
-        IOobject
-        (
-            "ShP",
-            mesh.time().timeName(),
-            mesh,
-            IOobject::READ_IF_PRESENT,
-            IOobject::AUTO_WRITE
-        ),
-        mesh,
-        dimensionedScalar
-        (
-           "ShPDefault", 
-            dimMass,
-            para_.Pini()
-        )
-    ),
-    Scat_
-    (
-        "Scat",
-        dimMass/dimVolume, //TODO
-        ADMno1Dict.lookupOrDefault("Scat", 0.00)
-    ),
-    San_
-    (
-        "San",
-        dimMass/dimVolume, //TODO
-        ADMno1Dict.lookupOrDefault("San", 0.0052)
-    ),
-    tc_
-    (
-        "timeScale",
-        dimTime, //TODO
-        One
-    )
-{
+// Foam::ADMno1::ADMno1
+// (
+//     volScalarField& T,
+//     const fvMesh& mesh,
+//     const IOdictionary& ADMno1Dict
+// )
+// :
+//     IOdictionary(ADMno1Dict),
+//     // DEBUG =======================================================
+//     Qin_
+//     (
+//         "Qin", 
+//         dimVolume/dimTime,
+//         ADMno1Dict.lookupOrDefault("qin", 0.00)
+//         // ADMno1Dict.lookupOrDefault("qin", 178.4674) // benchmark 
+//     ),
+//     Vgas_
+//     (
+//         "Vgas", 
+//         dimVolume,
+//         // 100 // <<< Rosen et al.
+//         300
+//     ),
+//     Vliq_
+//     (
+//         "Vliq", 
+//         dimVolume, 
+//         3400
+//     ),
+//     Vgas_test
+//     (
+//         IOobject
+//         (
+//             "Vgastest",
+//             mesh.time().timeName(),
+//             mesh,
+//             IOobject::NO_READ,
+//             IOobject::AUTO_WRITE
+//         ),
+//         mesh,
+//         dimensionedScalar
+//         (
+//             "VgastestDefault", 
+//             dimVolume, 
+//             ADMno1Dict.lookupOrDefault("fac", 1)
+//         )
+//     ),
+//     // =============================================================
+//     para_(ADMno1Dict.get<word>("mode")),
+//     Sc_(ADMno1Dict.lookupOrDefault("Sc", 1.0)),
+//     Sct_(ADMno1Dict.lookupOrDefault("Sct", 0.2)),
+//     R_(ADMno1Dict.lookupOrDefault("R", 0.083145)),
+//     KP_(ADMno1Dict.lookupOrDefault("Kpip", 5e4)),
+//     // Vfrac_(ADMno1Dict.lookupOrDefault("Vfrac", 0.0294118)), // 100/3400
+//     Vfrac_(ADMno1Dict.lookupOrDefault("Vfrac", 0.0882353)), // 300/3400
+//     Pext_
+//     (
+//         "Pext", 
+//         dimPressure,
+//         ADMno1Dict.lookupOrDefault("Pext", 1.013)
+//     ),
+//     Pgas_
+//     (
+//         IOobject
+//         (
+//             "Pgas",
+//             mesh.time().timeName(),
+//             mesh,
+//             IOobject::NO_READ,
+//             IOobject::AUTO_WRITE
+//         ),
+//         mesh,
+//         Pext_
+//     ),
+//     TopDummy_(T),
+//     fac_
+//     (
+//         IOobject
+//         (
+//             "fac",
+//             mesh.time().timeName(),
+//             mesh,
+//             IOobject::READ_IF_PRESENT,
+//             IOobject::NO_WRITE
+//         ),
+//         mesh,
+//         dimensionedScalar
+//         (
+//             "facDefault", 
+//             dimless, 
+//             ADMno1Dict.lookupOrDefault("fac", 1)
+//         )
+//     ),
+//     KHh2_(fac_),
+//     KHch4_(fac_),
+//     KHco2_(fac_),
+//     KaW_(fac_),
+//     KaIN_(fac_),                    
+//     Kaco2_(fac_),
+//     pH_
+//     (
+//         IOobject
+//         (
+//             "pH",
+//             mesh.time().timeName(),
+//             mesh,
+//             IOobject::READ_IF_PRESENT,
+//             IOobject::AUTO_WRITE
+//         ),
+//         mesh,
+//         dimensionedScalar
+//         (
+//             "pHDefault", 
+//             dimless, 
+//             ADMno1Dict.lookupOrDefault("pH", 7.26)
+//         )
+//     ),
+//     ShP_
+//     (
+//         IOobject
+//         (
+//             "ShP",
+//             mesh.time().timeName(),
+//             mesh,
+//             IOobject::READ_IF_PRESENT,
+//             IOobject::AUTO_WRITE
+//         ),
+//         mesh,
+//         dimensionedScalar
+//         (
+//            "ShPDefault", 
+//             dimMass,
+//             para_.Pini()
+//         )
+//     ),
+//     Scat_
+//     (
+//         "Scat",
+//         dimMass/dimVolume, //TODO
+//         ADMno1Dict.lookupOrDefault("Scat", 0.00)
+//     ),
+//     San_
+//     (
+//         "San",
+//         dimMass/dimVolume, //TODO
+//         ADMno1Dict.lookupOrDefault("San", 0.0052)
+//     ),
+//     tc_
+//     (
+//         "timeScale",
+//         dimTime, //TODO
+//         One
+//     )
+// {
 
-    Info<< "\nSelecting ADM no1 operation mode " << ADMno1Dict.get<word>("mode") << endl;
+//     Info<< "\nSelecting ADM no1 operation mode " << ADMno1Dict.get<word>("mode") << endl;
 
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+//     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-    //- Main substances concentration initialization
+//     //- Main substances concentration initialization
 
-    Info<< "Reading ADM no1 initial concentrations for soluables" << endl;
+//     Info<< "Reading ADM no1 initial concentrations for soluables" << endl;
 
-    label iNames = 0;
-    label nSpecies = namesSoluable.size() + namesParticulate.size();
+//     label iNames = 0;
+//     label nSpecies = namesSoluable.size() + namesParticulate.size();
 
-    YPtrs_.resize(nSpecies);
+//     YPtrs_.resize(nSpecies);
 
-    forAll(namesSoluable, i)
-    {
-        YPtrs_.set
-        (
-            i,
-            new volScalarField
-            (
-                IOobject
-                (
-                    namesSoluable[i], // IOobject::groupName(namesSoluable[i]),
-                    mesh.time().timeName(),
-                    mesh,
-                    IOobject::MUST_READ,
-                    IOobject::AUTO_WRITE
-                ),
-                mesh
-            )
-        );
-    }
+//     forAll(namesSoluable, i)
+//     {
+//         YPtrs_.set
+//         (
+//             i,
+//             new volScalarField
+//             (
+//                 IOobject
+//                 (
+//                     namesSoluable[i], // IOobject::groupName(namesSoluable[i]),
+//                     mesh.time().timeName(),
+//                     mesh,
+//                     IOobject::MUST_READ,
+//                     IOobject::AUTO_WRITE
+//                 ),
+//                 mesh
+//             )
+//         );
+//     }
 
-    iNames += namesSoluable.size();
+//     iNames += namesSoluable.size();
 
-    //- Read particulates
+//     //- Read particulates
 
-    Info<< "Reading ADMno1 initial concentrations for particulates" << endl;
+//     Info<< "Reading ADMno1 initial concentrations for particulates" << endl;
 
-    forAll(namesParticulate, i)
-    {
-        YPtrs_.set
-        (
-            i + iNames,
-            new volScalarField
-            (
-                IOobject
-                (
-                    namesParticulate[i],
-                    mesh.time().timeName(),
-                    mesh,
-                    IOobject::MUST_READ,
-                    IOobject::AUTO_WRITE
-                ),
-                mesh
-            )
-        );
-    }
+//     forAll(namesParticulate, i)
+//     {
+//         YPtrs_.set
+//         (
+//             i + iNames,
+//             new volScalarField
+//             (
+//                 IOobject
+//                 (
+//                     namesParticulate[i],
+//                     mesh.time().timeName(),
+//                     mesh,
+//                     IOobject::MUST_READ,
+//                     IOobject::AUTO_WRITE
+//                 ),
+//                 mesh
+//             )
+//         );
+//     }
 
-    //- Initializing derivatives
+//     //- Initializing derivatives
 
-    dYPtrs_.resize(nSpecies);
+//     dYPtrs_.resize(nSpecies);
 
-    for (label i = 0; i < nSpecies; i++)
-    {
-        dYPtrs_.set
-        (
-            i,
-            new volScalarField::Internal
-            (
-                IOobject
-                (
-                    "d" + YPtrs_[i].name(),
-                    mesh.time().timeName(),
-                    mesh,
-                    IOobject::NO_READ,
-                    IOobject::NO_WRITE
-                ),
-                mesh,
-                dimensionedScalar
-                (
-                    YPtrs_[0].dimensions()/dimTime, 
-                    Zero
-                )
-            )
-        );
-    }
+//     for (label i = 0; i < nSpecies; i++)
+//     {
+//         dYPtrs_.set
+//         (
+//             i,
+//             new volScalarField::Internal
+//             (
+//                 IOobject
+//                 (
+//                     "d" + YPtrs_[i].name(),
+//                     mesh.time().timeName(),
+//                     mesh,
+//                     IOobject::NO_READ,
+//                     IOobject::NO_WRITE
+//                 ),
+//                 mesh,
+//                 dimensionedScalar
+//                 (
+//                     YPtrs_[0].dimensions()/dimTime, 
+//                     Zero
+//                 )
+//             )
+//         );
+//     }
 
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+//     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-    //- Gaseuoses initialization
+//     //- Gaseuoses initialization
 
-    Info<< "Reading ADM no1 initial concentrations for gaseuoses" << endl;
+//     Info<< "Reading ADM no1 initial concentrations for gaseuoses" << endl;
 
-    GPtrs_.resize(namesGaseous.size());
+//     GPtrs_.resize(namesGaseous.size());
 
-    forAll(namesGaseous, i)
-    {
-        GPtrs_.set
-        (
-            i,
-            new volScalarField
-            (
-                IOobject
-                (
-                    namesGaseous[i],
-                    mesh.time().timeName(),
-                    mesh,
-                    IOobject::READ_IF_PRESENT,
-                    IOobject::AUTO_WRITE
-                ),
-                mesh,
-                dimensionedScalar
-                (
-                    namesGaseous[i] + "Default", 
-                    YPtrs_[0].dimensions(),
-                    para_.Gini(i)
-                )
-            )
-        );
-    }
+//     forAll(namesGaseous, i)
+//     {
+//         GPtrs_.set
+//         (
+//             i,
+//             new volScalarField
+//             (
+//                 IOobject
+//                 (
+//                     namesGaseous[i],
+//                     mesh.time().timeName(),
+//                     mesh,
+//                     IOobject::READ_IF_PRESENT,
+//                     IOobject::AUTO_WRITE
+//                 ),
+//                 mesh,
+//                 dimensionedScalar
+//                 (
+//                     namesGaseous[i] + "Default", 
+//                     YPtrs_[0].dimensions(),
+//                     para_.Gini(i)
+//                 )
+//             )
+//         );
+//     }
     
-    //- Initializing derivatives
+//     //- Initializing derivatives
 
-    dGPtrs_.resize(namesGaseous.size());
+//     dGPtrs_.resize(namesGaseous.size());
 
-    for (label i = 0; i < namesGaseous.size(); i++)
-    {
-        dGPtrs_.set
-        (
-            i,
-            new volScalarField::Internal
-            (
-                IOobject
-                (
-                    "d" + GPtrs_[i].name(),
-                    mesh.time().timeName(),
-                    mesh,
-                    IOobject::NO_READ,
-                    IOobject::NO_WRITE
-                ),
-                mesh,
-                dimensionedScalar
-                (
-                    GPtrs_[0].dimensions()/dimTime, 
-                    Zero
-                )
-            )
-        );
-    }
+//     for (label i = 0; i < namesGaseous.size(); i++)
+//     {
+//         dGPtrs_.set
+//         (
+//             i,
+//             new volScalarField::Internal
+//             (
+//                 IOobject
+//                 (
+//                     "d" + GPtrs_[i].name(),
+//                     mesh.time().timeName(),
+//                     mesh,
+//                     IOobject::NO_READ,
+//                     IOobject::NO_WRITE
+//                 ),
+//                 mesh,
+//                 dimensionedScalar
+//                 (
+//                     GPtrs_[0].dimensions()/dimTime, 
+//                     Zero
+//                 )
+//             )
+//         );
+//     }
 
 
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+//     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-    //- Medians initialization
+//     //- Medians initialization
 
-    Info<< "Initializing concentrations for medians" << endl;
+//     Info<< "Initializing concentrations for medians" << endl;
 
-    MPtrs_.resize(namesMedians.size());
+//     MPtrs_.resize(namesMedians.size());
 
-    forAll(namesMedians, i)
-    {
-        MPtrs_.set
-        (
-            i,
-            new volScalarField
-            (
-                IOobject
-                (
-                    namesMedians[i],
-                    mesh.time().timeName(),
-                    mesh,
-                    IOobject::READ_IF_PRESENT,
-                    IOobject::AUTO_WRITE
-                ),
-                mesh,
-                dimensionedScalar
-                (
-                    namesMedians[i] + "Default", 
-                    YPtrs_[0].dimensions(),
-                    para_.Mini(i)
-                )
-            )
-        );  
-    }
+//     forAll(namesMedians, i)
+//     {
+//         MPtrs_.set
+//         (
+//             i,
+//             new volScalarField
+//             (
+//                 IOobject
+//                 (
+//                     namesMedians[i],
+//                     mesh.time().timeName(),
+//                     mesh,
+//                     IOobject::READ_IF_PRESENT,
+//                     IOobject::AUTO_WRITE
+//                 ),
+//                 mesh,
+//                 dimensionedScalar
+//                 (
+//                     namesMedians[i] + "Default", 
+//                     YPtrs_[0].dimensions(),
+//                     para_.Mini(i)
+//                 )
+//             )
+//         );  
+//     }
 
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+//     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-    //- Ions initialization
+//     //- Ions initialization
 
-    IOPtrs_.resize(2);
+//     IOPtrs_.resize(2);
 
-    IOPtrs_.set
-    (
-        0,
-        new volScalarField
-        (
-            IOobject
-            (
-                "Scat",
-                mesh.time().timeName(),
-                mesh,
-                IOobject::READ_IF_PRESENT,
-                IOobject::NO_WRITE
-            ),
-            mesh,
-            dimensionedScalar
-            (
-               "Scat", 
-                YPtrs_[0].dimensions(),
-                ADMno1Dict.lookupOrDefault("Scat", 0.00)
-            )
-        )
-    );
+//     IOPtrs_.set
+//     (
+//         0,
+//         new volScalarField
+//         (
+//             IOobject
+//             (
+//                 "Scat",
+//                 mesh.time().timeName(),
+//                 mesh,
+//                 IOobject::READ_IF_PRESENT,
+//                 IOobject::NO_WRITE
+//             ),
+//             mesh,
+//             dimensionedScalar
+//             (
+//                "Scat", 
+//                 YPtrs_[0].dimensions(),
+//                 ADMno1Dict.lookupOrDefault("Scat", 0.00)
+//             )
+//         )
+//     );
 
-    IOPtrs_.set
-    (
-        1,
-        new volScalarField
-        (
-            IOobject
-            (
-                "San",
-                mesh.time().timeName(),
-                mesh,
-                IOobject::READ_IF_PRESENT,
-                IOobject::NO_WRITE
-            ),                             
-            mesh,
-            dimensionedScalar
-            (
-               "San", 
-                YPtrs_[0].dimensions(),
-                ADMno1Dict.lookupOrDefault("San", 0.0052)
-            )
-        )
-    );
+//     IOPtrs_.set
+//     (
+//         1,
+//         new volScalarField
+//         (
+//             IOobject
+//             (
+//                 "San",
+//                 mesh.time().timeName(),
+//                 mesh,
+//                 IOobject::READ_IF_PRESENT,
+//                 IOobject::NO_WRITE
+//             ),                             
+//             mesh,
+//             dimensionedScalar
+//             (
+//                "San", 
+//                 YPtrs_[0].dimensions(),
+//                 ADMno1Dict.lookupOrDefault("San", 0.0052)
+//             )
+//         )
+//     );
 
     
-    //- Initializing derivatives
+//     //- Initializing derivatives
 
-    dIOPtrs_.resize(namesIons.size());
+//     dIOPtrs_.resize(namesIons.size());
 
-    for (label i = 0; i < namesIons.size(); i++)
-    {
-        dIOPtrs_.set
-        (
-            i,
-            new volScalarField::Internal
-            (
-                IOobject
-                (
-                    "d" + IOPtrs_[i].name(),
-                    mesh.time().timeName(),
-                    mesh,
-                    IOobject::NO_READ,
-                    IOobject::NO_WRITE
-                ),
-                mesh,
-                dimensionedScalar
-                (
-                    IOPtrs_[0].dimensions()/dimTime, 
-                    Zero
-                )
-            )
-        );
-    }
+//     for (label i = 0; i < namesIons.size(); i++)
+//     {
+//         dIOPtrs_.set
+//         (
+//             i,
+//             new volScalarField::Internal
+//             (
+//                 IOobject
+//                 (
+//                     "d" + IOPtrs_[i].name(),
+//                     mesh.time().timeName(),
+//                     mesh,
+//                     IOobject::NO_READ,
+//                     IOobject::NO_WRITE
+//                 ),
+//                 mesh,
+//                 dimensionedScalar
+//                 (
+//                     IOPtrs_[0].dimensions()/dimTime, 
+//                     Zero
+//                 )
+//             )
+//         );
+//     }
 
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+//     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-    //-  Medians initialization
+//     //-  Medians initialization
 
-    Info<< "Initializing concentrations for electrolytes" << endl;
+//     Info<< "Initializing concentrations for electrolytes" << endl;
 
-    EPtrs_.resize(namesElectrolytes.size());
+//     EPtrs_.resize(namesElectrolytes.size());
 
-    forAll(namesElectrolytes, i)
-    {
-        EPtrs_.set
-        (
-            i,
-            new volScalarField::Internal
-            (
-                IOobject
-                (
-                    namesElectrolytes[i],
-                    mesh.time().timeName(),
-                    mesh,
-                    IOobject::NO_READ, // READ_IF_PRESENT,
-                    IOobject::NO_WRITE
-                ),
-                mesh,
-                dimensionedScalar
-                (
-                    YPtrs_[0].dimensions(),
-                    para_.Eini(i)
-                )
-            )
-        );
-    }
+//     forAll(namesElectrolytes, i)
+//     {
+//         EPtrs_.set
+//         (
+//             i,
+//             new volScalarField::Internal
+//             (
+//                 IOobject
+//                 (
+//                     namesElectrolytes[i],
+//                     mesh.time().timeName(),
+//                     mesh,
+//                     IOobject::NO_READ, // READ_IF_PRESENT,
+//                     IOobject::NO_WRITE
+//                 ),
+//                 mesh,
+//                 dimensionedScalar
+//                 (
+//                     YPtrs_[0].dimensions(),
+//                     para_.Eini(i)
+//                 )
+//             )
+//         );
+//     }
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-    //- Inhibition coeffs initialization
+//     //- Inhibition coeffs initialization
 
-    IPtrs_.resize(8);
+//     IPtrs_.resize(8);
 
-    for (int i = 0; i < 8; i++)
-    {
-        IPtrs_.set
-        (
-            i,
-            new volScalarField
-            (
-                IOobject
-                (
-                    "Inh" + Foam::name(i),
-                    mesh.time().timeName(),
-                    mesh,
-                    IOobject::NO_READ,
-                    IOobject::NO_WRITE// TODO: choose if writing
-                ),
-                mesh,
-                dimensionedScalar
-                (
-                    dimless, 
-                    Zero
-                )
-            )
-        );
-    }
+//     for (int i = 0; i < 8; i++)
+//     {
+//         IPtrs_.set
+//         (
+//             i,
+//             new volScalarField
+//             (
+//                 IOobject
+//                 (
+//                     "Inh" + Foam::name(i),
+//                     mesh.time().timeName(),
+//                     mesh,
+//                     IOobject::NO_READ,
+//                     IOobject::NO_WRITE// TODO: choose if writing
+//                 ),
+//                 mesh,
+//                 dimensionedScalar
+//                 (
+//                     dimless, 
+//                     Zero
+//                 )
+//             )
+//         );
+//     }
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-    //- Kinetic rate initialization
+//     //- Kinetic rate initialization
     
-    KRPtrs_.resize(19);
+//     KRPtrs_.resize(19);
 
-    for (int i = 0; i < 19; i++)
-    {
-        KRPtrs_.set
-        (
-            i,
-            new volScalarField::Internal
-            (
-                IOobject
-                (
-                    "RRs" + Foam::name(i),
-                    mesh.time().timeName(),
-                    mesh,
-                    IOobject::NO_READ,
-                    IOobject::NO_WRITE
-                ),
-                mesh,
-                dimensionedScalar
-                (
-                    dYPtrs_[0].dimensions(), 
-                    Zero
-                )
-            )
-        );
-    }
+//     for (int i = 0; i < 19; i++)
+//     {
+//         KRPtrs_.set
+//         (
+//             i,
+//             new volScalarField::Internal
+//             (
+//                 IOobject
+//                 (
+//                     "RRs" + Foam::name(i),
+//                     mesh.time().timeName(),
+//                     mesh,
+//                     IOobject::NO_READ,
+//                     IOobject::NO_WRITE
+//                 ),
+//                 mesh,
+//                 dimensionedScalar
+//                 (
+//                     dYPtrs_[0].dimensions(), 
+//                     Zero
+//                 )
+//             )
+//         );
+//     }
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-    //- Gas trasfer rate initialization
+//     //- Gas trasfer rate initialization
     
-    GRPtrs_.resize(3);
+//     GRPtrs_.resize(3);
 
-    for (int i = 0; i < 3; i++)
-    {
-        GRPtrs_.set
-        (
-            i,
-            new volScalarField::Internal
-            (
-                IOobject
-                (
-                    "GRs" + Foam::name(i),
-                    mesh.time().timeName(),
-                    mesh,
-                    IOobject::NO_READ,
-                    IOobject::NO_WRITE
-                ),
-                mesh,
-                dimensionedScalar
-                (
-                    dGPtrs_[0].dimensions(), 
-                    Zero
-                )
-            )
-        );
-    }
+//     for (int i = 0; i < 3; i++)
+//     {
+//         GRPtrs_.set
+//         (
+//             i,
+//             new volScalarField::Internal
+//             (
+//                 IOobject
+//                 (
+//                     "GRs" + Foam::name(i),
+//                     mesh.time().timeName(),
+//                     mesh,
+//                     IOobject::NO_READ,
+//                     IOobject::NO_WRITE
+//                 ),
+//                 mesh,
+//                 dimensionedScalar
+//                 (
+//                     dGPtrs_[0].dimensions(), 
+//                     Zero
+//                 )
+//             )
+//         );
+//     }
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+// // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-    // reset dimensions 
-    para_.setParaDim(YPtrs_[0].dimensions());
-    ShP_.dimensions().reset(YPtrs_[0].dimensions());
-    Scat_.dimensions().reset(YPtrs_[0].dimensions());
-    San_.dimensions().reset(YPtrs_[0].dimensions());
+//     // reset dimensions 
+//     para_.setParaDim(YPtrs_[0].dimensions());
+//     ShP_.dimensions().reset(YPtrs_[0].dimensions());
+//     Scat_.dimensions().reset(YPtrs_[0].dimensions());
+//     San_.dimensions().reset(YPtrs_[0].dimensions());
 
-    TopDummy_.dimensions().reset(dimless);
+//     TopDummy_.dimensions().reset(dimless);
 
-    KHh2_.dimensions().reset(para_.KH().h2.dimensions());
-    KHch4_.dimensions().reset(para_.KH().ch4.dimensions());
-    KHco2_.dimensions().reset(para_.KH().co2.dimensions());
-    Kaco2_.dimensions().reset(para_.Ka().co2.dimensions());
-    KaIN_.dimensions().reset(para_.Ka().IN.dimensions());
-    KaW_.dimensions().reset(para_.Ka().W.dimensions());
+//     KHh2_.dimensions().reset(para_.KH().h2.dimensions());
+//     KHch4_.dimensions().reset(para_.KH().ch4.dimensions());
+//     KHco2_.dimensions().reset(para_.KH().co2.dimensions());
+//     Kaco2_.dimensions().reset(para_.Ka().co2.dimensions());
+//     KaIN_.dimensions().reset(para_.Ka().IN.dimensions());
+//     KaW_.dimensions().reset(para_.Ka().W.dimensions());
 
-    nIaa_ = 3.0 / (para_.pHL().ULaa - para_.pHL().LLaa);  // aa
-    nIac_ = 3.0 / (para_.pHL().ULac - para_.pHL().LLac);  // ac
-    nIh2_ = 3.0 / (para_.pHL().ULh2 - para_.pHL().LLh2);  // h2
-    MPtrs_[0].ref() = YPtrs_[9] - EPtrs_[4]; // Sco2 = SIC - Shco3N
+//     nIaa_ = 3.0 / (para_.pHL().ULaa - para_.pHL().LLaa);  // aa
+//     nIac_ = 3.0 / (para_.pHL().ULac - para_.pHL().LLac);  // ac
+//     nIh2_ = 3.0 / (para_.pHL().ULh2 - para_.pHL().LLh2);  // h2
+//     MPtrs_[0].ref() = YPtrs_[9] - EPtrs_[4]; // Sco2 = SIC - Shco3N
 
-    // DEBUG
-    Vfrac_ = (Vgas_/Vliq_).value();
-}
+//     // DEBUG
+//     Vfrac_ = (Vgas_/Vliq_).value();
+// }
 
 
 // * * * * * * * * * * * * * * * * Selectors * * * * * * * * * * * * * * * * //
