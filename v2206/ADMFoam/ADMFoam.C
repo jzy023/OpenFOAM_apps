@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 
         // ADM1 reaction source terms
         reaction->clear();
-        // reaction->correct(phi, T);
+        reaction->correct(phi, T);
         PtrList<volScalarField>& YPtrs = reaction->Y();
         PtrList<volScalarField>& GPtrs = reaction->G();
 

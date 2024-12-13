@@ -33,6 +33,21 @@ License
         return DTOS_;
     }
 
+    inline scalar admPara::MTOm() const 
+    {
+        return MTOm_;
+    }
+
+    inline scalar admPara::BTOP() const 
+    {
+        return BTOP_;
+    }
+
+    inline scalar admPara::kTOK() const 
+    {
+        return kTOK_;
+    }
+
     inline const dimensionedScalar admPara::Tbase() const 
     {
         return Tbase_;
@@ -71,11 +86,6 @@ License
     inline const inhibitionParaS admPara::KS() const 
     {
         return KS_;
-    }
-
-    inline const dimensionedScalar admPara::kAB() const 
-    {
-        return kAB_;
     }
 
     inline const admAcidBaseEq admPara::Ka() const 

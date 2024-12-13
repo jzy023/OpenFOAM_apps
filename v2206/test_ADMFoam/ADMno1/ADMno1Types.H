@@ -330,7 +330,6 @@ struct inhibitionParaS
     dimensionSet ds;
 
     dimensionedScalar IN;  //[kmol/m3]
-    dimensionedScalar nh3; //[kmol/m3]
     dimensionedScalar su;  //[kgCOD/m3]
     dimensionedScalar aa;  //[kgCOD/m3]
     dimensionedScalar fa;  //[kgCOD/m3]
@@ -343,7 +342,6 @@ struct inhibitionParaS
     (
         dimensionSet ds_,
         scalar IN_,
-        scalar nh3_,
         scalar su_,
         scalar aa_,
         scalar fa_,
@@ -354,7 +352,6 @@ struct inhibitionParaS
     )
     :
         IN( ds_, IN_ ),
-        nh3( ds_, nh3_ ),
         su( ds_, su_ ),
         aa( ds_, aa_ ),
         fa( ds_, fa_ ),
@@ -370,7 +367,6 @@ struct inhibitionParaS
     )
     {
         IN.dimensions().reset(ds);
-        nh3.dimensions().reset(ds);
         su.dimensions().reset(ds);
         aa.dimensions().reset(ds);
         fa.dimensions().reset(ds);

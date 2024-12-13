@@ -68,7 +68,7 @@ volScalarField::Internal Foam::ADMno1::calcInhibitionHP
     dimensionedScalar Kph = pow(10, -0.5 * (UL + LL));
     Kph.dimensions().reset(Shp.dimensions());
 
-    return pow(Kph, n) / (pow(Shp, n) + pow(Kph, n));
+    return pow(Kph, n) / (pow(Shp / para_.MTOm(), n) + pow(Kph, n));
 }
 
 
@@ -142,11 +142,11 @@ volScalarField::Internal Foam::ADMno1::concPerComponent
     {
         for (int i = 0; i < 12; i++) 
         {
-            dY += para_.DTOS() * KRPtrs[i] * para_.STOI[i][j]; 
+            dY += para_.DTOS() * KRPtrs[i] * para_.STOI[i][j] * para_.MTOm(); 
         }
         for (int i = 12; i < 19; i++) 
         {
-            dY += para_.DTOS() * KRPtrs[i] * para_.STOI[12][j]; 
+            dY += para_.DTOS() * KRPtrs[i] * para_.STOI[12][j] * para_.MTOm(); 
         }
     }
     else

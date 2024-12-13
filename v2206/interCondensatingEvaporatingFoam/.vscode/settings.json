@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "bashrc": "shellscript",
+        "interCondensatingEvaporatingFoam.C": "cpp",
+        "temperaturePhaseChangeTwoPhaseMixture.C": "cpp",
+        "thermoIncompressibleTwoPhaseMixture.C": "cpp",
+        "twoPhaseMixtureEThermo.C": "cpp",
+        "constant.C": "cpp",
+        "interfaceHeatResistance.C": "cpp",
+        "temperaturePhaseChangeTwoPhaseMixtureNew.C": "cpp"
+    }
+}

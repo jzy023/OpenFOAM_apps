@@ -87,18 +87,41 @@ const Foam::word Foam::ADMno1::propertiesName("admno1Properties");
 //         )
 //     ),
 //     // =============================================================
-//     para_(ADMno1Dict.get<word>("mode")),
-//     Sc_(ADMno1Dict.lookupOrDefault("Sc", 1.0)),
-//     Sct_(ADMno1Dict.lookupOrDefault("Sct", 0.2)),
-//     R_(ADMno1Dict.lookupOrDefault("R", 0.083145)),
-//     KP_(ADMno1Dict.lookupOrDefault("Kpip", 5e4)),
-//     // Vfrac_(ADMno1Dict.lookupOrDefault("Vfrac", 0.0294118)), // 100/3400
-//     Vfrac_(ADMno1Dict.lookupOrDefault("Vfrac", 0.0882353)), // 300/3400
+//     para_
+//     (
+//         ADMno1Dict.get<word>("mode")
+//     ),
+//     Sc_
+//     (
+//         ADMno1Dict.lookupOrDefault("Sc", 1.0)
+//     ),
+//     Sct_
+//     (
+//         ADMno1Dict.lookupOrDefault("Sct", 0.2)
+//     ),
+//     R_
+//     (
+//         ADMno1Dict.lookupOrDefault("R", 0.083145 / para_.kTOK())
+//     ),
+//     KP_
+//     (
+//         ADMno1Dict.lookupOrDefault("Kpip", 5e4 / para_.BTOP())
+//     ),
+//     Vfrac_
+//     (
+//         ADMno1Dict.lookupOrDefault("Vfrac", 0.0882353) // 300/3400
+//     ), 
+//     Pvap_
+//     (
+//         "Pvap", 
+//         dimPressure,
+//         ADMno1Dict.lookupOrDefault("Pvap", para_.BTOP() * 0.0313)
+//     ),
 //     Pext_
 //     (
 //         "Pext", 
 //         dimPressure,
-//         ADMno1Dict.lookupOrDefault("Pext", 1.013)
+//         ADMno1Dict.lookupOrDefault("Pext", para_.BTOP() * 1.013)
 //     ),
 //     Pgas_
 //     (
@@ -184,7 +207,7 @@ const Foam::word Foam::ADMno1::propertiesName("admno1Properties");
 //     (
 //         "San",
 //         dimMass/dimVolume, //TODO
-//         ADMno1Dict.lookupOrDefault("San", 0.0052)
+//         ADMno1Dict.lookupOrDefault("San", 0.0052 * para_.MTOm())
 //     ),
 //     tc_
 //     (
@@ -592,6 +615,8 @@ const Foam::word Foam::ADMno1::propertiesName("admno1Properties");
 
 //     // reset dimensions 
 //     para_.setParaDim(YPtrs_[0].dimensions());
+//     MPtrs_[0].ref() = YPtrs_[9] - EPtrs_[4]; // Sco2 = SIC - Shco3N
+
 //     ShP_.dimensions().reset(YPtrs_[0].dimensions());
 //     Scat_.dimensions().reset(YPtrs_[0].dimensions());
 //     San_.dimensions().reset(YPtrs_[0].dimensions());
@@ -601,6 +626,7 @@ const Foam::word Foam::ADMno1::propertiesName("admno1Properties");
 //     KHh2_.dimensions().reset(para_.KH().h2.dimensions());
 //     KHch4_.dimensions().reset(para_.KH().ch4.dimensions());
 //     KHco2_.dimensions().reset(para_.KH().co2.dimensions());
+
 //     Kaco2_.dimensions().reset(para_.Ka().co2.dimensions());
 //     KaIN_.dimensions().reset(para_.Ka().IN.dimensions());
 //     KaW_.dimensions().reset(para_.Ka().W.dimensions());
@@ -608,7 +634,6 @@ const Foam::word Foam::ADMno1::propertiesName("admno1Properties");
 //     nIaa_ = 3.0 / (para_.pHL().ULaa - para_.pHL().LLaa);  // aa
 //     nIac_ = 3.0 / (para_.pHL().ULac - para_.pHL().LLac);  // ac
 //     nIh2_ = 3.0 / (para_.pHL().ULh2 - para_.pHL().LLh2);  // h2
-//     MPtrs_[0].ref() = YPtrs_[9] - EPtrs_[4]; // Sco2 = SIC - Shco3N
 
 //     // DEBUG
 //     Vfrac_ = (Vgas_/Vliq_).value();
@@ -652,7 +677,6 @@ void Foam::ADMno1::calcThermal
 {
     TopDummy_.field() = T.field();
 
-    // fac_ = (1.0 / para_.Tbase().value() - 1.0 / TopDummy_) / (100.0 * R_);
     fac_ = (1.0 / para_.Tbase().value() - 1.0 / TopDummy_) / R_;
     
     KHh2_ = para_.KH().h2 * exp(-4180.0 * fac_);
@@ -694,10 +718,12 @@ void Foam::ADMno1::gasPressure()
         )
     );
 
-    // Ph2o.field() = para_.KH().h2o * exp(5290.0 * fac_ * 100 * R_);
-    // Pgas_.field() = (GPtrs_[0] / 16.0 + GPtrs_[1] / 64.0 + GPtrs_[2]) * R_ * TopDummy_ + Ph2o;
-    Ph2o.field() = 1e2*1e5*para_.KH().h2o * exp(5290.0 * fac_ * R_);
-    Pgas_.field() = (1e3*GPtrs_[0] / 16.0 + 1e3*GPtrs_[1] / 64.0 + GPtrs_[2]) * R_ * TopDummy_ + Ph2o;
+    Ph2o.field() = Pvap_ * exp(5290.0 * fac_ * R_);
+    Pgas_.field() = 
+    (
+        Ph2o + R_ * TopDummy_
+     * (para_.MTOm() * GPtrs_[0] / 16.0 + para_.MTOm() * GPtrs_[1] / 64.0 + GPtrs_[2])
+    );
 
     // in multiphase gas calculation: Ptotal is directly taken from the fluid calcualtion
     //                                GPtrs_[i] (kg COD/m3) are used to find the mole of each gas
@@ -773,8 +799,8 @@ void Foam::ADMno1::gasSourceRate()
         if ( qGasLocal.field()[i] < 0.0 ) { qGasLocal.field()[i] = 1e-16; }
     }
 
-    Info<< "DEBUG: Pgas: " << max(Pgas_.field()) << endl;
-    Info<< "DEBUG: qGas: " << max(qGasLocal.field() / (para_.DTOS() * (volMeshField / (Vgas_ + Vliq_).value()))) << endl;
+    // Info<< "DEBUG: Pgas: " << max(Pgas_.field()) << endl;
+    // Info<< "DEBUG: qGas: " << max(qGasLocal.field() / (para_.DTOS() * (volMeshField / (Vgas_ + Vliq_).value()))) << endl;
 
     dGPtrs_[0].field() = 
     (
@@ -1246,7 +1272,7 @@ volScalarField::Internal Foam::ADMno1::fShp
     (
         IOPtrs_[0].internalField() - IOPtrs_[1].internalField() + ShpTemp 
       - SohN + (YPtrs_[10].internalField() - MPtrs_[1].internalField()) - EPtrs_[4] 
-      - (EPtrs_[3]/64.0 + EPtrs_[2]/112.0 + EPtrs_[1]/160.0 + EPtrs_[0]/208.0)*1e3
+      - para_.MTOm() * (EPtrs_[3]/64.0 + EPtrs_[2]/112.0 + EPtrs_[1]/160.0 + EPtrs_[0]/208.0)
     );
 
     // DEBUG
@@ -1325,7 +1351,7 @@ volScalarField::Internal Foam::ADMno1::dfShp
     );
 
     return uniField - dSnh3 - dShco3N - dSohN  
-         - (dSacN/64.0 + dSproN/112.0 + dSbuN/160.0 + dSvaN/208.0)*1e3;
+         - para_.MTOm() * (dSacN/64.0 + dSproN/112.0 + dSbuN/160.0 + dSvaN/208.0);
 }
 
 
@@ -1366,8 +1392,7 @@ void Foam::ADMno1::calcShp()
 
     // ShP
     ShP_ = x;
-    // pH_.field() = -log10(ShP_.field());
-    pH_.field() = -log10(ShP_.field() / 1e3);
+    pH_.field() = -log10(ShP_.field() / para_.MTOm());
 
     // update Sco2: Sco2 = SIC - Shco3N
     MPtrs_[0].ref() = YPtrs_[9] - EPtrs_[4];
@@ -1422,17 +1447,6 @@ void Foam::ADMno1::correct
 
     //- Sh2 calculations
     calcSh2(flux);
-
-//     Info<< "Newton-Raphson:\tSolving for Sh+" 
-//     << ", min Shp: " << min(ShP_.field()) 
-//     << ", max Shp: " << max(ShP_.field()) 
-//     << ", No Interations " << 1 << endl;
-
-//     Info<< "Newton-Raphson:\tSolving for Sh2" 
-//     << ", min Sh2: " << min(YPtrs_[7].field()) 
-//     << ", max Sh2: " << max(YPtrs_[7].field()) 
-//     << ", No Interations " << 1 << endl;
-
 }
 
 

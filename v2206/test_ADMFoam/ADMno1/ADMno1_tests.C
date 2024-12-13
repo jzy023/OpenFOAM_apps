@@ -85,17 +85,41 @@ Foam::ADMno1::ADMno1
         )
     ),
     // =============================================================
-    para_(ADMno1Dict.get<word>("mode")),
-    Sc_(ADMno1Dict.lookupOrDefault("Sc", 1.0)),
-    Sct_(ADMno1Dict.lookupOrDefault("Sct", 0.2)),
-    R_(ADMno1Dict.lookupOrDefault("R", 0.083145)),
-    KP_(ADMno1Dict.lookupOrDefault("Kpip", 5e4)),
-    Vfrac_(ADMno1Dict.lookupOrDefault("Vfrac", 0.0882353)), // 300/3400
+    para_
+    (
+        ADMno1Dict.get<word>("mode")
+    ),
+    Sc_
+    (
+        ADMno1Dict.lookupOrDefault("Sc", 1.0)
+    ),
+    Sct_
+    (
+        ADMno1Dict.lookupOrDefault("Sct", 0.2)
+    ),
+    R_
+    (
+        ADMno1Dict.lookupOrDefault("R", 0.083145 / para_.kTOK())
+    ),
+    KP_
+    (
+        ADMno1Dict.lookupOrDefault("Kpip", 5e4 / para_.BTOP())
+    ),
+    Vfrac_
+    (
+        ADMno1Dict.lookupOrDefault("Vfrac", 0.0882353) // 300/3400
+    ), 
+    Pvap_
+    (
+        "Pvap", 
+        dimPressure,
+        ADMno1Dict.lookupOrDefault("Pvap", para_.BTOP() * 0.0313)
+    ),
     Pext_
     (
         "Pext", 
         dimPressure,
-        ADMno1Dict.lookupOrDefault("Pext", 1.013)
+        ADMno1Dict.lookupOrDefault("Pext", para_.BTOP() * 1.013)
     ),
     Pgas_
     (
@@ -181,7 +205,7 @@ Foam::ADMno1::ADMno1
     (
         "San",
         dimMass/dimVolume, //TODO
-        ADMno1Dict.lookupOrDefault("San", 0.0052)
+        ADMno1Dict.lookupOrDefault("San", 0.0052 * para_.MTOm())
     ),
     tc_
     (
@@ -674,6 +698,8 @@ Foam::ADMno1::ADMno1
 
     // reset dimensions 
     para_.setParaDim(YPtrs_[0].dimensions());
+    MPtrs_[0].ref() = YPtrs_[9] - EPtrs_[4]; // Sco2 = SIC - Shco3N
+
     ShP_.dimensions().reset(YPtrs_[0].dimensions());
     Scat_.dimensions().reset(YPtrs_[0].dimensions());
     San_.dimensions().reset(YPtrs_[0].dimensions());
@@ -683,6 +709,7 @@ Foam::ADMno1::ADMno1
     KHh2_.dimensions().reset(para_.KH().h2.dimensions());
     KHch4_.dimensions().reset(para_.KH().ch4.dimensions());
     KHco2_.dimensions().reset(para_.KH().co2.dimensions());
+
     Kaco2_.dimensions().reset(para_.Ka().co2.dimensions());
     KaIN_.dimensions().reset(para_.Ka().IN.dimensions());
     KaW_.dimensions().reset(para_.Ka().W.dimensions());
@@ -690,8 +717,7 @@ Foam::ADMno1::ADMno1
     nIaa_ = 3.0 / (para_.pHL().ULaa - para_.pHL().LLaa);  // aa
     nIac_ = 3.0 / (para_.pHL().ULac - para_.pHL().LLac);  // ac
     nIh2_ = 3.0 / (para_.pHL().ULh2 - para_.pHL().LLh2);  // h2
-    MPtrs_[0].ref() = YPtrs_[9] - EPtrs_[4]; // Sco2 = SIC - Shco3N
-
+    
     // DEBUG
     Vfrac_ = (Vgas_/Vliq_).value();
 }
@@ -745,8 +771,8 @@ void Foam::ADMno1::gasTest(volScalarField& Ptotal)
 
     // Vfrac_test = Pgas_incell.field();
 
-    Ph2o_incell.field() = para_.KH().h2o * exp(5290.0 * fac_ * 100 * R_);
-    Pgas_incell.field() = (GPtrs_test[0] / 16.0 + GPtrs_test[1] / 64.0 + GPtrs_test[2]) * R_ * TopDummy_;
+    Ph2o_incell.field() = Pvap_ * exp(5290.0 * fac_ * R_);
+    Pgas_incell.field() = (para_.MTOm() * GPtrs_[0] / 16.0 + para_.MTOm() * GPtrs_[1] / 64.0 + GPtrs_[2]) * R_ * TopDummy_ + Ph2o_incell;
     Ptotal_incell.field() = Ph2o_incell.field() + Pgas_incell.field();
     // Vfrac_test.field() = 100000 * Pgas_incell.field() / Ptotal.field();
 

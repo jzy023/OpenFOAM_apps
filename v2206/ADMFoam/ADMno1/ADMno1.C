@@ -52,8 +52,8 @@ Foam::ADMno1::ADMno1
     (
         "Qin", 
         dimVolume/dimTime,
-        ADMno1Dict.lookupOrDefault("qin", 0.00)
-        // ADMno1Dict.lookupOrDefault("qin", 178.4674) // benchmark 
+        // ADMno1Dict.lookupOrDefault("qin", 0.00)
+        ADMno1Dict.lookupOrDefault("qin", 178.4674) // benchmark 
     ),
     Vgas_
     (
@@ -69,13 +69,37 @@ Foam::ADMno1::ADMno1
         3400
     ),
     // =============================================================
-    para_(ADMno1Dict.get<word>("mode")),
-    Sc_(ADMno1Dict.lookupOrDefault("Sc", 1.0)),
-    Sct_(ADMno1Dict.lookupOrDefault("Sct", 0.2)),
-    R_(ADMno1Dict.lookupOrDefault("R", 0.083145)),
-    KP_(ADMno1Dict.lookupOrDefault("Kpip", 5e4)),
-    // Vfrac_(ADMno1Dict.lookupOrDefault("Vfrac", 0.0294118)), // 100/3400
-    Vfrac_(ADMno1Dict.lookupOrDefault("Vfrac", 0.0882353)), // 300/3400
+    para_
+    (
+        ADMno1Dict.get<word>("mode")
+    ),
+    Sc_
+    (
+        ADMno1Dict.lookupOrDefault("Sc", 1.0)
+    ),
+    Sct_
+    (
+        ADMno1Dict.lookupOrDefault("Sct", 0.2)
+    ),
+    R_
+    (
+        ADMno1Dict.lookupOrDefault("R", 0.083145 / para_.kTOK())
+    ),
+    KP_
+    (
+        ADMno1Dict.lookupOrDefault("Kpip", 5e4 / para_.BTOP())
+    ),
+    Vfrac_
+    (
+        // ADMno1Dict.lookupOrDefault("Vfrac", 0.0294118) // 100/3400
+        ADMno1Dict.lookupOrDefault("Vfrac", 0.0882353) // 300/3400
+    ), 
+    Pvap_
+    (
+        "Pvap", 
+        dimPressure,
+        ADMno1Dict.lookupOrDefault("Pvap", para_.BTOP() * 0.0313)
+    ),
     Pext_
     (
         "Pext", 
@@ -166,7 +190,7 @@ Foam::ADMno1::ADMno1
     (
         "San",
         dimMass/dimVolume, //TODO
-        ADMno1Dict.lookupOrDefault("San", 0.0052)
+        ADMno1Dict.lookupOrDefault("San", 0.0052 * para_.MTOm())
     ),
     tc_
     (
@@ -634,7 +658,7 @@ void Foam::ADMno1::calcThermal
 {
     TopDummy_.field() = T.field();
 
-    fac_ = (1.0 / para_.Tbase().value() - 1.0 / TopDummy_) / (100.0 * R_);
+    fac_ = (1.0 / para_.Tbase().value() - 1.0 / TopDummy_) / R_;
     
     KHh2_ = para_.KH().h2 * exp(-4180.0 * fac_);
     KHch4_ = para_.KH().ch4 * exp(-14240.0 * fac_);
@@ -675,8 +699,12 @@ void Foam::ADMno1::gasPressure()
         )
     );
 
-    Ph2o.field() = para_.KH().h2o * exp(5290.0 * fac_ * 100 * R_);
-    Pgas_.field() = (GPtrs_[0] / 16.0 + GPtrs_[1] / 64.0 + GPtrs_[2]) * R_ * TopDummy_ + Ph2o;
+    Ph2o.field() = Pvap_ * exp(5290.0 * fac_ * R_);
+    Pgas_.field() = 
+    (
+        Ph2o + R_ * TopDummy_
+     * (para_.MTOm() * GPtrs_[0] / 16.0 + para_.MTOm() * GPtrs_[1] / 64.0 + GPtrs_[2])
+    );    
 }
 
 
@@ -1216,8 +1244,8 @@ volScalarField::Internal Foam::ADMno1::fShp
     volScalarField::Internal E = 
     (
         IOPtrs_[0].internalField() - IOPtrs_[1].internalField() + ShpTemp 
-      - SohN + (YPtrs_[10].internalField() - MPtrs_[1].internalField())
-      - EPtrs_[4] - EPtrs_[3]/64.0 - EPtrs_[2]/112.0 - EPtrs_[1]/160.0 - EPtrs_[0]/208.0
+      - SohN + (YPtrs_[10].internalField() - MPtrs_[1].internalField()) - EPtrs_[4] 
+      - para_.MTOm() * (EPtrs_[3]/64.0 + EPtrs_[2]/112.0 + EPtrs_[1]/160.0 + EPtrs_[0]/208.0)
     );
 
     // DEBUG
@@ -1295,8 +1323,8 @@ volScalarField::Internal Foam::ADMno1::dfShp
         One
     );
 
-    return uniField - dSnh3 - dShco3N - dSacN/64.0 - 
-           dSproN/112.0 - dSbuN/160.0 - dSvaN/208.0 - dSohN;
+    return uniField - dSnh3 - dShco3N - dSohN  
+         - para_.MTOm() * (dSacN/64.0 + dSproN/112.0 + dSbuN/160.0 + dSvaN/208.0);
 }
 
 
@@ -1337,7 +1365,7 @@ void Foam::ADMno1::calcShp()
 
     // ShP
     ShP_ = x;
-    pH_.field() = -log10(ShP_.field());
+    pH_.field() = -log10(ShP_.field() / para_.MTOm());
 
     // update Sco2: Sco2 = SIC - Shco3N
     MPtrs_[0].ref() = YPtrs_[9] - EPtrs_[4];

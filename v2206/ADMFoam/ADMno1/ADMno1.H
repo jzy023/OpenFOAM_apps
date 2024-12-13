@@ -78,6 +78,9 @@ private:
     //- Gas-Liquid volume fraction in tank 
     scalar Vfrac_;
 
+    //- Vapour pressure of water [Pa]
+    dimensionedScalar Pvap_; 
+
     //- Gas exit ambient pressure
     dimensionedScalar Pext_;
 

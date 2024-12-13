@@ -43,24 +43,33 @@ class admPara
 private:
 
     //- Operation modes (thermal conditions for biomass)
-    const wordList namesOpMode = {"Meso", "MesoSolid", "Thermo"}; 
+    const wordList namesOpMode = {"MesoSolid", "MesoSolid", "Thermo"}; 
 
     //- Error message
     int errMessage;
 
-    //- Day-to-second conversion
+    //- [d] to [s] conversion
     const scalar DTOS_ = 1.0/86400.0;
 
-    //- Base dimension (kg/m3; mol/m3; mass fraction)
+    //- [mol * L-1] to [mol * m-3] conversion 
+    const scalar MTOm_ = 1e3;
+
+    //- [bar] to [Pa] conversion 
+    const scalar BTOP_ = 1e5;
+
+    //- [M * bar-1] to [mol * m-3 * Pa-1] conversion 
+    const scalar kTOK_ = 1e-2;
+
+    //- Base dimension ([kg * m-3]; [mol * m-3]; mass fraction)
     dimensionSet ds_;
 
-    //- Base operational temperature
+    //- Base operational temperature [K]
     dimensionedScalar Tbase_;   
 
-    //- Operational temperature
+    //- Operational temperature [K]
     dimensionedScalar Top_;   
 
-    //- Decay rate [1/day]
+    //- Decay rate [1 * d-1]
     decayRate kDec_; 
 
     //- Yield of biomass (Y)
@@ -78,16 +87,13 @@ private:
     //- Inhibition factor
     inhibitionParaS KS_;
 
-	//- Acid-base kinematic para [M/day]
-    dimensionedScalar kAB_;
-
-    //- Acid-base equilibrium para [M]
+    //- Acid-base equilibrium para [mol * m-3]
     admAcidBaseEq Ka_;
 
     //- Henry's Law coeffecients
     gasHenryCoe KH_;
 
-    // Gas transfer rate coefficients [d^-1]
+    // Gas transfer rate coefficients [d-1]
     dimensionedScalar kLa_;  
 
     // pH Limits
@@ -141,7 +147,7 @@ public:
     admPara() : 
         errMessage
         (
-            printErrMessage("Meso")
+            printErrMessage("MesoSolid")
         ),
         ds_
         (
@@ -153,15 +159,15 @@ public:
         ),
         Top_
         (
-            defineTop("Meso")
+            defineTop("MesoSolid")
         ),
         kDec_
         (
-            defineRC("Meso")
+            defineRC("MesoSolid")
         ),
         yB_
         (
-            defineYields("Meso")
+            defineYields("MesoSolid")
         ),
         yP_
         (   
@@ -201,32 +207,28 @@ public:
         ),
         KI_
         (
-            defineKI("Meso")
+            defineKI("MesoSolid")
         ),
         KS_
         (
-            defineKS("Meso")
-        ),
-        kAB_
-        (
-            dimMoles/dimTime, 1e8
+            defineKS("MesoSolid")
         ),
         Ka_
         (
-            1.380e-5,  // va
-            1.514e-5,  // bu
-            1.318e-5,  // pro
-            1.738e-5,  // ac
-            4.467e-7,  // co2
-            5.623e-10, // IN
-            1e-14      // W
+            MTOm_*std::pow(10, -4.86),  // [mol * m-3] va
+            MTOm_*std::pow(10, -4.82),  // [mol * m-3] bu
+            MTOm_*std::pow(10, -4.88),  // [mol * m-3] pro
+            MTOm_*std::pow(10, -4.76),  // [mol * m-3] ac
+            MTOm_*std::pow(10, -6.35),  // [mol * m-3] co2
+            MTOm_*std::pow(10, -9.25),  // [mol * m-3] IN
+            MTOm_*std::pow(10, -14)     // [mol * m-3] W
         ),
         KH_
         (
-            7.8e-04,    // h2
-            0.0014,     // ch4
-            0.035,      // co2
-            0.0313      // h2o
+            kTOK_*7.8e-04,    // [mol * m-3 * Pa-1] h2
+            kTOK_*0.0014,     // [mol * m-3 * Pa-1] ch4
+            kTOK_*0.035,      // [mol * m-3 * Pa-1] co2
+            kTOK_*0.0313      // [mol * m-3 * Pa-1] h2o
         ),
         kLa_
         (
@@ -244,9 +246,9 @@ public:
             0.08/14.0    // bac
         )
     {
-        defineInitialState("Meso");
+        defineInitialState("MesoSolid");
         defineSTOI();
-        defineINFLOW("Meso");
+        defineINFLOW("MesoSolid");
     };
 
     admPara
@@ -259,6 +261,12 @@ public:
     void setParaDim(dimensionSet ds);
 
     inline scalar DTOS() const;
+
+    inline scalar MTOm() const;
+    
+    inline scalar BTOP() const;
+
+    inline scalar kTOK() const;
 
     inline const dimensionedScalar Tbase() const;
 
@@ -297,8 +305,6 @@ public:
     inline scalar Eini(label idx) const;
 
     inline scalar Iini(label idx) const;
-
-    // inline scalar INFLOW(label idx) const;
 
     inline dimensionedScalar INFLOW(label idx) const
     {
