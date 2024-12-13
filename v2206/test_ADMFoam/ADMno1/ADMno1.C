@@ -652,7 +652,8 @@ void Foam::ADMno1::calcThermal
 {
     TopDummy_.field() = T.field();
 
-    fac_ = (1.0 / para_.Tbase().value() - 1.0 / TopDummy_) / (100.0 * R_);
+    // fac_ = (1.0 / para_.Tbase().value() - 1.0 / TopDummy_) / (100.0 * R_);
+    fac_ = (1.0 / para_.Tbase().value() - 1.0 / TopDummy_) / R_;
     
     KHh2_ = para_.KH().h2 * exp(-4180.0 * fac_);
     KHch4_ = para_.KH().ch4 * exp(-14240.0 * fac_);
@@ -693,8 +694,11 @@ void Foam::ADMno1::gasPressure()
         )
     );
 
-    Ph2o.field() = para_.KH().h2o * exp(5290.0 * fac_ * 100 * R_);
-    Pgas_.field() = (GPtrs_[0] / 16.0 + GPtrs_[1] / 64.0 + GPtrs_[2]) * R_ * TopDummy_ + Ph2o;
+    // Ph2o.field() = para_.KH().h2o * exp(5290.0 * fac_ * 100 * R_);
+    // Pgas_.field() = (GPtrs_[0] / 16.0 + GPtrs_[1] / 64.0 + GPtrs_[2]) * R_ * TopDummy_ + Ph2o;
+    Ph2o.field() = 1e2*1e5*para_.KH().h2o * exp(5290.0 * fac_ * R_);
+    Pgas_.field() = (1e3*GPtrs_[0] / 16.0 + 1e3*GPtrs_[1] / 64.0 + GPtrs_[2]) * R_ * TopDummy_ + Ph2o;
+
     // in multiphase gas calculation: Ptotal is directly taken from the fluid calcualtion
     //                                GPtrs_[i] (kg COD/m3) are used to find the mole of each gas
     //                                with Ptotal and moles, vol of Gas can be found
@@ -768,6 +772,9 @@ void Foam::ADMno1::gasSourceRate()
     {
         if ( qGasLocal.field()[i] < 0.0 ) { qGasLocal.field()[i] = 1e-16; }
     }
+
+    Info<< "DEBUG: Pgas: " << max(Pgas_.field()) << endl;
+    Info<< "DEBUG: qGas: " << max(qGasLocal.field() / (para_.DTOS() * (volMeshField / (Vgas_ + Vliq_).value()))) << endl;
 
     dGPtrs_[0].field() = 
     (
@@ -936,9 +943,9 @@ void Foam::ADMno1::calcSh2
     }
 
     Info<< "Newton-Raphson:\tSolving for Sh2" 
-         << ", min Sh2: " << min(x.field()) 
-         << ", max Sh2: " << max(x.field()) 
-         << ", No Interations " << i << endl;
+        << ", min Sh2: " << min(x.field()) 
+        << ", max Sh2: " << max(x.field()) 
+        << ", No Interations " << i << endl;
 
     // Sh2
     YPtrs_[7].ref() = x;
@@ -1238,8 +1245,8 @@ volScalarField::Internal Foam::ADMno1::fShp
     volScalarField::Internal E = 
     (
         IOPtrs_[0].internalField() - IOPtrs_[1].internalField() + ShpTemp 
-      - SohN + (YPtrs_[10].internalField() - MPtrs_[1].internalField())
-      - EPtrs_[4] - EPtrs_[3]/64.0 - EPtrs_[2]/112.0 - EPtrs_[1]/160.0 - EPtrs_[0]/208.0
+      - SohN + (YPtrs_[10].internalField() - MPtrs_[1].internalField()) - EPtrs_[4] 
+      - (EPtrs_[3]/64.0 + EPtrs_[2]/112.0 + EPtrs_[1]/160.0 + EPtrs_[0]/208.0)*1e3
     );
 
     // DEBUG
@@ -1317,8 +1324,8 @@ volScalarField::Internal Foam::ADMno1::dfShp
         One
     );
 
-    return uniField - dSnh3 - dShco3N - dSacN/64.0 - 
-           dSproN/112.0 - dSbuN/160.0 - dSvaN/208.0 - dSohN;
+    return uniField - dSnh3 - dShco3N - dSohN  
+         - (dSacN/64.0 + dSproN/112.0 + dSbuN/160.0 + dSvaN/208.0)*1e3;
 }
 
 
@@ -1359,7 +1366,8 @@ void Foam::ADMno1::calcShp()
 
     // ShP
     ShP_ = x;
-    pH_.field() = -log10(ShP_.field());
+    // pH_.field() = -log10(ShP_.field());
+    pH_.field() = -log10(ShP_.field() / 1e3);
 
     // update Sco2: Sco2 = SIC - Shco3N
     MPtrs_[0].ref() = YPtrs_[9] - EPtrs_[4];
@@ -1414,6 +1422,17 @@ void Foam::ADMno1::correct
 
     //- Sh2 calculations
     calcSh2(flux);
+
+//     Info<< "Newton-Raphson:\tSolving for Sh+" 
+//     << ", min Shp: " << min(ShP_.field()) 
+//     << ", max Shp: " << max(ShP_.field()) 
+//     << ", No Interations " << 1 << endl;
+
+//     Info<< "Newton-Raphson:\tSolving for Sh2" 
+//     << ", min Sh2: " << min(YPtrs_[7].field()) 
+//     << ", max Sh2: " << max(YPtrs_[7].field()) 
+//     << ", No Interations " << 1 << endl;
+
 }
 
 

@@ -15,8 +15,8 @@ Foam::ADMno1::ADMno1
     (
         "Qin", 
         dimVolume/dimTime,
-        ADMno1Dict.lookupOrDefault("qin", 0.00)
-        // ADMno1Dict.lookupOrDefault("qin", 178.4674) // benchmark 
+        // ADMno1Dict.lookupOrDefault("qin", 0.00)
+        ADMno1Dict.lookupOrDefault("qin", 178.4674) // benchmark 
     ),
     Vgas_
     (
@@ -63,6 +63,24 @@ Foam::ADMno1::ADMno1
         (
             "Vgas_testDefault", 
             dimVolume, 
+            Zero
+        )
+    ),
+    Ptotal_incell
+    (
+        IOobject
+        (
+            "Ptotal_incell",
+            mesh.time().timeName(),
+            mesh,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh,
+        dimensionedScalar
+        (
+           "Ptotal_incellDefault", 
+            dimPressure,
             Zero
         )
     ),
@@ -729,9 +747,10 @@ void Foam::ADMno1::gasTest(volScalarField& Ptotal)
 
     Ph2o_incell.field() = para_.KH().h2o * exp(5290.0 * fac_ * 100 * R_);
     Pgas_incell.field() = (GPtrs_test[0] / 16.0 + GPtrs_test[1] / 64.0 + GPtrs_test[2]) * R_ * TopDummy_;
-    Vfrac_test.field() = 100000 * Pgas_incell.field() / Ptotal.field();
+    Ptotal_incell.field() = Ph2o_incell.field() + Pgas_incell.field();
+    // Vfrac_test.field() = 100000 * Pgas_incell.field() / Ptotal.field();
 
-    Info<< "Vfrac: " << Vfrac_test << endl;
+    // Info<< "Vfrac: " << Vfrac_test << endl;
 
     //
     GRPtrs_test[0] = 

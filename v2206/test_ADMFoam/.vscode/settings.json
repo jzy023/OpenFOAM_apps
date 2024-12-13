@@ -23,7 +23,8 @@
         "chrono": "cpp",
         "limits": "cpp",
         "overPimpleDyMFoam.C": "cpp",
-        "ADMno1_tests.C": "cpp"
+        "ADMno1_tests.C": "cpp",
+        "ostream": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }
