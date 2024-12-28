@@ -124,7 +124,7 @@ admPara::admPara
         kTOK_*7.8e-04,    // [mol * m-3 * Pa-1] h2
         kTOK_*0.0014,     // [mol * m-3 * Pa-1] ch4
         kTOK_*0.035,      // [mol * m-3 * Pa-1] co2
-        kTOK_*0.0313      // [mol * m-3 * Pa-1] h2o
+        kTOK_*0.0313      // [mol * m-3 * Pa-1] h2o  // TODO: not in use
     ),
     kLa_
     (

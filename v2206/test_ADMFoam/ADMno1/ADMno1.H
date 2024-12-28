@@ -373,6 +373,8 @@ public:
 
     PtrList<volScalarField::Internal> dGPtrs_test;
 
+    PtrList<volScalarField::Internal> vDotPtrs_test;
+
     void correct
     (
         const surfaceScalarField &flux, 

@@ -123,7 +123,7 @@ struct gasHenryCoe
     dimensionedScalar h2;
     dimensionedScalar ch4;
     dimensionedScalar co2;
-    dimensionedScalar h2o;
+    dimensionedScalar h2o; // TODO: not in use
 
     gasHenryCoe
     (

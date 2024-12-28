@@ -38,7 +38,7 @@ Foam::ADMno1::ADMno1
             mesh.time().timeName(),
             mesh,
             IOobject::NO_READ,
-            IOobject::AUTO_WRITE
+            IOobject::NO_WRITE
         ),
         mesh,
         dimensionedScalar
@@ -56,7 +56,7 @@ Foam::ADMno1::ADMno1
             mesh.time().timeName(),
             mesh,
             IOobject::NO_READ,
-            IOobject::AUTO_WRITE
+            IOobject::NO_WRITE
         ),
         mesh,
         dimensionedScalar
@@ -654,7 +654,7 @@ Foam::ADMno1::ADMno1
                     mesh.time().timeName(),
                     mesh,
                     IOobject::NO_READ,
-                    IOobject::AUTO_WRITE
+                    IOobject::NO_WRITE
                 ),
                 mesh,
                 dimensionedScalar
@@ -681,12 +681,39 @@ Foam::ADMno1::ADMno1
                     mesh.time().timeName(),
                     mesh,
                     IOobject::NO_READ,
-                    IOobject::AUTO_WRITE
+                    IOobject::NO_WRITE
                 ),
                 mesh,
                 dimensionedScalar
                 (
                     GPtrs_[0].dimensions()/dimTime, 
+                    Zero
+                )
+            )
+        );
+    }
+
+    vDotPtrs_test.resize(3);
+
+    for (int i = 0; i < 3; i++)
+    {
+        vDotPtrs_test.set
+        (
+            i,
+            new volScalarField::Internal
+            (
+                IOobject
+                (
+                    "vDots_test_" + Foam::name(i+1),
+                    mesh.time().timeName(),
+                    mesh,
+                    IOobject::NO_READ,
+                    IOobject::AUTO_WRITE
+                ),
+                mesh,
+                dimensionedScalar
+                (
+                    dimVolume/dimTime, 
                     Zero
                 )
             )
@@ -771,27 +798,29 @@ void Foam::ADMno1::gasTest(volScalarField& Ptotal)
 
     // Vfrac_test = Pgas_incell.field();
 
-    Ph2o_incell.field() = Pvap_ * exp(5290.0 * fac_ * R_);
-    Pgas_incell.field() = (para_.MTOm() * GPtrs_[0] / 16.0 + para_.MTOm() * GPtrs_[1] / 64.0 + GPtrs_[2]) * R_ * TopDummy_ + Ph2o_incell;
-    Ptotal_incell.field() = Ph2o_incell.field() + Pgas_incell.field();
+    // Pgas_incell.field() = 
+    // (
+    //     (para_.MTOm() * GPtrs_[0] / 16.0 + para_.MTOm() * GPtrs_[1] / 64.0 + GPtrs_[2]) * R_ * TopDummy_ 
+    //   + Ph2o_incell
+    // );
+    // Ph2o_incell.field() = Pvap_ * exp(5290.0 * fac_ * R_);
+    // Ptotal_incell.field() = Ph2o_incell.field() + Pgas_incell.field();
+
     // Vfrac_test.field() = 100000 * Pgas_incell.field() / Ptotal.field();
 
-    // Info<< "Vfrac: " << Vfrac_test << endl;
-
-    //
-    GRPtrs_test[0] = 
+    GRPtrs_test[0] = // <- in dimension of [kg * m-3 * s-1]
     (
         para_.DTOS() * para_.kLa()
       * (YPtrs_[7].internalField() - R_ * TopDummy_.internalField() * GPtrs_test[0].internalField() * KHh2_)
     );
 
-    GRPtrs_test[1] = 
+    GRPtrs_test[1] = // <- in dimension of [kg * m-3 * s-1]
     (
         para_.DTOS() * para_.kLa()
       * (YPtrs_[8].internalField() - R_ * TopDummy_.internalField() * GPtrs_test[1].internalField() * KHch4_)
     );
 
-    GRPtrs_test[2] = 
+    GRPtrs_test[2] = // <- in dimension of [mol * m-3 * s-1]
     (
         para_.DTOS() * para_.kLa()
       * (MPtrs_[0].internalField() - R_ * TopDummy_.internalField() * GPtrs_test[2].internalField() * KHco2_) // Sco2 instead of SIC
@@ -805,9 +834,8 @@ void Foam::ADMno1::gasTest(volScalarField& Ptotal)
 
     // ==================================================================================
 
-    //
     // field of cell volume for mesh 
-    // scalarField volMeshField = GPtrs_[0].mesh().V().field();            
+    scalarField volMeshField = GPtrs_[0].mesh().V().field();            
 
     // scalarField volGas = volMeshField / (1.0 + (1.0/Vfrac_test));
     // scalarField volLiq = volMeshField / (1.0 + Vfrac_test);
@@ -818,6 +846,21 @@ void Foam::ADMno1::gasTest(volScalarField& Ptotal)
     // dGPtrs_test[1].field() = GRPtrs_test[1].field() * volLiq / volGas;
     // dGPtrs_test[2].field() = GRPtrs_test[2].field() * volLiq / volGas;
 
+    // ==================================================================================
+
+    // volScalarField moleRate_test_0 = (para_.MTOm() * GRPtrs_test[0].field() / 16.0) * volMeshField;
+    // volScalarField moleRate_test_1 = (para_.MTOm() * GRPtrs_test[1].field() / 64.0) * volMeshField;
+    // volScalarField moleRate_test_2 = GRPtrs_test[2].field() * volMeshField;
+
+    // vDotPtrs_test[0].field() = moleRate_test_0.field() * R_ * TopDummy_.internalField() / Ptotal.field();
+    // vDotPtrs_test[1].field() = moleRate_test_1.field() * R_ * TopDummy_.internalField() / Ptotal.field();
+    // vDotPtrs_test[2].field() = moleRate_test_2.field() * R_ * TopDummy_.internalField() / Ptotal.field();
+
+    // ==================================================================================
+
+    vDotPtrs_test[0].field() = (para_.MTOm() * GRPtrs_test[0].field() / 16.0) * volMeshField * R_ * TopDummy_.internalField() / Ptotal.field();
+    vDotPtrs_test[1].field() = (para_.MTOm() * GRPtrs_test[1].field() / 64.0) * volMeshField * R_ * TopDummy_.internalField() / Ptotal.field();
+    vDotPtrs_test[2].field() = GRPtrs_test[2].field() * volMeshField * R_ * TopDummy_.internalField() / Ptotal.field();
 }
 
 
@@ -832,7 +875,7 @@ void Foam::ADMno1::correct
     //- Calculate thermal factor and adjust parameters
     calcThermal(T);
 
-    // testing
+    // testing <- not impacting the simulation for now
     gasTest(Ptotal);
 
     //- Gas phase pressure

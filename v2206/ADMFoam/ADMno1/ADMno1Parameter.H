@@ -48,16 +48,16 @@ private:
     //- Error message
     int errMessage;
 
-    //- [d] to [s] conversion
+    //- Conversion [d] to [s] 
     const scalar DTOS_ = 1.0/86400.0;
 
-    //- [mol * L-1] to [mol * m-3] conversion 
+    //- Conversion [mol * L-1] to [mol * m-3] 
     const scalar MTOm_ = 1e3;
 
-    //- [bar] to [Pa] conversion 
+    //- Conversion [bar] to [Pa] 
     const scalar BTOP_ = 1e5;
 
-    //- [M * bar-1] to [mol * m-3 * Pa-1] conversion 
+    //- Conversion [M * bar-1] to [mol * m-3 * Pa-1] 
     const scalar kTOK_ = 1e-2;
 
     //- Base dimension ([kg * m-3]; [mol * m-3]; mass fraction)
