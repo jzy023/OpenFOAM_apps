@@ -104,7 +104,7 @@ Foam::ADMno1::ADMno1
     (
         "Pext", 
         dimPressure,
-        ADMno1Dict.lookupOrDefault("Pext", 1.013)
+        ADMno1Dict.lookupOrDefault("Pext", para_.BTOP() * 1.013)
     ),
     Pgas_
     (
@@ -433,7 +433,7 @@ Foam::ADMno1::ADMno1
             (
                "San", 
                 YPtrs_[0].dimensions(),
-                ADMno1Dict.lookupOrDefault("San", 0.0052)
+                ADMno1Dict.lookupOrDefault("San", 0.0052 * para_.MTOm())
             )
         )
     );
@@ -598,6 +598,8 @@ Foam::ADMno1::ADMno1
 
     // reset dimensions 
     para_.setParaDim(YPtrs_[0].dimensions());
+    MPtrs_[0].ref() = YPtrs_[9] - EPtrs_[4]; // Sco2 = SIC - Shco3N
+
     ShP_.dimensions().reset(YPtrs_[0].dimensions());
     Scat_.dimensions().reset(YPtrs_[0].dimensions());
     San_.dimensions().reset(YPtrs_[0].dimensions());
@@ -614,7 +616,6 @@ Foam::ADMno1::ADMno1
     nIaa_ = 3.0 / (para_.pHL().ULaa - para_.pHL().LLaa);  // aa
     nIac_ = 3.0 / (para_.pHL().ULac - para_.pHL().LLac);  // ac
     nIh2_ = 3.0 / (para_.pHL().ULh2 - para_.pHL().LLh2);  // h2
-    MPtrs_[0].ref() = YPtrs_[9] - EPtrs_[4]; // Sco2 = SIC - Shco3N
 
     // DEBUG
     Vfrac_ = (Vgas_/Vliq_).value();
@@ -942,9 +943,9 @@ void Foam::ADMno1::calcSh2
     }
 
     Info<< "Newton-Raphson:\tSolving for Sh2" 
-         << ", min Sh2: " << min(x.field()) 
-         << ", max Sh2: " << max(x.field()) 
-         << ", No Interations " << i << endl;
+        << ", min Sh2: " << min(x.field()) 
+        << ", max Sh2: " << max(x.field()) 
+        << ", No Interations " << i << endl;
 
     // Sh2
     YPtrs_[7].ref() = x;

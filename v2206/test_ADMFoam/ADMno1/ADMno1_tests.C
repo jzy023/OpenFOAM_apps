@@ -448,7 +448,7 @@ Foam::ADMno1::ADMno1
             (
                "San", 
                 YPtrs_[0].dimensions(),
-                ADMno1Dict.lookupOrDefault("San", 0.0052)
+                ADMno1Dict.lookupOrDefault("San", 0.0052 * para_.MTOm())
             )
         )
     );
@@ -802,10 +802,7 @@ void Foam::ADMno1::gasTest(volScalarField& Ptotal)
     // volScalarField GRMolar = GRMass / molarMass;
     // volScalarField volGasRate = GRMolar * R * T / P; <- (P_rgh or P?)
     
-    
-    
-    
-    
+
     // ==================================================================================
 
     //
@@ -820,7 +817,6 @@ void Foam::ADMno1::gasTest(volScalarField& Ptotal)
     // dGPtrs_test[0].field() = GRPtrs_test[0].field() * volLiq / volGas;
     // dGPtrs_test[1].field() = GRPtrs_test[1].field() * volLiq / volGas;
     // dGPtrs_test[2].field() = GRPtrs_test[2].field() * volLiq / volGas;
-
 
 }
 
