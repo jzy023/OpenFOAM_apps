@@ -1,25 +1,5 @@
 #include "createRDeltaT.H"
 
-Info<< "Reading field operational temperature" << endl;
-volScalarField T
-(
-    IOobject
-    (
-        "T",
-        runTime.timeName(),
-        mesh,
-        IOobject::READ_IF_PRESENT,
-        IOobject::AUTO_WRITE
-    ),
-    mesh,
-    dimensionedScalar
-    (
-        "TDefault", 
-        dimTemperature,
-        308.15
-    )
-);
-
 Info<< "Reading field p_rgh\n" << endl;
 volScalarField p_rgh
 (
@@ -51,58 +31,63 @@ volVectorField U
 #include "createPhi.H"
 
 
-// testing
-multiphaseMixture mixture(U, phi);
+Info<< "Reading transportProperties\n" << endl;
+immiscibleIncompressibleTwoPhaseMixture mixture(U, phi);
+
+volScalarField& alpha1(mixture.alpha1());
+volScalarField& alpha2(mixture.alpha2());
+
+const dimensionedScalar& rho1 = mixture.rho1();
+const dimensionedScalar& rho2 = mixture.rho2();
 
 
-// ADM reactions
-autoPtr<ADMno1> reaction
-(
-    ADMno1::New(T, mesh)
-);
-
-
-singlePhaseTransportModel laminarTransport(U, phi);
-
-#include "readTransportProperties.H"
-
-autoPtr<incompressible::turbulenceModel> turbulence
-(
-    incompressible::turbulenceModel::New(U, phi, laminarTransport)
-);
-
-// Kinematic density for buoyancy force
-volScalarField rhok
+// Need to store rho for ddt(rho, U)
+volScalarField rho
 (
     IOobject
     (
-        "rhok",
-        runTime.timeName(),
-        mesh
-    ),
-    1.0 - beta*(T - TRef)
-);
-
-// Kinematic turbulent thermal thermal conductivity m2/s
-Info<< "Reading field alphat\n" << endl;
-volScalarField alphat
-(
-    IOobject
-    (
-        "alphat",
+        "rho",
         runTime.timeName(),
         mesh,
-        IOobject::MUST_READ,
-        IOobject::AUTO_WRITE
+        IOobject::READ_IF_PRESENT
     ),
-    mesh
+    alpha1*rho1 + alpha2*rho2
+);
+rho.oldTime();
+
+
+// Mass flux
+surfaceScalarField rhoPhi
+(
+    IOobject
+    (
+        "rhoPhi",
+        runTime.timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::NO_WRITE
+    ),
+    fvc::interpolate(rho)*phi
+);
+
+typedef incompressibleInterPhaseTransportModel
+    <
+        immiscibleIncompressibleTwoPhaseMixture
+    > transportModelType;
+
+autoPtr<transportModelType> turbulence
+(
+    new transportModelType
+    (
+        rho, U, phi, rhoPhi, mixture
+    )
 );
 
 #include "readGravitationalAcceleration.H"
 #include "readhRef.H"
 #include "gh.H"
 
-// Pressure field
+
 volScalarField p
 (
     IOobject
@@ -113,7 +98,7 @@ volScalarField p
         IOobject::NO_READ,
         IOobject::AUTO_WRITE
     ),
-    p_rgh + rhok*gh
+    p_rgh + rho*gh
 );
 
 label pRefCell = 0;
@@ -135,10 +120,11 @@ if (p_rgh.needReference())
         p.dimensions(),
         pRefValue - getRefCellValue(p, pRefCell)
     );
+    p_rgh = p - rho*gh;
 }
 
 mesh.setFluxRequired(p_rgh.name());
+mesh.setFluxRequired(alpha1.name());
 
 #include "createMRF.H"
-#include "createIncompressibleRadiationModel.H"
 #include "createFvOptions.H"

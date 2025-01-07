@@ -92,7 +92,8 @@
         "typeinfo": "cpp",
         "variant": "cpp",
         "__nullptr": "cpp",
-        "__tree": "cpp"
+        "__tree": "cpp",
+        "multiphaseMixture.C": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "bashrc": "shellscript",
+        "multiphaseInterFoam.C": "cpp",
+        "alphaContactAngleFvPatchScalarField.C": "cpp"
+    }
+}

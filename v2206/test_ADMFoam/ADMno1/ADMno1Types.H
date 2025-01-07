@@ -40,7 +40,6 @@ Description
 #include "typeInfo.H"
 #include "fvCFD.H"
 #include "autoPtr.H"
-#include "ODESystem.H"
 #include "volFields.H"
 #include "simpleMatrix.H"
 

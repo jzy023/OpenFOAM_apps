@@ -2,64 +2,56 @@
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
    \\    /   O peration     |
-    \\  /    A nd           |  
+    \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C)  Jeremy Z. Yan
+    Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2020 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
- 
+
     OpenFOAM is free software: you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
- 
+
     OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
     ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
     FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
     for more details.
- 
+
     You should have received a copy of the GNU General Public License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Application
-    ADMFoam.C
+    interFoam
 
 Group
-    grpIncompressibleSolvers
+    grpMultiphaseSolvers
 
 Description
-    Transient solver for ADM no1 coupled with incompressible, turbulent flow of 
-    Newtonian fluids on a moving mesh.
-
-    \heading Solver details
-    The solver uses the PIMPLE (merged PISO-SIMPLE) algorithm to solve the
-    continuity equation
-
-    Sub-models include:
-    - turbulence modelling, i.e. laminar, RAS or LES
-    - run-time selectable MRF and finite volume options, e.g. explicit porosity
-
-Note
+    Solver for two incompressible, isothermal immiscible fluids using a VOF
+    (volume of fluid) phase-fraction based interface capturing approach,
+    with optional mesh motion and mesh topology changes including adaptive
+    re-meshing.
 
 \*---------------------------------------------------------------------------*/
 
 #include "fvCFD.H"
-#include "fvcSmooth.H"
 #include "dynamicFvMesh.H"
-#include "singlePhaseTransportModel.H"
-#include "turbulentTransportModel.H"
-#include "radiationModel.H"
-#include "CorrectPhi.H"
-#include "fvOptions.H"
-#include "pimpleControl.H"
-
+#include "CMULES.H"
+#include "EulerDdtScheme.H"
 #include "localEulerDdtScheme.H"
-#include "ADMno1.H"
-
-// testing
-#include "multiphaseMixture.H"
+#include "CrankNicolsonDdtScheme.H"
+#include "subCycle.H"
+#include "immiscibleIncompressibleTwoPhaseMixture.H"
+#include "incompressibleInterPhaseTransportModel.H"
+#include "turbulentTransportModel.H"
+#include "pimpleControl.H"
+#include "fvOptions.H"
+#include "CorrectPhi.H"
+#include "fvcSmooth.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -67,60 +59,72 @@ int main(int argc, char *argv[])
 {
     argList::addNote
     (
-        "Transient solver for ADM no1 coupled with incompressible," 
-        " turbulent flow of Newtonian fluids on a moving mesh."
+        "Solver for two incompressible, isothermal immiscible fluids"
+        " using VOF phase-fraction based interface capturing.\n"
+        "With optional mesh motion and mesh topology changes including"
+        " adaptive re-meshing."
     );
 
     #include "postProcess.H"
+
     #include "addCheckCaseOptions.H"
     #include "setRootCaseLists.H"
     #include "createTime.H"
     #include "createDynamicFvMesh.H"
+    #include "initContinuityErrs.H"
     #include "createDyMControls.H"
     #include "createFields.H"
+    #include "createAlphaFluxes.H"
+    #include "initCorrectPhi.H"
     #include "createUfIfPresent.H"
-    #include "CourantNo.H"
-    #include "setInitialDeltaT.H"
-    #include "initContinuityErrs.H"
 
-    turbulence->validate();
+    if (!LTS)
+    {
+        #include "CourantNo.H"
+        #include "setInitialDeltaT.H"
+    }
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
     Info<< "\nStarting time loop\n" << endl;
 
     while (runTime.run())
     {
-        // testing`
-        #include "alphaCourantNo.H"
- 
- 
         #include "readDyMControls.H"
-        #include "CourantNo.H"
-        #include "setDeltaT.H"
 
+        if (LTS)
+        {
+            #include "setRDeltaT.H"
+        }
+        else
+        {
+            #include "CourantNo.H"
+            #include "alphaCourantNo.H"
+            #include "setDeltaT.H"
+        }
 
         ++runTime;
 
         Info<< "Time = " << runTime.timeName() << nl << endl;
-
-        // // ADM1 reaction source terms
-        // reaction->clear();
-        // reaction->correct(phi, T, );
-        // // reaction->correct(phi, T);
-        // PtrList<volScalarField>& YPtrs = reaction->Y();
-        // PtrList<volScalarField>& GPtrs = reaction->G();
 
         // --- Pressure-velocity PIMPLE corrector loop
         while (pimple.loop())
         {
             if (pimple.firstIter() || moveMeshOuterCorrectors)
             {
-                // Do any mesh changes
-                mesh.controlledUpdate();
+                mesh.update();
 
                 if (mesh.changing())
                 {
+                    // Do not apply previous time-step mesh compression flux
+                    // if the mesh topology changed
+                    if (mesh.topoChanging())
+                    {
+                        talphaPhi1Corr0.clear();
+                    }
+
+                    gh = (g & mesh.C()) - ghRef;
+                    ghf = (g & mesh.Cf()) - ghRef;
+
                     MRF.update();
 
                     if (correctPhi)
@@ -133,6 +137,8 @@ int main(int argc, char *argv[])
 
                         // Make the flux relative to the mesh motion
                         fvc::makeRelative(phi, U);
+
+                        mixture.correct();
                     }
 
                     if (checkMeshCourantNo)
@@ -142,8 +148,17 @@ int main(int argc, char *argv[])
                 }
             }
 
+            #include "alphaControls.H"
+            #include "alphaEqnSubCycle.H"
+
+            mixture.correct();
+
+            if (pimple.frozenFlow())
+            {
+                continue;
+            }
+
             #include "UEqn.H"
-            #include "TEqn.H"
 
             // --- Pressure corrector loop
             while (pimple.correct())
@@ -153,22 +168,9 @@ int main(int argc, char *argv[])
 
             if (pimple.turbCorr())
             {
-                laminarTransport.correct();
                 turbulence->correct();
             }
-
         }
-
-        // ADM1 reaction source terms
-        reaction->clear();
-        reaction->correct(phi, T, p);
-        // Info<< p.field() << endl;
-        // reaction->correct(phi, T);
-        PtrList<volScalarField>& YPtrs = reaction->Y();
-        PtrList<volScalarField>& GPtrs = reaction->G();
-        // PtrList<volScalarField>& GPtrs_test = reaction->G_test();
-        // --- ADM calculation
-        #include "ADMEqn.H"
 
         runTime.write();
 
