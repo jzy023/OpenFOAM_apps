@@ -54,6 +54,17 @@ volVectorField U
 // testing
 multiphaseMixture mixture(U, phi);
 
+volScalarField rho
+(
+    IOobject
+    (
+        "rho",
+        runTime.timeName(),
+        mesh
+    ),
+    mixture.rho()
+);
+
 
 // ADM reactions
 autoPtr<ADMno1> reaction
@@ -66,9 +77,14 @@ singlePhaseTransportModel laminarTransport(U, phi);
 
 #include "readTransportProperties.H"
 
+// autoPtr<incompressible::turbulenceModel> turbulence
+// (
+//     incompressible::turbulenceModel::New(U, phi, laminarTransport)
+// );
+
 autoPtr<incompressible::turbulenceModel> turbulence
 (
-    incompressible::turbulenceModel::New(U, phi, laminarTransport)
+    incompressible::turbulenceModel::New(U, phi, mixture)
 );
 
 // Kinematic density for buoyancy force
@@ -113,7 +129,8 @@ volScalarField p
         IOobject::NO_READ,
         IOobject::AUTO_WRITE
     ),
-    p_rgh + rhok*gh
+    // p_rgh + rhok*gh
+    p_rgh + rho*gh
 );
 
 label pRefCell = 0;

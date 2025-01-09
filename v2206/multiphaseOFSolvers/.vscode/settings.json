@@ -4,6 +4,19 @@
         "interFoam.C": "cpp",
         "multiphaseInterFoam.C": "cpp",
         "thermoIncompressibleTwoPhaseMixture.C": "cpp",
-        "twoPhaseMixtureEThermo.C": "cpp"
+        "twoPhaseMixtureEThermo.C": "cpp",
+        "multiphaseMixture.C": "cpp",
+        "interfaceHeatResistance.C": "cpp",
+        "FresnelLaser.C": "cpp",
+        "constant.C": "cpp",
+        "Fresnel.C": "cpp",
+        "phase.C": "cpp",
+        "noReflection.C": "cpp",
+        "alphaContactAngleFvPatchScalarField.C": "cpp",
+        "threePhaseInterfaceProperties.C": "cpp",
+        "laserDTRM.C": "cpp",
+        "incompressibleThreePhaseMixture.C": "cpp",
+        "temperaturePhaseChangeTwoPhaseMixture.C": "cpp",
+        "reflectionModel.C": "cpp"
     }
 }

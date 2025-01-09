@@ -93,7 +93,9 @@
         "variant": "cpp",
         "__nullptr": "cpp",
         "__tree": "cpp",
-        "multiphaseMixture.C": "cpp"
+        "multiphaseMixture.C": "cpp",
+        "phase.C": "cpp",
+        "alphaContactAngleFvPatchScalarField.C": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

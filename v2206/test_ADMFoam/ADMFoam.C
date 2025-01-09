@@ -85,13 +85,17 @@ int main(int argc, char *argv[])
 
     turbulence->validate();
 
+    // testing
+    #include "initCorrectPhi.H"
+    const surfaceScalarField& rhoPhi(mixture.rhoPhi());
+
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
     Info<< "\nStarting time loop\n" << endl;
 
     while (runTime.run())
     {
-        // testing`
+        // testing
         #include "alphaCourantNo.H"
  
  
@@ -142,13 +146,15 @@ int main(int argc, char *argv[])
                 }
             }
 
-            #include "UEqn.H"
+            // #include "UEqn.H"
+            #include "UEqn_test.H"
             #include "TEqn.H"
 
             // --- Pressure corrector loop
             while (pimple.correct())
             {
-                #include "pEqn.H"
+                // #include "pEqn.H"
+                #include "pEqn_test.H"
             }
 
             if (pimple.turbCorr())
@@ -160,15 +166,15 @@ int main(int argc, char *argv[])
         }
 
         // ADM1 reaction source terms
-        reaction->clear();
-        reaction->correct(phi, T, p);
-        // Info<< p.field() << endl;
-        // reaction->correct(phi, T);
-        PtrList<volScalarField>& YPtrs = reaction->Y();
-        PtrList<volScalarField>& GPtrs = reaction->G();
-        // PtrList<volScalarField>& GPtrs_test = reaction->G_test();
-        // --- ADM calculation
-        #include "ADMEqn.H"
+        // reaction->clear();
+        // reaction->correct(phi, T, p);
+        // // Info<< p.field() << endl;
+        // // reaction->correct(phi, T);
+        // PtrList<volScalarField>& YPtrs = reaction->Y();
+        // PtrList<volScalarField>& GPtrs = reaction->G();
+        // // PtrList<volScalarField>& GPtrs_test = reaction->G_test();
+        // // --- ADM calculation
+        // #include "ADMEqn.H"
 
         runTime.write();
 
