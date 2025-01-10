@@ -1,13 +1,3 @@
-// CorrectPhi
-// (
-//     U,
-//     phi,
-//     p,
-//     dimensionedScalar("rAUf", dimTime, 1),
-//     geometricZeroField(),
-//     pimple
-// );
-
 CorrectPhi
 (
     U,
@@ -19,3 +9,15 @@ CorrectPhi
 );
 
 #include "continuityErrs.H"
+
+// CorrectPhi
+// (
+//     U,
+//     phi,
+//     p,
+//     dimensionedScalar("rAUf", dimTime, 1),
+//     geometricZeroField(),
+//     pimple
+// );
+
+

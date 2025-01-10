@@ -31,10 +31,3 @@
 
         fvOptions.correct(U);
     }
-
-
-    // fvMatrix<Foam::Vector<double>> test0 = fvm::ddt(rho, U); 
-    // fvMatrix<Foam::Vector<double>> test1 = fvm::div(rhoPhi, U); 
-    // Info<< test0.dimensions() << ", " << test1.dimensions() << endl;
-
-    // Info<< rho.dimensions() << endl;    

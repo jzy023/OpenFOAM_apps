@@ -860,7 +860,7 @@ void Foam::ADMno1::gasTest(volScalarField& Ptotal)
 
     vDotPtrs_test[0].field() = (para_.MTOm() * GRPtrs_test[0].field() / 16.0) * volMeshField * R_ * TopDummy_.internalField() / Ptotal.field();
     vDotPtrs_test[1].field() = (para_.MTOm() * GRPtrs_test[1].field() / 64.0) * volMeshField * R_ * TopDummy_.internalField() / Ptotal.field();
-    vDotPtrs_test[2].field() = GRPtrs_test[2].field() * volMeshField * R_ * TopDummy_.internalField() / Ptotal.field();
+    vDotPtrs_test[2].field() = GRPtrs_test[2].field() * volMeshField * R_ * TopDummy_.internalField() / Ptotal.field(); // <-- check dimensions for Ptotal for multiphase
 }
 
 

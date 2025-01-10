@@ -13,6 +13,8 @@ rAU = new volScalarField
     dimensionedScalar("rAU", dimTime/dimDensity, 1)
 );
 
+#include "correctPhi.H"
+
 // if (correctPhi)
 // {
 //     rAU = new volScalarField
@@ -45,3 +47,5 @@ rAU = new volScalarField
 
 //     #include "continuityErrs.H"
 // }
+
+

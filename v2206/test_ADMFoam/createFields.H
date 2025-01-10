@@ -65,13 +65,18 @@ volScalarField rho
     mixture.rho()
 );
 
+autoPtr<incompressible::turbulenceModel> turbulence
+(
+    incompressible::turbulenceModel::New(U, phi, mixture)
+);
+
+
 
 // ADM reactions
 autoPtr<ADMno1> reaction
 (
     ADMno1::New(T, mesh)
 );
-
 
 singlePhaseTransportModel laminarTransport(U, phi);
 
@@ -82,10 +87,6 @@ singlePhaseTransportModel laminarTransport(U, phi);
 //     incompressible::turbulenceModel::New(U, phi, laminarTransport)
 // );
 
-autoPtr<incompressible::turbulenceModel> turbulence
-(
-    incompressible::turbulenceModel::New(U, phi, mixture)
-);
 
 // Kinematic density for buoyancy force
 volScalarField rhok
