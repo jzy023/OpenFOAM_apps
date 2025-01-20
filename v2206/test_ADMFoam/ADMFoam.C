@@ -59,7 +59,13 @@ Note
 #include "ADMno1.H"
 
 // testing
-#include "multiphaseMixture.H"
+// > multiphaseInterFoam
+// #include "multiphaseMixture.H"
+
+// > icoReactingMultiphaseInterFoam
+#include "multiphaseSystem.H"
+#include "turbulentFluidThermoModel.H"
+
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -86,8 +92,15 @@ int main(int argc, char *argv[])
     turbulence->validate();
 
     // testing
+    // > multiphaseInterFoam
     #include "initCorrectPhi.H"
     const surfaceScalarField& rhoPhi(mixture.rhoPhi());
+
+    // > icoReactingMultiphaseInterFoam
+    // #include "createFieldRefs.H"
+    // #include "createFvOptions.H"
+
+
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -96,7 +109,12 @@ int main(int argc, char *argv[])
     while (runTime.run())
     {
         // testing
+        // > multiphaseInterFoam
         #include "alphaCourantNo.H"
+
+        // > icoReactingMultiphaseInterFoam
+        // #include "icoReactingMixture/alphaCourantNo.H"
+
  
  
         #include "readDyMControls.H"
@@ -139,20 +157,33 @@ int main(int argc, char *argv[])
                 }
             }
 
-            // #include "UEqn.H"
-            #include "UEqn_test.H"
             // #include "TEqn.H"
+            
+            // testing
+            // > multiphaseInterFoam
+            mixture.solve();
+            rho = mixture.rho();
+
+            // > icoReactingMultiphaseInterFoam
+            
+
+
+            // #include "UEqn.H"
+            #include "multiphaseMixture/UEqn.H"
+            // #include "icoReactingMixture/UEqn.H"
 
             // --- Pressure corrector loop
             while (pimple.correct())
             {
                 // #include "pEqn.H"
-                #include "pEqn_test.H"
+                #include "multiphaseMixture/pEqn.H"
+                // #include "icoReactingMixture/pEqn.H"
             }
 
             if (pimple.turbCorr())
             {
-                laminarTransport.correct();
+                // laminarTransport.correct();
+                // testing
                 turbulence->correct();
             }
 
