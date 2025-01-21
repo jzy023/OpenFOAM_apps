@@ -60,11 +60,11 @@ Note
 
 // testing
 // > multiphaseInterFoam
-// #include "multiphaseMixture.H"
+#include "multiphaseMixture.H"
 
 // > icoReactingMultiphaseInterFoam
-#include "multiphaseSystem.H"
-#include "turbulentFluidThermoModel.H"
+// #include "multiphaseSystem.H"
+// #include "turbulentFluidThermoModel.H"
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

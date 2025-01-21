@@ -361,6 +361,8 @@ public:
 
 
     //- testing
+    volScalarField rhoGas_test;
+
     volScalarField Ptotal_incell;
 
     volScalarField Vfrac_test;

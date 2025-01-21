@@ -26,11 +26,11 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "phase.H"
+#include "phaseADM.H"
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::phase::phase
+Foam::phaseADM::phaseADM
 (
     const word& phaseName,
     const dictionary& phaseDict,
@@ -65,8 +65,54 @@ Foam::phase::phase
     rho_("rho", dimDensity, phaseDict_)
 {}
 
+// testing
+// Foam::phaseADM::phaseADM
+// (
+//     const word& phaseName,
+//     const dictionary& phaseDict,
+//     const volVectorField& U,
+//     const surfaceScalarField& phi,
 
-Foam::phase::phase
+// )
+// :
+//     volScalarField
+//     (
+//         IOobject
+//         (
+//             IOobject::groupName("alpha", phaseName),
+//             U.mesh().time().timeName(),
+//             U.mesh(),
+//             IOobject::MUST_READ,
+//             IOobject::AUTO_WRITE
+//         ),
+//         U.mesh()
+//     ),
+//     name_(phaseName),
+//     phaseDict_(phaseDict),
+//     nuModel_
+//     (
+//         viscosityModel::New
+//         (
+//             IOobject::groupName("nu", phaseName),
+//             phaseDict_,
+//             U,
+//             phi
+//         )
+//     ),
+//     rho_
+//     (
+//         "rho",
+//         dimDensity,
+//         phaseDict_.lookupOrDefault
+//         (
+//             "rho",
+            
+//         )
+//     )
+// {}
+
+
+Foam::phaseADM::phaseADM
 (
     const word& phaseName,
     const dictionary& phaseDict,
@@ -104,20 +150,20 @@ Foam::phase::phase
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-Foam::autoPtr<Foam::phase> Foam::phase::clone() const
+Foam::autoPtr<Foam::phaseADM> Foam::phaseADM::clone() const
 {
     NotImplemented;
     return nullptr;
 }
 
 
-void Foam::phase::correct()
+void Foam::phaseADM::correct()
 {
     nuModel_->correct();
 }
 
 
-bool Foam::phase::read(const dictionary& phaseDict)
+bool Foam::phaseADM::read(const dictionary& phaseDict)
 {
     phaseDict_ = phaseDict;
 
