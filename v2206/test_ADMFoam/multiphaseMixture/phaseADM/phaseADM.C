@@ -65,52 +65,6 @@ Foam::phaseADM::phaseADM
     rho_("rho", dimDensity, phaseDict_)
 {}
 
-// testing
-// Foam::phaseADM::phaseADM
-// (
-//     const word& phaseName,
-//     const dictionary& phaseDict,
-//     const volVectorField& U,
-//     const surfaceScalarField& phi,
-
-// )
-// :
-//     volScalarField
-//     (
-//         IOobject
-//         (
-//             IOobject::groupName("alpha", phaseName),
-//             U.mesh().time().timeName(),
-//             U.mesh(),
-//             IOobject::MUST_READ,
-//             IOobject::AUTO_WRITE
-//         ),
-//         U.mesh()
-//     ),
-//     name_(phaseName),
-//     phaseDict_(phaseDict),
-//     nuModel_
-//     (
-//         viscosityModel::New
-//         (
-//             IOobject::groupName("nu", phaseName),
-//             phaseDict_,
-//             U,
-//             phi
-//         )
-//     ),
-//     rho_
-//     (
-//         "rho",
-//         dimDensity,
-//         phaseDict_.lookupOrDefault
-//         (
-//             "rho",
-            
-//         )
-//     )
-// {}
-
 
 Foam::phaseADM::phaseADM
 (

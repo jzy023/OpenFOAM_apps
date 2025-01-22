@@ -264,6 +264,18 @@ public:
 
         //- Read base transportProperties dictionary
         bool read();
+
+
+    // testing 
+        //- Density field for gas phase
+        // PtrList<volScalarField::Internal> rhoAvePhase_;
+        volScalarField::Internal rhoGas_;
+
+        //- Read average (to be executed every time step)
+        void updateRhoGas(const volScalarField::Internal& rhoAve);
+
+        //TODO: add limiter to max 3 phases (liq, gas, particle)
+
 };
 
 

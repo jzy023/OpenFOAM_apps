@@ -152,12 +152,6 @@ public:
         //- Read base transportProperties dictionary
         bool read(const dictionary& phaseDict);
 
-        // testing
-        //- Read average (to be executed every time step)
-        void updateAverageRho(const rhoAve);
-
-        //
-
 };
 
 
