@@ -30,40 +30,40 @@ License
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::phaseADM::phaseADM
-(
-    const word& phaseName,
-    const dictionary& phaseDict,
-    const volVectorField& U,
-    const surfaceScalarField& phi
-)
-:
-    volScalarField
-    (
-        IOobject
-        (
-            IOobject::groupName("alpha", phaseName),
-            U.mesh().time().timeName(),
-            U.mesh(),
-            IOobject::MUST_READ,
-            IOobject::AUTO_WRITE
-        ),
-        U.mesh()
-    ),
-    name_(phaseName),
-    phaseDict_(phaseDict),
-    nuModel_
-    (
-        viscosityModel::New
-        (
-            IOobject::groupName("nu", phaseName),
-            phaseDict_,
-            U,
-            phi
-        )
-    ),
-    rho_("rho", dimDensity, phaseDict_)
-{}
+// Foam::phaseADM::phaseADM
+// (
+//     const word& phaseName,
+//     const dictionary& phaseDict,
+//     const volVectorField& U,
+//     const surfaceScalarField& phi
+// )
+// :
+//     volScalarField
+//     (
+//         IOobject
+//         (
+//             IOobject::groupName("alpha", phaseName),
+//             U.mesh().time().timeName(),
+//             U.mesh(),
+//             IOobject::MUST_READ,
+//             IOobject::AUTO_WRITE
+//         ),
+//         U.mesh()
+//     ),
+//     name_(phaseName),
+//     phaseDict_(phaseDict),
+//     nuModel_
+//     (
+//         viscosityModel::New
+//         (
+//             IOobject::groupName("nu", phaseName),
+//             phaseDict_,
+//             U,
+//             phi
+//         )
+//     ),
+//     rho_("rho", dimDensity, phaseDict_)
+// {}
 
 
 Foam::phaseADM::phaseADM
@@ -99,7 +99,14 @@ Foam::phaseADM::phaseADM
         )
     ),
     rho_("rho", dimDensity, phaseDict_)
-{}
+    // ,
+    // isRhoField
+    // (
+    //     phaseDict.lookupOrDefault("isRhoField", false)
+    // )
+{
+
+}
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
@@ -130,6 +137,5 @@ bool Foam::phaseADM::read(const dictionary& phaseDict)
 
     return false;
 }
-
 
 // ************************************************************************* //

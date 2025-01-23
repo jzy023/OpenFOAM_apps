@@ -28,14 +28,14 @@ Class
     Foam::multiphaseMixture
 
 Description
-    Incompressible multi-phase mixture with built in solution for the
-    phase fractions with interface compression for interface-capturing.
+    Incompressible multi-phaseADM mixture with built in solution for the
+    phaseADM fractions with interface compression for interface-capturing.
 
     Derived from transportModel so that it can be unused in conjunction with
     the incompressible turbulence models.
 
     Surface tension and contact-angle is handled for the interface
-    between each phase-pair.
+    between each phaseADM-pair.
 
 SourceFiles
     multiphaseMixture.C
@@ -47,10 +47,11 @@ SourceFiles
 
 #include "incompressible/transportModel/transportModel.H"
 #include "IOdictionary.H"
-#include "phase.H"
 #include "PtrDictionary.H"
 #include "volFields.H"
 #include "surfaceFields.H"
+#include "phaseADM.H"
+// #include "phase.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -94,7 +95,7 @@ public:
                 Pair<word>(alpha1Name, alpha2Name)
             {}
 
-            interfacePair(const phase& alpha1, const phase& alpha2)
+            interfacePair(const phaseADM& alpha1, const phaseADM& alpha2)
             :
                 Pair<word>(alpha1.name(), alpha2.name())
             {}
@@ -127,7 +128,7 @@ private:
     // Private data
 
         //- Dictionary of phases
-        PtrDictionary<phase> phases_;
+        PtrDictionary<phaseADM> phases_;
 
         const fvMesh& mesh_;
         const volVectorField& U_;
@@ -168,8 +169,8 @@ private:
 
         void correctContactAngle
         (
-            const phase& alpha1,
-            const phase& alpha2,
+            const phaseADM& alpha1,
+            const phaseADM& alpha2,
             surfaceVectorField::Boundary& nHatb
         ) const;
 
@@ -177,12 +178,12 @@ private:
         (
             const alphaContactAngleFvPatchScalarField& acap,
             label patchi,
-            const phase& alpha1,
-            const phase& alpha2,
+            const phaseADM& alpha1,
+            const phaseADM& alpha2,
             surfaceVectorField::Boundary& nHatb
         ) const;
 
-        tmp<volScalarField> K(const phase& alpha1, const phase& alpha2) const;
+        tmp<volScalarField> K(const phaseADM& alpha1, const phaseADM& alpha2) const;
 
 
 public:
@@ -204,7 +205,7 @@ public:
     // Member Functions
 
         //- Return the phases
-        const PtrDictionary<phase>& phases() const
+        const PtrDictionary<phaseADM>& phases() const
         {
             return phases_;
         }
@@ -256,7 +257,7 @@ public:
         //  Field values are 1 near and 0 away for the interface.
         tmp<volScalarField> nearInterface() const;
 
-        //- Solve for the mixture phase-fractions
+        //- Solve for the mixture phaseADM-fractions
         void solve();
 
         //- Correct the mixture properties
@@ -267,14 +268,17 @@ public:
 
 
     // testing 
-        //- Density field for gas phase
-        // PtrList<volScalarField::Internal> rhoAvePhase_;
+        //- Density field for gas and sludge phase
+        // PtrList<volScalarField::Internal> rhoPhase_;
         volScalarField::Internal rhoGas_;
 
-        //- Read average (to be executed every time step)
-        void updateRhoGas(const volScalarField::Internal& rhoAve);
+        volScalarField::Internal rhoSludge_;
 
-        //TODO: add limiter to max 3 phases (liq, gas, particle)
+        //- Safe check for setting rho
+        void checkPhases();
+
+        // //- Read average (to be executed every time step)
+        // void updateRhoGas(const volScalarField::Internal& rhoAve);
 
 };
 

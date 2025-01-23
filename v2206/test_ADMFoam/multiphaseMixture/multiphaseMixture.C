@@ -45,7 +45,7 @@ void Foam::multiphaseMixture::calcAlphas()
     scalar level = 0.0;
     alphas_ == 0.0;
 
-    for (const phase& ph : phases_)
+    for (const phaseADM& ph : phases_)
     {
         alphas_ += level * ph;
         level += 1.0;
@@ -73,7 +73,7 @@ Foam::multiphaseMixture::multiphaseMixture
         )
     ),
 
-    phases_(lookup("phases"), phase::iNew(U, phi)),
+    phases_(lookup("phases"), phaseADM::iNew(U, phi)),
 
     mesh_(U.mesh()),
     U_(U),
@@ -125,11 +125,53 @@ Foam::multiphaseMixture::multiphaseMixture
         "deltaN",
         1e-8/cbrt(average(mesh_.V()))
     )
+
+    // testing 
+    ,
+    rhoGas_
+    (
+        IOobject
+        (
+            "rhoGas_test",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar
+        (
+            "rhoGas_testDefault", 
+            dimDensity, 
+            Zero
+        )
+    ),
+    rhoSludge_
+    (
+        IOobject
+        (
+            "rhoSludge_test",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar
+        (
+            "rhoSludge_testDefault", 
+            dimDensity, 
+            Zero
+        )
+    )
 {
     rhoPhi_.setOriented();
 
     calcAlphas();
     alphas_.write();
+    
+    // testing
+    checkPhases();
 }
 
 
@@ -277,13 +319,13 @@ Foam::multiphaseMixture::surfaceTensionForce() const
 
     forAllConstIters(phases_, iter1)
     {
-        const phase& alpha1 = iter1();
+        const phaseADM& alpha1 = iter1();
 
         auto iter2 = iter1;
 
         for (++iter2; iter2 != phases_.cend(); ++iter2)
         {
-            const phase& alpha2 = iter2();
+            const phaseADM& alpha2 = iter2();
 
             auto sigma = sigmas_.cfind(interfacePair(alpha1, alpha2));
 
@@ -360,7 +402,7 @@ void Foam::multiphaseMixture::solve()
 
 void Foam::multiphaseMixture::correct()
 {
-    for (phase& ph : phases_)
+    for (phaseADM& ph : phases_)
     {
         ph.correct();
     }
@@ -412,8 +454,8 @@ Foam::tmp<Foam::surfaceScalarField> Foam::multiphaseMixture::nHatf
 
 void Foam::multiphaseMixture::correctContactAngle
 (
-    const phase& alpha1,
-    const phase& alpha2,
+    const phaseADM& alpha1,
+    const phaseADM& alpha2,
     surfaceVectorField::Boundary& nHatb
 ) const
 {
@@ -446,8 +488,8 @@ void Foam::multiphaseMixture::correctBoundaryContactAngle
 (
     const alphaContactAngleFvPatchScalarField& acap,
     label patchi,
-    const phase& alpha1,
-    const phase& alpha2,
+    const phaseADM& alpha1,
+    const phaseADM& alpha2,
     surfaceVectorField::Boundary& nHatb
 ) const
 {
@@ -536,8 +578,8 @@ void Foam::multiphaseMixture::correctBoundaryContactAngle
 
 Foam::tmp<Foam::volScalarField> Foam::multiphaseMixture::K
 (
-    const phase& alpha1,
-    const phase& alpha2
+    const phaseADM& alpha1,
+    const phaseADM& alpha2
 ) const
 {
     tmp<surfaceVectorField> tnHatfv = nHatfv(alpha1, alpha2);
@@ -567,7 +609,7 @@ Foam::multiphaseMixture::nearInterface() const
         )
     );
 
-    for (const phase& ph : phases_)
+    for (const phaseADM& ph : phases_)
     {
         tnearInt.ref() = max(tnearInt(), pos0(ph - 0.01)*pos0(0.99 - ph));
     }
@@ -593,7 +635,7 @@ void Foam::multiphaseMixture::solveAlphas
     PtrList<surfaceScalarField> alphaPhiCorrs(phases_.size());
     int phasei = 0;
 
-    for (phase& alpha : phases_)
+    for (phaseADM& alpha : phases_)
     {
         alphaPhiCorrs.set
         (
@@ -612,7 +654,7 @@ void Foam::multiphaseMixture::solveAlphas
 
         surfaceScalarField& alphaPhiCorr = alphaPhiCorrs[phasei];
 
-        for (phase& alpha2 : phases_)
+        for (phaseADM& alpha2 : phases_)
         {
             if (&alpha2 == &alpha) continue;
 
@@ -661,7 +703,7 @@ void Foam::multiphaseMixture::solveAlphas
 
     phasei = 0;
 
-    for (phase& alpha : phases_)
+    for (phaseADM& alpha : phases_)
     {
         surfaceScalarField& alphaPhi = alphaPhiCorrs[phasei];
         alphaPhi += upwind<scalar>(mesh_, phi_).flux(alpha);
@@ -686,15 +728,15 @@ void Foam::multiphaseMixture::solveAlphas
         ++phasei;
     }
 
-    Info<< "Phase-sum volume fraction, min, max = "
+    Info<< "phaseADM-sum volume fraction, min, max = "
         << sumAlpha.weightedAverage(mesh_.V()).value()
         << ' ' << min(sumAlpha).value()
         << ' ' << max(sumAlpha).value()
         << endl;
 
-    // Correct the sum of the phase-fractions to avoid 'drift'
+    // Correct the sum of the phaseADM-fractions to avoid 'drift'
     volScalarField sumCorr(1.0 - sumAlpha);
-    for (phase& alpha : phases_)
+    for (phaseADM& alpha : phases_)
     {
         alpha += alpha*sumCorr;
     }
@@ -712,7 +754,7 @@ bool Foam::multiphaseMixture::read()
         PtrList<entry> phaseData(lookup("phases"));
         label phasei = 0;
 
-        for (phase& ph : phases_)
+        for (phaseADM& ph : phases_)
         {
             readOK &= ph.read(phaseData[phasei++].dict());
         }
@@ -723,6 +765,36 @@ bool Foam::multiphaseMixture::read()
     }
 
     return false;
+}
+
+
+// testing
+void Foam::multiphaseMixture::checkPhases()
+{
+    // checking number of phases
+    if (phases_.size() > 3)
+    {
+        FatalErrorInFunction
+            << "Current implementation does not allow more than 3 phases:\n" 
+            << "(fluid, gas, sludge)"
+            << exit(FatalError);
+    }
+
+    // checking rho field
+    bool isAllRhoField = true; 
+
+    for (phaseADM& ph : phases_)
+    {
+        isAllRhoField &= ph.isRhoField();
+    }
+
+    if (isAllRhoField)
+    {
+        FatalErrorInFunction
+            << "Cannot have all phases to have rho field\n" 
+            << "Please set homogeneous rho for fluid phase"
+            << exit(FatalError);
+    }
 }
 
 

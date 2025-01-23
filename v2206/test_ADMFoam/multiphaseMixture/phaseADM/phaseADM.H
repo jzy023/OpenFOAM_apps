@@ -36,8 +36,8 @@ SourceFiles
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef phase_H
-#define phase_H
+#ifndef phaseADM_H
+#define phaseADM_H
 
 #include "volFields.H"
 #include "dictionaryEntry.H"
@@ -151,6 +151,17 @@ public:
 
         //- Read base transportProperties dictionary
         bool read(const dictionary& phaseDict);
+
+
+    // testing
+        //- If rho set to be a homogeneous value or a field 
+        bool isRhoField_;
+
+        //- return isRhoField_  
+        const bool isRhoField() const
+        {  
+            return isRhoField_;
+        }
 
 };
 
