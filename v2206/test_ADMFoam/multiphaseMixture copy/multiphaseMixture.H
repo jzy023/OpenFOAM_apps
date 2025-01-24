@@ -269,26 +269,16 @@ public:
 
     // testing 
         //- Density field for gas and sludge phase
-        PtrList<volScalarField::Internal> rhoPhases_;
+        // PtrList<volScalarField::Internal> rhoPhase_;
+        volScalarField::Internal rhoGas_;
 
-        // volScalarField::Internal rhoGas_;
-        // volScalarField::Internal rhoSludge_;
-
-        //- Number of rho fields
-        wordList test_;
-        label nRhoField_; 
+        volScalarField::Internal rhoSludge_;
 
         //- Safe check for setting rho
         void checkPhases();
 
-        //- Initialize rho field
-        void initRhoPhases();
-
-        //- Read rho field 
-        void readRhoField(const volScalarField::Internal& rhoField);
-
-        //- Update average (to be executed every time step)
-        void updateRho();
+        // //- Read average (to be executed every time step)
+        // void updateRhoGas(const volScalarField::Internal& rhoAve);
 
 };
 

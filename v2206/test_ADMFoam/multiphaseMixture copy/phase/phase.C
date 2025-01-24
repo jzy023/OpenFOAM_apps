@@ -26,47 +26,11 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "phaseADM.H"
+#include "phase.H"
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-// Foam::phaseADM::phaseADM
-// (
-//     const word& phaseName,
-//     const dictionary& phaseDict,
-//     const volVectorField& U,
-//     const surfaceScalarField& phi
-// )
-// :
-//     volScalarField
-//     (
-//         IOobject
-//         (
-//             IOobject::groupName("alpha", phaseName),
-//             U.mesh().time().timeName(),
-//             U.mesh(),
-//             IOobject::MUST_READ,
-//             IOobject::AUTO_WRITE
-//         ),
-//         U.mesh()
-//     ),
-//     name_(phaseName),
-//     phaseDict_(phaseDict),
-//     nuModel_
-//     (
-//         viscosityModel::New
-//         (
-//             IOobject::groupName("nu", phaseName),
-//             phaseDict_,
-//             U,
-//             phi
-//         )
-//     ),
-//     rho_("rho", dimDensity, phaseDict_)
-// {}
-
-
-Foam::phaseADM::phaseADM
+Foam::phase::phase
 (
     const word& phaseName,
     const dictionary& phaseDict,
@@ -98,41 +62,26 @@ Foam::phaseADM::phaseADM
             phi
         )
     ),
-    rho_
-    (
-        "rho", 
-        dimDensity, 
-        phaseDict_.lookupOrDefault("rho", 0.0)
-    ),
-    isRhoField_
-    (
-        phaseDict.lookupOrDefault("isRhoField", false)
-    )
-{
-    // set rho to be inhomogeneous
-    if ((rho_.value() == 0.0) | isRhoField_)
-    {
-        isRhoField_ = true;
-    }
-}
+    rho_("rho", dimDensity, phaseDict_)
+{}
 
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
-Foam::autoPtr<Foam::phaseADM> Foam::phaseADM::clone() const
+Foam::autoPtr<Foam::phase> Foam::phase::clone() const
 {
     NotImplemented;
     return nullptr;
 }
 
 
-void Foam::phaseADM::correct()
+void Foam::phase::correct()
 {
     nuModel_->correct();
 }
 
 
-bool Foam::phaseADM::read(const dictionary& phaseDict)
+bool Foam::phase::read(const dictionary& phaseDict)
 {
     phaseDict_ = phaseDict;
 
@@ -145,5 +94,6 @@ bool Foam::phaseADM::read(const dictionary& phaseDict)
 
     return false;
 }
+
 
 // ************************************************************************* //

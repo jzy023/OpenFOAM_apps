@@ -128,44 +128,42 @@ Foam::multiphaseMixture::multiphaseMixture
 
     // testing 
     ,
-    // rhoGas_
-    // (
-    //     IOobject
-    //     (
-    //         "rhoGas_test",
-    //         mesh_.time().timeName(),
-    //         mesh_,
-    //         IOobject::NO_READ,
-    //         IOobject::NO_WRITE
-    //     ),
-    //     mesh_,
-    //     dimensionedScalar
-    //     (
-    //         "rhoGas_testDefault", 
-    //         dimDensity, 
-    //         Zero
-    //     )
-    // ),
-    // rhoSludge_
-    // (
-    //     IOobject
-    //     (
-    //         "rhoSludge_test",
-    //         mesh_.time().timeName(),
-    //         mesh_,
-    //         IOobject::NO_READ,
-    //         IOobject::NO_WRITE
-    //     ),
-    //     mesh_,
-    //     dimensionedScalar
-    //     (
-    //         "rhoSludge_testDefault", 
-    //         dimDensity, 
-    //         Zero
-    //     )
-    // )
-    nRhoField_(0)
-
+    rhoGas_
+    (
+        IOobject
+        (
+            "rhoGas_test",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar
+        (
+            "rhoGas_testDefault", 
+            dimDensity, 
+            Zero
+        )
+    ),
+    rhoSludge_
+    (
+        IOobject
+        (
+            "rhoSludge_test",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar
+        (
+            "rhoSludge_testDefault", 
+            dimDensity, 
+            Zero
+        )
+    )
 {
     rhoPhi_.setOriented();
 
@@ -174,7 +172,6 @@ Foam::multiphaseMixture::multiphaseMixture
     
     // testing
     checkPhases();
-    initRhoPhases();
 }
 
 
@@ -202,7 +199,6 @@ Foam::multiphaseMixture::rho(const label patchi) const
 {
     auto iter = phases_.cbegin();
 
-    // tmp<scalarField> trho = iter().boundaryField()[patchi]*rhoPhases_[0].field();
     tmp<scalarField> trho = iter().boundaryField()[patchi]*iter().rho().value();
     scalarField& rho = trho.ref();
 
@@ -780,7 +776,7 @@ void Foam::multiphaseMixture::checkPhases()
     {
         FatalErrorInFunction
             << "Current implementation does not allow more than 3 phases:\n" 
-            << "(liquid, gas, sludge)" // TODO: hard code this
+            << "(fluid, gas, sludge)"
             << exit(FatalError);
     }
 
@@ -790,12 +786,6 @@ void Foam::multiphaseMixture::checkPhases()
     for (phaseADM& ph : phases_)
     {
         isAllRhoField &= ph.isRhoField();
-
-        if (ph.isRhoField())
-        {
-            nRhoField_++;
-            test_.append(ph.name());
-        }
     }
 
     if (isAllRhoField)
@@ -805,46 +795,6 @@ void Foam::multiphaseMixture::checkPhases()
             << "Please set homogeneous rho for fluid phase"
             << exit(FatalError);
     }
-
-    // DEBUG
-    Info<< nRhoField_ << endl;
-}
-
-
-void Foam::multiphaseMixture::initRhoPhases()
-{
-    // for (label n = 0; n < nRhoField_; n++)
-    forAll(test_, n)
-    {
-        rhoPhases_.set
-        (
-            n,
-            new volScalarField::Internal
-            (
-                IOobject
-                (
-                    test_[n],
-                    mesh_.time().timeName(),
-                    mesh_,
-                    // TODO: check with createFields.H to avoid duplicating rho fields
-                    IOobject::NO_READ,
-                    IOobject::NO_WRITE 
-                ),
-                mesh_,
-                dimensionedScalar
-                (
-                    dimDensity,
-                    SMALL
-                )
-            )
-        );  
-    }
-}
-
-
-void Foam::multiphaseMixture::updateRho()
-{
-
 }
 
 
