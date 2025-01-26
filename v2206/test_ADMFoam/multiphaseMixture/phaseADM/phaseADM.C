@@ -98,22 +98,19 @@ Foam::phaseADM::phaseADM
             phi
         )
     ),
+    isRhoField_
+    (
+        setIsRhoField()
+    ),
     rho_
     (
         "rho", 
         dimDensity, 
-        phaseDict_.lookupOrDefault("rho", 0.0)
-    ),
-    isRhoField_
-    (
-        phaseDict.lookupOrDefault("isRhoField", false)
+        setRho()
     )
 {
-    // set rho to be inhomogeneous
-    if ((rho_.value() == 0.0) | isRhoField_)
-    {
-        isRhoField_ = true;
-    }
+    // DEBUG
+    // Info<< setIsRhoField() << endl;
 }
 
 

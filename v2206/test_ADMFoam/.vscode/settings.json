@@ -97,7 +97,20 @@
         "phase.C": "cpp",
         "alphaContactAngleFvPatchScalarField.C": "cpp",
         "multiphaseADM.C": "cpp",
-        "phaseADM.C": "cpp"
+        "phaseADM.C": "cpp",
+        "__node_handle": "cpp",
+        "__locale": "cpp",
+        "__string": "cpp",
+        "filesystem": "cpp",
+        "__hash_table": "cpp",
+        "__split_buffer": "cpp",
+        "queue": "cpp",
+        "stack": "cpp",
+        "__functional_base": "cpp",
+        "__bit_reference": "cpp",
+        "locale": "cpp",
+        "*.ipp": "cpp",
+        "ios": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

@@ -48,6 +48,7 @@ SourceFiles
 #include "incompressible/transportModel/transportModel.H"
 #include "IOdictionary.H"
 #include "PtrDictionary.H"
+#include "PtrListDictionary.H"
 #include "volFields.H"
 #include "surfaceFields.H"
 #include "phaseADM.H"
@@ -269,26 +270,23 @@ public:
 
     // testing 
         //- Density field for gas and sludge phase
-        PtrList<volScalarField::Internal> rhoPhases_;
+        PtrListDictionary<volScalarField> rhoFieldsPtrs_;
 
-        // volScalarField::Internal rhoGas_;
-        // volScalarField::Internal rhoSludge_;
-
-        //- Number of rho fields
-        wordList test_;
-        label nRhoField_; 
+        //- Number of inhomogeneous rho fields
+        wordList namePhaseRhoFields_;
 
         //- Safe check for setting rho
         void checkPhases();
 
         //- Initialize rho field
-        void initRhoPhases();
+        void initRhoFileds();
 
         //- Read rho field 
-        void readRhoField(const volScalarField::Internal& rhoField);
+        // void readRhoField(const volScalarField::Internal& rhoField);
+        void readRhoField(const volScalarField& rhoField);
 
         //- Update average (to be executed every time step)
-        void updateRho();
+        // void updateRho();
 
 };
 

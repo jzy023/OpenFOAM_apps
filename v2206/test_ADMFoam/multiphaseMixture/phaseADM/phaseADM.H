@@ -61,6 +61,8 @@ class phaseADM
         word name_;
         dictionary phaseDict_;
         autoPtr<viscosityModel> nuModel_;
+        // testing
+        bool isRhoField_ = false;
         dimensionedScalar rho_;
 
 
@@ -154,11 +156,44 @@ public:
 
 
     // testing
-        //- If rho set to be a homogeneous value or a field 
-        bool isRhoField_;
+        //- Set rho
+        scalar setRho()
+        {
+            if (isRhoField_)
+            {
+                Info<< "Setting density field to be calculated" 
+                    << " for phase: " << name_ << endl;
+                return 1.0;
+            }
+            else
+            {
+                Info<< "Setting density field to be homogeneous" 
+                    << " for phase: " << name_ << endl;
+                return phaseDict_.getScalar("rho");
+            }
+        }
+
+        //- Set rho
+        bool setIsRhoField()
+        {
+            if (name_ == "liquid")
+            {
+                return false;
+            }
+            else
+            {
+                bool ans =
+                (
+                    !phaseDict_.found("rho") | 
+                    phaseDict_.lookupOrDefault("isRhoField", false)
+                );
+                
+                return ans;
+            }
+        }
 
         //- return isRhoField_  
-        const bool isRhoField() const
+        bool isRhoField() const
         {  
             return isRhoField_;
         }
