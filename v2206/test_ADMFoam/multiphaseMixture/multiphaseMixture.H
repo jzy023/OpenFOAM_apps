@@ -268,12 +268,25 @@ public:
         bool read();
 
 
-    // testing 
+    // testing
+
+
         //- Density field for gas and sludge phase
         PtrListDictionary<volScalarField> rhoFieldsPtrs_;
 
         //- Number of inhomogeneous rho fields
         wordList namePhaseRhoFields_;
+
+        //- tmp fields for
+        tmp<volScalarField> trhov;
+        
+        tmp<scalarField> trho;
+        
+        // tmp<volScalarField> tmuv;
+        
+        // tmp<scalarField> tmu;
+        
+        // tmp<surfaceScalarField> tmuf;
 
         //- Safe check for setting rho
         void checkPhases();

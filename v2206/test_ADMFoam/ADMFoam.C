@@ -164,6 +164,8 @@ int main(int argc, char *argv[])
             mixture.solve();
             rho = mixture.rho();
 
+            Info<< rho.internalField().field() << endl;
+
             // > icoReactingMultiphaseInterFoam
             
 
