@@ -163,7 +163,7 @@ public:
             {
                 Info<< "Setting density field to be calculated" 
                     << " for phase: " << name_ << endl;
-                return 1.0;
+                return 1.0; // dummy value, rho filed would be calculated in mixture
             }
             else
             {

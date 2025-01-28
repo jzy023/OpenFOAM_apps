@@ -73,7 +73,6 @@ Foam::multiphaseMixture::multiphaseMixture
         )
     ),
 
-
     phases_(lookup("phases"), phaseADM::iNew(U, phi)),
 
     mesh_(U.mesh()),
@@ -126,43 +125,12 @@ Foam::multiphaseMixture::multiphaseMixture
     (
         "deltaN",
         1e-8/cbrt(average(mesh_.V()))
-    )
-
-    // testing 
-    ,
-    rhoFieldsPtrs_(phases_.size()),
-    trhov
-    (
-        new volScalarField
-        (
-            IOobject
-            (
-                "trhov", 
-                mesh_.time().timeName(),
-                mesh_,
-                IOobject::NO_READ,
-                IOobject::NO_WRITE 
-            ),
-            mesh_, 
-            dimensionedScalar
-            (
-                dimDensity,
-                Zero
-            )
-        )
     ),
-    trho
-    (
-        new scalarField
-        (
-            mesh_.boundary().size(),
-            Zero
-        )
-    )
+    // testing 
+    rhoFieldsPtrs_(0)
 
 {
     rhoPhi_.setOriented();
-
     calcAlphas();
     alphas_.write();
     
@@ -184,13 +152,34 @@ Foam::multiphaseMixture::multiphaseMixture
 Foam::tmp<Foam::volScalarField>
 Foam::multiphaseMixture::rho() const
 {
+    tmp<volScalarField> trhov
+    (
+        new volScalarField
+        (
+            IOobject
+            (
+                "trhov", 
+                mesh_.time().timeName(),
+                mesh_,
+                IOobject::NO_READ,
+                IOobject::NO_WRITE 
+            ),
+            mesh_, 
+            dimensionedScalar
+            (
+                dimDensity,
+                Zero
+            )
+        )
+    );
+
     volScalarField& rho = trhov.ref();
-    rho.field() *= 0.0;
+    rho *= 0.0;
 
     for (auto iter = phases_.cbegin(); iter != phases_.cend(); ++iter)
     {
         if (iter().isRhoField())
-        {   
+        {
             word name = iter().name();
             rho += iter()*(*rhoFieldsPtrs_.lookup(name));
         }
@@ -203,9 +192,20 @@ Foam::multiphaseMixture::rho() const
     return trhov;
 }
 
+
 Foam::tmp<Foam::scalarField>
 Foam::multiphaseMixture::rho(const label patchi) const
 {
+
+    tmp<scalarField> trho
+    (
+        new scalarField
+        (
+            mesh_.boundary().size(),
+            Zero
+        )
+    );
+
     scalarField& rho = trho.ref();
     rho *= 0.0;
 
@@ -229,64 +229,141 @@ Foam::multiphaseMixture::rho(const label patchi) const
 Foam::tmp<Foam::volScalarField>
 Foam::multiphaseMixture::mu() const
 {
-    auto iter = phases_.cbegin();
 
-    tmp<volScalarField> tmu = iter()*iter().rho()*iter().nu();
-    volScalarField& mu = tmu.ref();
+    tmp<volScalarField> tmuv
+    (
+        new volScalarField
+        (
+            IOobject
+            (
+                "tmuv", 
+                mesh_.time().timeName(),
+                mesh_,
+                IOobject::NO_READ,
+                IOobject::NO_WRITE 
+            ),
+            mesh_, 
+            dimensionedScalar
+            (
+                dimViscosity*dimDensity,
+                Zero
+            )
+        )
+    );
 
-    for (++iter; iter != phases_.cend(); ++iter)
+    volScalarField& mu = tmuv.ref();
+    mu *= 0.0;
+
+    for (auto iter = phases_.cbegin(); iter != phases_.cend(); ++iter)
     {
-        mu += iter()*iter().rho()*iter().nu();
+        if (iter().isRhoField())
+        {
+            word name = iter().name();
+            mu += iter()*(*rhoFieldsPtrs_.lookup(name))*iter().nu();
+        }
+        else
+        {
+            mu += iter()*iter().rho()*iter().nu();
+        }
     }
 
-    return tmu;
+    return tmuv;
 }
 
 
 Foam::tmp<Foam::scalarField>
 Foam::multiphaseMixture::mu(const label patchi) const
 {
-    auto iter = phases_.cbegin();
-
-    tmp<scalarField> tmu =
+    tmp<scalarField> tmu
     (
-        iter().boundaryField()[patchi]
-       *iter().rho().value()
-       *iter().nu(patchi)
+        new scalarField
+        (
+            mesh_.boundary().size(),
+            Zero
+        )
     );
 
     scalarField& mu = tmu.ref();
+    mu *= 0.0;
 
-    for (++iter; iter != phases_.cend(); ++iter)
+    for (auto iter = phases_.cbegin(); iter != phases_.cend(); ++iter)
     {
-        mu +=
-        (
-            iter().boundaryField()[patchi]
-           *iter().rho().value()
-           *iter().nu(patchi)
-        );
+        if (iter().isRhoField())
+        {
+            word name = iter().name();
+            mu +=
+            (
+                iter().boundaryField()[patchi]
+               *(*rhoFieldsPtrs_.lookup(name))
+               *iter().nu(patchi)
+            );
+        }
+        else
+        {
+            mu +=
+            (
+                iter().boundaryField()[patchi]
+               *iter().rho().value()
+               *iter().nu(patchi)
+            );
+        }
     }
 
     return tmu;
 }
 
+
 Foam::tmp<Foam::surfaceScalarField>
 Foam::multiphaseMixture::muf() const
 {
-    auto iter = phases_.cbegin();
+    tmp<surfaceScalarField> tmuf
+    (
+        new surfaceScalarField
+        (
+            IOobject
+            (
+                "tmuv", 
+                mesh_.time().timeName(),
+                mesh_,
+                IOobject::NO_READ,
+                IOobject::NO_WRITE 
+            ),
+            mesh_, 
+            dimensionedScalar
+            (
+                dimViscosity*dimDensity,
+                Zero
+            )
+        )
+    );
 
-    tmp<surfaceScalarField> tmuf =
-        fvc::interpolate(iter())*iter().rho()*fvc::interpolate(iter().nu());
     surfaceScalarField& muf = tmuf.ref();
+    muf *= 0.0;
 
-    for (++iter; iter != phases_.cend(); ++iter)
+    for (auto iter = phases_.cbegin(); iter != phases_.cend(); ++iter)
     {
-        muf +=
-            fvc::interpolate(iter())*iter().rho()*fvc::interpolate(iter().nu());
+        if (iter().isRhoField())
+        {
+            word name = iter().name();
+            muf +=
+            (
+                fvc::interpolate(iter())
+               *fvc::interpolate(*rhoFieldsPtrs_.lookup(name))
+               *fvc::interpolate(iter().nu())
+            );
+        }
+        else
+        {
+            muf +=
+                fvc::interpolate(iter())*iter().rho()*fvc::interpolate(iter().nu());
+        }
     }
 
     return tmuf;
 }
+
+
+
 
 // Foam::tmp<Foam::volScalarField>
 // Foam::multiphaseMixture::rho() const
@@ -1036,7 +1113,6 @@ void Foam::multiphaseMixture::checkPhases()
             << exit(FatalError);
     }
 
-    // int counter = 0;
     for (phaseADM& ph : phases_)
     {
         if (ph.isRhoField())
@@ -1049,7 +1125,7 @@ void Foam::multiphaseMixture::checkPhases()
 
 void Foam::multiphaseMixture::initRhoFileds()
 {
-    // rhoFieldsPtrs_.resize(namePhaseRhoFields_.size());
+    rhoFieldsPtrs_.resize(namePhaseRhoFields_.size());
 
     forAll(namePhaseRhoFields_, n)
     {
