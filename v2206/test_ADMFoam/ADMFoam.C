@@ -51,16 +51,16 @@ Note
 #include "singlePhaseTransportModel.H"
 #include "turbulentTransportModel.H"
 #include "radiationModel.H"
-#include "CorrectPhi.H"
-#include "fvOptions.H"
 #include "pimpleControl.H"
+#include "fvOptions.H"
+#include "CorrectPhi.H"
 
 #include "localEulerDdtScheme.H"
 #include "ADMno1.H"
 
 // testing
 // > multiphaseInterFoam
-#include "multiphaseMixture.H"
+#include "multiphaseADMixture.H"
 
 // > icoReactingMultiphaseInterFoam
 // #include "multiphaseSystem.H"
@@ -108,6 +108,10 @@ int main(int argc, char *argv[])
 
     while (runTime.run())
     {
+        #include "readDyMControls.H"
+        #include "CourantNo.H"
+
+
         // testing
         // > multiphaseInterFoam
         #include "alphaCourantNo.H"
@@ -117,10 +121,8 @@ int main(int argc, char *argv[])
 
  
  
-        #include "readDyMControls.H"
-        #include "CourantNo.H"
-        #include "setDeltaT.H"
 
+        #include "setDeltaT.H"
 
         ++runTime;
 
@@ -169,14 +171,14 @@ int main(int argc, char *argv[])
 
 
             // #include "UEqn.H"
-            #include "multiphaseMixture/UEqn.H"
+            #include "multiphaseADMixture/UEqn.H"
             // #include "icoReactingMixture/UEqn.H"
 
             // --- Pressure corrector loop
             while (pimple.correct())
             {
                 // #include "pEqn.H"
-                #include "multiphaseMixture/pEqn.H"
+                #include "multiphaseADMixture/pEqn.H"
                 // #include "icoReactingMixture/pEqn.H"
             }
 

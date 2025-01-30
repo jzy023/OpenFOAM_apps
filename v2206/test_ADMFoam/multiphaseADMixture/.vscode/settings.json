@@ -1,6 +1,6 @@
 {
     "files.associations": {
         "bashrc": "shellscript",
-        "multiphaseMixture.C": "cpp"
+        "multiphaseADMixture.C": "cpp"
     }
 }

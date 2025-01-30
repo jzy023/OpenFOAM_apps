@@ -28,7 +28,7 @@ Class
 
 Description
     Single incompressible phaseADM derived from the phaseADM-fraction.
-    Used as part of the multiPhaseMixture for interface-capturing multi-phaseADM
+    Used as part of the multiphaseADMixture for interface-capturing multi-phaseADM
     simulations.
 
 SourceFiles

@@ -28,7 +28,7 @@ Class
 
 Description
     Contact-angle boundary condition for multi-phase interface-capturing
-    simulations.  Used in conjunction with multiphaseMixture.
+    simulations.  Used in conjunction with multiphaseADMixture.
 
 SourceFiles
     alphaContactAngleFvPatchScalarField.C
@@ -39,7 +39,7 @@ SourceFiles
 #define alphaContactAngleFvPatchScalarField_H
 
 #include "zeroGradientFvPatchFields.H"
-#include "multiphaseMixture.H"
+#include "multiphaseADMixture.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -119,8 +119,8 @@ public:
     typedef HashTable
     <
         interfaceThetaProps,
-        multiphaseMixture::interfacePair,
-        multiphaseMixture::interfacePair::hash
+        multiphaseADMixture::interfacePair,
+        multiphaseADMixture::interfacePair::hash
     > thetaPropsTable;
 
 

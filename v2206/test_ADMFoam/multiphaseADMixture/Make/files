@@ -1,6 +1,5 @@
-
 phaseADM/phaseADM.C
 alphaContactAngle/alphaContactAngleFvPatchScalarField.C
-multiphaseMixture.C
+multiphaseADMixture.C
 
-LIB = $(FOAM_LIBBIN)/libmultiphaseInterFoam
+LIB = $(FOAM_LIBBIN)/libmultiphaseADMixture

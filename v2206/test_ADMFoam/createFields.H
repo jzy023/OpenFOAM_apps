@@ -21,10 +21,10 @@ volScalarField T
     )
 );
 
-autoPtr<ADMno1> reaction
-(
-    ADMno1::New(T, mesh)
-);
+// autoPtr<ADMno1> reaction
+// (
+//     ADMno1::New(T, mesh)
+// );
 
 
 // Original [buoyantBoussinesqPimpleFoam]
@@ -78,20 +78,20 @@ volVectorField U
 //     1.0 - beta*(T - TRef)
 // );
 
-// Kinematic turbulent thermal thermal conductivity m2/s
-Info<< "Reading field alphat\n" << endl;
-volScalarField alphat
-(
-    IOobject
-    (
-        "alphat",
-        runTime.timeName(),
-        mesh,
-        IOobject::MUST_READ,
-        IOobject::AUTO_WRITE
-    ),
-    mesh
-);
+// // Kinematic turbulent thermal thermal conductivity m2/s
+// Info<< "Reading field alphat\n" << endl;
+// volScalarField alphat
+// (
+//     IOobject
+//     (
+//         "alphat",
+//         runTime.timeName(),
+//         mesh,
+//         IOobject::MUST_READ,
+//         IOobject::AUTO_WRITE
+//     ),
+//     mesh
+// );
 
 #include "readGravitationalAcceleration.H"
 #include "readhRef.H"
@@ -142,7 +142,7 @@ volScalarField alphat
 
 // testing
 // > multiphaseInterFoam
-multiphaseMixture mixture(U, phi);
+multiphaseADMixture mixture(U, phi);
 
 volScalarField rho
 (

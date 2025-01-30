@@ -1,6 +1,6 @@
-$(OBJECTS_DIR)/multiphaseMixture.C.dep: \
-multiphaseMixture.C \
-multiphaseMixture.H \
+$(OBJECTS_DIR)/multiphaseADMixture.C.dep: \
+multiphaseADMixture.C \
+multiphaseADMixture.H \
 $(WM_PROJECT_DIR)/src/transportModels/incompressible/transportModel/transportModel.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/primitiveFieldsFwd.H \
 $(WM_PROJECT_DIR)/src/OpenFOAM/lnInclude/fieldTypes.H \

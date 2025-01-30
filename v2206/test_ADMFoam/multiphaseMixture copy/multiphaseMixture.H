@@ -25,7 +25,7 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::multiphaseMixture
+    Foam::multiphaseADMixture
 
 Description
     Incompressible multi-phaseADM mixture with built in solution for the
@@ -38,7 +38,7 @@ Description
     between each phaseADM-pair.
 
 SourceFiles
-    multiphaseMixture.C
+    multiphaseADMixture.C
 
 \*---------------------------------------------------------------------------*/
 
@@ -62,10 +62,10 @@ namespace Foam
 class alphaContactAngleFvPatchScalarField;
 
 /*---------------------------------------------------------------------------*\
-                      Class multiphaseMixture Declaration
+                      Class multiphaseADMixture Declaration
 \*---------------------------------------------------------------------------*/
 
-class multiphaseMixture
+class multiphaseADMixture
 :
     public IOdictionary,
     public transportModel
@@ -191,7 +191,7 @@ public:
     // Constructors
 
         //- Construct from components
-        multiphaseMixture
+        multiphaseADMixture
         (
             const volVectorField& U,
             const surfaceScalarField& phi
@@ -199,7 +199,7 @@ public:
 
 
     //- Destructor
-    virtual ~multiphaseMixture() = default;
+    virtual ~multiphaseADMixture() = default;
 
 
     // Member Functions

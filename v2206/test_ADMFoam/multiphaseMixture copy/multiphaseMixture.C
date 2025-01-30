@@ -26,7 +26,7 @@ License
 
 \*---------------------------------------------------------------------------*/
 
-#include "multiphaseMixture.H"
+#include "multiphaseADMixture.H"
 #include "Time.H"
 #include "subCycle.H"
 #include "MULES.H"
@@ -40,7 +40,7 @@ License
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
-void Foam::multiphaseMixture::calcAlphas()
+void Foam::multiphaseADMixture::calcAlphas()
 {
     scalar level = 0.0;
     alphas_ == 0.0;
@@ -55,7 +55,7 @@ void Foam::multiphaseMixture::calcAlphas()
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
-Foam::multiphaseMixture::multiphaseMixture
+Foam::multiphaseADMixture::multiphaseADMixture
 (
     const volVectorField& U,
     const surfaceScalarField& phi
@@ -178,7 +178,7 @@ Foam::multiphaseMixture::multiphaseMixture
 // * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //
 
 Foam::tmp<Foam::volScalarField>
-Foam::multiphaseMixture::rho() const
+Foam::multiphaseADMixture::rho() const
 {
     auto iter = phases_.cbegin();
 
@@ -195,7 +195,7 @@ Foam::multiphaseMixture::rho() const
 
 
 Foam::tmp<Foam::scalarField>
-Foam::multiphaseMixture::rho(const label patchi) const
+Foam::multiphaseADMixture::rho(const label patchi) const
 {
     auto iter = phases_.cbegin();
 
@@ -212,7 +212,7 @@ Foam::multiphaseMixture::rho(const label patchi) const
 
 
 Foam::tmp<Foam::volScalarField>
-Foam::multiphaseMixture::mu() const
+Foam::multiphaseADMixture::mu() const
 {
     auto iter = phases_.cbegin();
 
@@ -229,7 +229,7 @@ Foam::multiphaseMixture::mu() const
 
 
 Foam::tmp<Foam::scalarField>
-Foam::multiphaseMixture::mu(const label patchi) const
+Foam::multiphaseADMixture::mu(const label patchi) const
 {
     auto iter = phases_.cbegin();
 
@@ -257,7 +257,7 @@ Foam::multiphaseMixture::mu(const label patchi) const
 
 
 Foam::tmp<Foam::surfaceScalarField>
-Foam::multiphaseMixture::muf() const
+Foam::multiphaseADMixture::muf() const
 {
     auto iter = phases_.cbegin();
 
@@ -276,28 +276,28 @@ Foam::multiphaseMixture::muf() const
 
 
 Foam::tmp<Foam::volScalarField>
-Foam::multiphaseMixture::nu() const
+Foam::multiphaseADMixture::nu() const
 {
     return nu_;
 }
 
 
 Foam::tmp<Foam::scalarField>
-Foam::multiphaseMixture::nu(const label patchi) const
+Foam::multiphaseADMixture::nu(const label patchi) const
 {
     return nu_.boundaryField()[patchi];
 }
 
 
 Foam::tmp<Foam::surfaceScalarField>
-Foam::multiphaseMixture::nuf() const
+Foam::multiphaseADMixture::nuf() const
 {
     return muf()/fvc::interpolate(rho());
 }
 
 
 Foam::tmp<Foam::surfaceScalarField>
-Foam::multiphaseMixture::surfaceTensionForce() const
+Foam::multiphaseADMixture::surfaceTensionForce() const
 {
     tmp<surfaceScalarField> tstf
     (
@@ -350,7 +350,7 @@ Foam::multiphaseMixture::surfaceTensionForce() const
 }
 
 
-void Foam::multiphaseMixture::solve()
+void Foam::multiphaseADMixture::solve()
 {
     correct();
 
@@ -400,7 +400,7 @@ void Foam::multiphaseMixture::solve()
 }
 
 
-void Foam::multiphaseMixture::correct()
+void Foam::multiphaseADMixture::correct()
 {
     for (phaseADM& ph : phases_)
     {
@@ -409,7 +409,7 @@ void Foam::multiphaseMixture::correct()
 }
 
 
-Foam::tmp<Foam::surfaceVectorField> Foam::multiphaseMixture::nHatfv
+Foam::tmp<Foam::surfaceVectorField> Foam::multiphaseADMixture::nHatfv
 (
     const volScalarField& alpha1,
     const volScalarField& alpha2
@@ -435,7 +435,7 @@ Foam::tmp<Foam::surfaceVectorField> Foam::multiphaseMixture::nHatfv
 }
 
 
-Foam::tmp<Foam::surfaceScalarField> Foam::multiphaseMixture::nHatf
+Foam::tmp<Foam::surfaceScalarField> Foam::multiphaseADMixture::nHatf
 (
     const volScalarField& alpha1,
     const volScalarField& alpha2
@@ -452,7 +452,7 @@ Foam::tmp<Foam::surfaceScalarField> Foam::multiphaseMixture::nHatf
 // The dynamic contact angle is calculated from the component of the
 // velocity on the direction of the interface, parallel to the wall.
 
-void Foam::multiphaseMixture::correctContactAngle
+void Foam::multiphaseADMixture::correctContactAngle
 (
     const phaseADM& alpha1,
     const phaseADM& alpha2,
@@ -484,7 +484,7 @@ void Foam::multiphaseMixture::correctContactAngle
 }
 
 
-void Foam::multiphaseMixture::correctBoundaryContactAngle
+void Foam::multiphaseADMixture::correctBoundaryContactAngle
 (
     const alphaContactAngleFvPatchScalarField& acap,
     label patchi,
@@ -576,7 +576,7 @@ void Foam::multiphaseMixture::correctBoundaryContactAngle
 }
 
 
-Foam::tmp<Foam::volScalarField> Foam::multiphaseMixture::K
+Foam::tmp<Foam::volScalarField> Foam::multiphaseADMixture::K
 (
     const phaseADM& alpha1,
     const phaseADM& alpha2
@@ -592,7 +592,7 @@ Foam::tmp<Foam::volScalarField> Foam::multiphaseMixture::K
 
 
 Foam::tmp<Foam::volScalarField>
-Foam::multiphaseMixture::nearInterface() const
+Foam::multiphaseADMixture::nearInterface() const
 {
     tmp<volScalarField> tnearInt
     (
@@ -618,7 +618,7 @@ Foam::multiphaseMixture::nearInterface() const
 }
 
 
-void Foam::multiphaseMixture::solveAlphas
+void Foam::multiphaseADMixture::solveAlphas
 (
     const scalar cAlpha
 )
@@ -745,7 +745,7 @@ void Foam::multiphaseMixture::solveAlphas
 }
 
 
-bool Foam::multiphaseMixture::read()
+bool Foam::multiphaseADMixture::read()
 {
     if (transportModel::read())
     {
@@ -769,7 +769,7 @@ bool Foam::multiphaseMixture::read()
 
 
 // testing
-void Foam::multiphaseMixture::checkPhases()
+void Foam::multiphaseADMixture::checkPhases()
 {
     // checking number of phases
     if (phases_.size() > 3)

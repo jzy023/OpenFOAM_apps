@@ -24,20 +24,20 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Class
-    Foam::phaseADM
+    Foam::phase
 
 Description
-    Single incompressible phaseADM derived from the phaseADM-fraction.
-    Used as part of the multiPhaseMixture for interface-capturing multi-phaseADM
+    Single incompressible phase derived from the phase-fraction.
+    Used as part of the multiphaseADMixture for interface-capturing multi-phase
     simulations.
 
 SourceFiles
-    phaseADM.C
+    phase.C
 
 \*---------------------------------------------------------------------------*/
 
-#ifndef phaseADM_H
-#define phaseADM_H
+#ifndef phase_H
+#define phase_H
 
 #include "volFields.H"
 #include "dictionaryEntry.H"
@@ -49,10 +49,10 @@ namespace Foam
 {
 
 /*---------------------------------------------------------------------------*\
-                           Class phaseADM Declaration
+                           Class phase Declaration
 \*---------------------------------------------------------------------------*/
 
-class phaseADM
+class phase
 :
     public volScalarField
 {
@@ -61,8 +61,6 @@ class phaseADM
         word name_;
         dictionary phaseDict_;
         autoPtr<viscosityModel> nuModel_;
-        // testing
-        bool isRhoField_ = false;
         dimensionedScalar rho_;
 
 
@@ -71,7 +69,7 @@ public:
     // Constructors
 
         //- Construct from components
-        phaseADM
+        phase
         (
             const word& name,
             const dictionary& phaseDict,
@@ -80,9 +78,9 @@ public:
         );
 
         //- Return clone
-        autoPtr<phaseADM> clone() const;
+        autoPtr<phase> clone() const;
 
-        //- Return a pointer to a new phaseADM created on freestore
+        //- Return a pointer to a new phase created on freestore
         //  from Istream
         class iNew
         {
@@ -101,10 +99,10 @@ public:
                 phi_(phi)
             {}
 
-            autoPtr<phaseADM> operator()(Istream& is) const
+            autoPtr<phase> operator()(Istream& is) const
             {
                 dictionaryEntry ent(dictionary::null, is);
-                return autoPtr<phaseADM>(new phaseADM(ent.keyword(), ent, U_, phi_));
+                return autoPtr<phase>(new phase(ent.keyword(), ent, U_, phi_));
             }
         };
 
@@ -145,7 +143,7 @@ public:
             return rho_;
         }
 
-        //- Correct the phaseADM properties
+        //- Correct the phase properties
         void correct();
 
         //-Inherit read from volScalarField
@@ -153,51 +151,6 @@ public:
 
         //- Read base transportProperties dictionary
         bool read(const dictionary& phaseDict);
-
-
-    // testing
-        //- Set rho
-        scalar setRho()
-        {
-            if (isRhoField_)
-            {
-                Info<< "Setting density field to be calculated" 
-                    << " for phase: " << name_ << endl;
-                return 1.0; // dummy value, rho filed would be calculated in mixture
-            }
-            else
-            {
-                Info<< "Setting density field to be homogeneous" 
-                    << " for phase: " << name_ << endl;
-                return phaseDict_.getScalar("rho");
-            }
-        }
-
-        //- Set rho
-        bool setIsRhoField()
-        {
-            if (name_ == "liquid")
-            {
-                return false;
-            }
-            else
-            {
-                bool ans =
-                (
-                    !phaseDict_.found("rho") | 
-                    phaseDict_.lookupOrDefault("isRhoField", false)
-                );
-                
-                return ans;
-            }
-        }
-
-        //- return isRhoField_  
-        bool isRhoField() const
-        {  
-            return isRhoField_;
-        }
-
 };
 
 

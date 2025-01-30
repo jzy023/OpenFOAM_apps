@@ -93,7 +93,7 @@
         "variant": "cpp",
         "__nullptr": "cpp",
         "__tree": "cpp",
-        "multiphaseMixture.C": "cpp",
+        "multiphaseADMixture.C": "cpp",
         "phase.C": "cpp",
         "alphaContactAngleFvPatchScalarField.C": "cpp",
         "multiphaseADM.C": "cpp",
@@ -110,7 +110,8 @@
         "__bit_reference": "cpp",
         "locale": "cpp",
         "*.ipp": "cpp",
-        "ios": "cpp"
+        "ios": "cpp",
+        "multiphaseMixture.C": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }
