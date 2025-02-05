@@ -25,6 +25,17 @@
             fvm::laplacian(rAUf, p_rgh) == fvc::div(phiHbyA)
         );
 
+
+        // from interCondensatingEvatoratingFoam/pEqn.H 
+        
+        // fvScalarMatrix p_rghEqn
+        // (
+        //     fvc::div(phiHbyA)
+        //   - fvm::laplacian(rAUf, p_rgh)
+        //   ==
+        //     vDotv + vDotc
+        // );
+
         p_rghEqn.setReference(pRefCell, getRefCellValue(p_rgh, pRefCell));
 
         p_rghEqn.solve(mesh.solver(p_rgh.select(pimple.finalInnerIter())));

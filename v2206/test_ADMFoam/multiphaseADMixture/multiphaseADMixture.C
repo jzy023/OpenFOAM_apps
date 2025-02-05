@@ -182,6 +182,9 @@ Foam::multiphaseADMixture::rho() const
         {
             word name = iter().name();
             rho += iter()*(*rhoFieldsPtrs_.lookup(name));
+            // TODO: lookup() overhead?
+            //       could just do hard coded idx entrance for 
+            //       better performance but is notgood practice  
         }
         else
         {
@@ -1133,7 +1136,6 @@ void Foam::multiphaseADMixture::initRhoFileds()
         (
             n,
             namePhaseRhoFields_[n],
-            // new volScalarField::Internal
             new volScalarField
             (
                 IOobject

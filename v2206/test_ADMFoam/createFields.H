@@ -21,10 +21,10 @@ volScalarField T
     )
 );
 
-// autoPtr<ADMno1> reaction
-// (
-//     ADMno1::New(T, mesh)
-// );
+autoPtr<ADMno1> reaction
+(
+    ADMno1::New(T, mesh)
+);
 
 
 // Original [buoyantBoussinesqPimpleFoam]

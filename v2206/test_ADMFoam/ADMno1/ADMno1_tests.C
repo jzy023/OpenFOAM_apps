@@ -812,6 +812,8 @@ void Foam::ADMno1::gasTest(volScalarField& Ptotal)
     // TODO!!!: This needs to be reviewed since now we have multiphase and due to the volume fraction 
     //          of the gas phase, the concentration might differ from the origial calculation
     //          Consult solvers like [icoReactingMultiphaseInterFoam]
+    // NOTE:    The concentration in the liquid phase doesn't not change with the phase vol fraction
+    //          
     GRPtrs_test[0] = // <- in dimension of [kg * m-3 * s-1]
     (
         para_.DTOS() * para_.kLa()
@@ -858,6 +860,9 @@ void Foam::ADMno1::gasTest(volScalarField& Ptotal)
           / (GPtrs_[0].internalField() / 16.0  + GPtrs_[1].internalField() / 64.0 + GPtrs_[2].internalField())
         )
     );
+
+    // TODO: maybe just return a single vDot instead Gh2, Gch4 and Gco2 sepreately?
+    
 
 
     // ==================================================================================

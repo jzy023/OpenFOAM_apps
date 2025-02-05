@@ -277,10 +277,6 @@ public:
         //- Number of inhomogeneous rho fields
         wordList namePhaseRhoFields_;
 
-        // tmp<volScalarField> tmuv;
-        // tmp<scalarField> tmu;
-        // tmp<surfaceScalarField> tmuf;
-
         //- Safe check for setting rho
         void checkPhases();
 

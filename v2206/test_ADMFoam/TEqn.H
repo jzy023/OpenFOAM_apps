@@ -26,3 +26,6 @@
 
     rhok = 1.0 - beta*(T - TRef);
 }
+
+// TODO:
+// consult interCondensatingEvaporatingFoam/TEqn.H

@@ -119,8 +119,6 @@ int main(int argc, char *argv[])
         // > icoReactingMultiphaseInterFoam
         // #include "icoReactingMixture/alphaCourantNo.H"
 
- 
- 
 
         #include "setDeltaT.H"
 
@@ -192,15 +190,15 @@ int main(int argc, char *argv[])
         }
 
         // ADM1 reaction source terms
-        // reaction->clear();
-        // reaction->correct(phi, T, p);
-        // // Info<< p.field() << endl;
-        // // reaction->correct(phi, T);
-        // PtrList<volScalarField>& YPtrs = reaction->Y();
-        // PtrList<volScalarField>& GPtrs = reaction->G();
-        // // PtrList<volScalarField>& GPtrs_test = reaction->G_test();
-        // // --- ADM calculation
-        // #include "ADMEqn.H"
+        reaction->clear();
+        reaction->correct(phi, T, p);
+        // Info<< p.field() << endl;
+        // reaction->correct(phi, T);
+        PtrList<volScalarField>& YPtrs = reaction->Y();
+        PtrList<volScalarField>& GPtrs = reaction->G();
+        // PtrList<volScalarField>& GPtrs_test = reaction->G_test();
+        // --- ADM calculation
+        #include "ADMEqn.H"
 
         runTime.write();
 
