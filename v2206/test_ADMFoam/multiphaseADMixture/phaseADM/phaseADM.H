@@ -61,6 +61,7 @@ class phaseADM
         word name_;
         dictionary phaseDict_;
         autoPtr<viscosityModel> nuModel_;
+        
         // testing
         bool isRhoField_ = false;
         dimensionedScalar rho_;

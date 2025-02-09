@@ -377,6 +377,10 @@ public:
 
     PtrList<volScalarField::Internal> vDotPtrs_test;
 
+    volScalarField vDot_test;
+
+    scalar amplifier;
+
     void correct
     (
         const surfaceScalarField &flux, 

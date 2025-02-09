@@ -7,7 +7,7 @@
 
     surfaceScalarField phiHbyA
     (
-        "phiHbyA",
+        "phiHbyA",  
         fvc::flux(HbyA)
       + MRF.zeroFilter(rAUf*fvc::ddtCorr(U, phi))
       + phig
@@ -24,7 +24,6 @@
         (
             fvm::laplacian(rAUf, p_rgh) == fvc::div(phiHbyA)
         );
-
 
         // from interCondensatingEvatoratingFoam/pEqn.H 
         

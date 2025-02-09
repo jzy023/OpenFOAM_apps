@@ -51,6 +51,10 @@ SourceFiles
 #include "PtrListDictionary.H"
 #include "volFields.H"
 #include "surfaceFields.H"
+// #include "fvcDiv.H"
+// #include "fvmSup.H"
+// #include "fvMatrix.H"
+// #include "CMULES.H"
 #include "phaseADM.H"
 // #include "phase.H"
 
@@ -269,7 +273,15 @@ public:
 
 
     // testing
+        
+        //- Mass transfer phase source terms
+        typedef HashTable<volScalarField::Internal> SuSpTable;
 
+        //- Su phase source terms
+        SuSpTable Su_;
+ 
+        //- Sp phase source terms
+        SuSpTable Sp_;
 
         //- Density field for gas and sludge phase
         PtrListDictionary<volScalarField> rhoFieldsPtrs_;
@@ -289,6 +301,29 @@ public:
 
         //- Update average (to be executed every time step)
         // void updateRho();
+
+        //- Rerturn name of phases
+        const PtrList<word> phaseNames()
+        {
+            PtrList<word> phaseNames(phases_.size());
+            
+            label phasei = 0;
+            for (phaseADM& phase : phases_)
+            {
+                phaseNames.set
+                (
+                    phasei,
+                    new word
+                    (
+                        phase.name()
+                    )
+                );
+
+                ++phasei;
+            }
+
+            return phaseNames;
+        }
 
 };
 

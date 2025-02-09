@@ -85,6 +85,10 @@ int main(int argc, char *argv[])
     #include "createDyMControls.H"
     #include "createFields.H"
     #include "createUfIfPresent.H"
+    
+    // #include "createControl.H"
+    // #include "createTimeControls.H"
+
     #include "CourantNo.H"
     #include "setInitialDeltaT.H"
     #include "initContinuityErrs.H"
@@ -157,12 +161,15 @@ int main(int argc, char *argv[])
                 }
             }
 
-            // #include "TEqn.H"
+            // #include "TEqn.H"     
             
             // testing
             // > multiphaseInterFoam
             mixture.solve();
             rho = mixture.rho();
+
+            // #include "alphaControls.H"      // <-- !!!
+            // #include "alphaEqnSubCycle.H"   // <-- !!!
 
             // > icoReactingMultiphaseInterFoam
             

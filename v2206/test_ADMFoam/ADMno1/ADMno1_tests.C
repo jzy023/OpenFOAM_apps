@@ -102,6 +102,27 @@ Foam::ADMno1::ADMno1
             Zero
         )
     ),
+    vDot_test
+    (
+        IOobject
+        (
+            "vDots_test",
+            mesh.time().timeName(),
+            mesh,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh,
+        dimensionedScalar
+        (
+            dimless/dimTime, 
+            Zero
+        )
+    ),
+    amplifier
+    (
+        ADMno1Dict.lookupOrDefault("amp", 1.0)
+    ),
     // =============================================================
     para_
     (
@@ -255,7 +276,7 @@ Foam::ADMno1::ADMno1
             (
                 IOobject
                 (
-                    namesSoluable[i], // IOobject::groupName(namesSoluable[i]),
+                    namesSoluable[i],
                     mesh.time().timeName(),
                     mesh,
                     IOobject::MUST_READ,
@@ -726,7 +747,8 @@ Foam::ADMno1::ADMno1
                     mesh.time().timeName(),
                     mesh,
                     IOobject::NO_READ,
-                    IOobject::AUTO_WRITE
+                    IOobject::NO_WRITE
+                    // IOobject::AUTO_WRITE
                 ),
                 mesh,
                 dimensionedScalar
@@ -835,33 +857,69 @@ void Foam::ADMno1::gasTest(volScalarField& Ptotal)
 
     // ==================================================================================
     // field of cell volume for mesh 
-    scalarField volMeshField = GPtrs_[0].mesh().V().field();   
+    const dimensionedScalar T0(dimless, Zero);
+    scalarField volMeshField = GPtrs_[0].mesh().V().field();
 
-    vDotPtrs_test[0].field() = 
-    (                                         // converting from kgCOD/m3 to mole/m3 (1kg H2 needs 8kg O2)                        
-        (para_.MTOm() * GRPtrs_test[0].field() / 16.0) * volMeshField * R_ * TopDummy_.internalField() / Ptotal.field()
-    );
-
-    vDotPtrs_test[1].field() = 
-    (                                         // converting from kgCOD/m3 to mole/m3 (1kg CH4 needs 4kg O2)                      
-        (para_.MTOm() * GRPtrs_test[1].field() / 64.0) * volMeshField * R_ * TopDummy_.internalField() / Ptotal.field()
-    );
-
-    vDotPtrs_test[2].field() = 
-    (   // <-- check dimensions for Ptotal for multiphase
-        GRPtrs_test[2].field() * volMeshField * R_ * TopDummy_.internalField() / Ptotal.field()
-    );
-
+    // density of the bulk gas phase
+    // rho = m / V = M * n / V = M * P / (R * T)
     rhoGas_test.field() = 
     (
         (Ptotal.field() / R_ * TopDummy_.internalField())
       * (
             (GPtrs_[0].internalField() / 8.0  + GPtrs_[1].internalField() / 4.0 + GPtrs_[2].internalField() * 0.044) 
           / (GPtrs_[0].internalField() / 16.0  + GPtrs_[1].internalField() / 64.0 + GPtrs_[2].internalField())
-        )
+        ) 
+
+    //     (Ptotal.field() / R_ * TopDummy_.internalField())
+    //   * (
+    //         (GPtrs_[0].internalField() / 8.0  + GPtrs_[1].internalField() / 4.0 + GPtrs_[2].internalField() * 0.044) 
+    //       / (GPtrs_[0].internalField() / 16.0  + GPtrs_[1].internalField() / 64.0 + GPtrs_[2].internalField())
+    //     ) // mol * m3
     );
 
+
     // TODO: maybe just return a single vDot instead Gh2, Gch4 and Gco2 sepreately?
+    // (m3) [Pa * K-1 * m3 * mol-1] * K * Pa-1 * [mol * m-3 * s-1] (K)
+    vDot_test.field() = // <-- check dimensions for Ptotal for multiphase
+    (
+        (/*volMeshField * */ R_ * TopDummy_.internalField() / Ptotal.field())                    
+      * (
+            (para_.MTOm() * GRPtrs_test[2].field())
+          + (para_.MTOm() * GRPtrs_test[0].field() / 16.0) // converting from kgCOD/m3 to mol/m3 (1kg H2 needs 8kg O2)                       
+          + (para_.MTOm() * GRPtrs_test[1].field() / 64.0) // converting from kgCOD/m3 to mol/m3 (1kg CH4 needs 4kg O2)                  
+        )
+      * amplifier * max(TopDummy_ - 310, T0) // DEBUG (K) just to trigger phase change on the bottom
+    );
+
+    // vDot_test.field() = // <-- check dimensions for Ptotal for multiphase
+    // (
+    //     (/*volMeshField * */ R_ * TopDummy_.internalField() / Ptotal.field())                    
+    //   * (
+    //         (para_.MTOm() * GRPtrs_test[2].field())
+    //       + (para_.MTOm() * GRPtrs_test[0].field() / 16.0) // converting from kgCOD/m3 to mol/m3 (1kg H2 needs 8kg O2)                       
+    //       + (para_.MTOm() * GRPtrs_test[1].field() / 64.0) // converting from kgCOD/m3 to mol/m3 (1kg CH4 needs 4kg O2)                  
+    //     )
+    //   * amplifier * max(TopDummy_ - 310, T0) // DEBUG (K) just to trigger phase change on the bottom
+    // );
+
+
+
+
+    // vDotPtrs_test[0].field() = 
+    // (                                         // converting from kgCOD/m3 to mole/m3 (1kg H2 needs 8kg O2)                        
+    //     (para_.MTOm() * GRPtrs_test[0].field() / 16.0) * volMeshField * R_ * TopDummy_.internalField() / Ptotal.field()
+    // );
+
+    // vDotPtrs_test[1].field() = 
+    // (                                         // converting from kgCOD/m3 to mole/m3 (1kg CH4 needs 4kg O2)                      
+    //     (para_.MTOm() * GRPtrs_test[1].field() / 64.0) * volMeshField * R_ * TopDummy_.internalField() / Ptotal.field()
+    // );
+
+    // vDotPtrs_test[2].field() = 
+    // (   // <-- check dimensions for Ptotal for multiphase
+    //     para_.MTOm() * GRPtrs_test[2].field() * volMeshField * R_ * TopDummy_.internalField() / Ptotal.field()
+    // );
+
     
 
 

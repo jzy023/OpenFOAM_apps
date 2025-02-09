@@ -58,8 +58,9 @@ volVectorField U
 
 #include "createPhi.H"
 
-// #include "readTransportProperties.H"
 // singlePhaseTransportModel laminarTransport(U, phi);
+// #include "readTransportProperties.H"
+
 // Info<< "Creating turbulence model\n" << endl;
 // autoPtr<incompressible::turbulenceModel> turbulence
 // (
@@ -78,20 +79,20 @@ volVectorField U
 //     1.0 - beta*(T - TRef)
 // );
 
-// // Kinematic turbulent thermal thermal conductivity m2/s
-// Info<< "Reading field alphat\n" << endl;
-// volScalarField alphat
-// (
-//     IOobject
-//     (
-//         "alphat",
-//         runTime.timeName(),
-//         mesh,
-//         IOobject::MUST_READ,
-//         IOobject::AUTO_WRITE
-//     ),
-//     mesh
-// );
+// Kinematic turbulent thermal thermal conductivity m2/s
+Info<< "Reading field alphat\n" << endl;
+volScalarField alphat
+(
+    IOobject
+    (
+        "alphat",
+        runTime.timeName(),
+        mesh,
+        IOobject::MUST_READ,
+        IOobject::AUTO_WRITE
+    ),
+    mesh
+);
 
 #include "readGravitationalAcceleration.H"
 #include "readhRef.H"
@@ -143,6 +144,13 @@ volVectorField U
 // testing
 // > multiphaseInterFoam
 multiphaseADMixture mixture(U, phi);
+
+// set flux required
+for (word name : mixture.phaseNames())
+{
+    Info << name << endl;
+    mesh.setFluxRequired("alpha." + name);
+}
 
 volScalarField rho
 (
