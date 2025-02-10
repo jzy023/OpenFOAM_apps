@@ -165,7 +165,7 @@ int main(int argc, char *argv[])
             
             // testing
             // > multiphaseInterFoam
-            mixture.solve();
+            mixture.solve(reaction->vDotGas_test.internalField());
             rho = mixture.rho();
 
             // #include "alphaControls.H"      // <-- !!!

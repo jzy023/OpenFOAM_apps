@@ -102,7 +102,7 @@ Foam::ADMno1::ADMno1
             Zero
         )
     ),
-    vDot_test
+    vDotGas_test
     (
         IOobject
         (
@@ -861,7 +861,7 @@ void Foam::ADMno1::gasTest(volScalarField& Ptotal)
     scalarField volMeshField = GPtrs_[0].mesh().V().field();
 
     // density of the bulk gas phase
-    // rho = m / V = M * n / V = M * P / (R * T)
+    // rho = mi / V = Mi * ni / V = M * P / (R * T)
     rhoGas_test.field() = 
     (
         (Ptotal.field() / R_ * TopDummy_.internalField())
@@ -880,7 +880,7 @@ void Foam::ADMno1::gasTest(volScalarField& Ptotal)
 
     // TODO: maybe just return a single vDot instead Gh2, Gch4 and Gco2 sepreately?
     // (m3) [Pa * K-1 * m3 * mol-1] * K * Pa-1 * [mol * m-3 * s-1] (K)
-    vDot_test.field() = // <-- check dimensions for Ptotal for multiphase
+    vDotGas_test.field() = // <-- check dimensions for Ptotal for multiphase
     (
         (/*volMeshField * */ R_ * TopDummy_.internalField() / Ptotal.field())                    
       * (
@@ -891,7 +891,7 @@ void Foam::ADMno1::gasTest(volScalarField& Ptotal)
       * amplifier * max(TopDummy_ - 310, T0) // DEBUG (K) just to trigger phase change on the bottom
     );
 
-    // vDot_test.field() = // <-- check dimensions for Ptotal for multiphase
+    // vDotGas_test.field() = // <-- check dimensions for Ptotal for multiphase
     // (
     //     (/*volMeshField * */ R_ * TopDummy_.internalField() / Ptotal.field())                    
     //   * (

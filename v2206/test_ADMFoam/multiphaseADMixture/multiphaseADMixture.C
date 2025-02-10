@@ -593,7 +593,11 @@ Foam::multiphaseADMixture::surfaceTensionForce() const
 }
 
 
-void Foam::multiphaseADMixture::solve()
+void Foam::multiphaseADMixture::solve
+(
+    const volScalarField::Internal& vDotGas
+    // ,const volScalarField::Internal& vDotSludge
+)
 {
     correct();
 
@@ -627,7 +631,12 @@ void Foam::multiphaseADMixture::solve()
             !(++alphaSubCycle).end();
         )
         {
-            solveAlphas(cAlpha);
+            solveAlphas
+            (
+                cAlpha,
+                vDotGas
+                // ,vDotSludge    
+            );
             rhoPhiSum += (runTime.deltaT()/totalDeltaT)*rhoPhi_;
         }
 
@@ -635,7 +644,12 @@ void Foam::multiphaseADMixture::solve()
     }
     else
     {
-        solveAlphas(cAlpha);
+        solveAlphas
+        (
+            cAlpha,
+            vDotGas
+            // ,vDotSludge    
+        );
     }
 
     // Update the mixture kinematic viscosity
@@ -862,7 +876,9 @@ Foam::multiphaseADMixture::nearInterface() const
 
 void Foam::multiphaseADMixture::solveAlphas
 (
-    const scalar cAlpha
+    const scalar cAlpha,
+    const volScalarField::Internal& vDotGas
+    // ,const volScalarField::Internal& vDotSludge
 )
 {
     static label nSolves(-1);
@@ -870,6 +886,9 @@ void Foam::multiphaseADMixture::solveAlphas
 
     const word alphaScheme("div(phi,alpha)");
     const word alpharScheme("div(phirb,alpha)");
+
+    // base phase (liquid)
+    volScalarField::Internal alphaLiq = phases_.lookup("liquid")->internalField();
 
     surfaceScalarField phic(mag(phi_/mesh_.magSf()));
     phic = min(cAlpha*phic, max(phic));
@@ -941,7 +960,27 @@ void Foam::multiphaseADMixture::solveAlphas
     }
 
     // calculate Su and Sp
+    for (phaseADM& phase : phases_)
+    {
+        if (phase.name() == "liquid")
+        {
+            // Info<< "DEBUG!!! >>> skipped Su Sp calc for " 
+            //     << phase.name() << endl;
+            
+            continue;
+        }
 
+        // load vDot for gas and sludge generation
+        // Pair<tmp<volScalarField>> vDotAlphal =
+        // mixture->vDotAlphal();
+        // const volScalarField& vDotcAlphal = vDotAlphal[0]();
+        // const volScalarField& vDotvAlphal = vDotAlphal[1]();
+        // const volScalarField vDotvmcAlphal(vDotvAlphal - vDotcAlphal);
+
+        // TODO: make vDot a listDictionary to incoperate future sludge implementation
+        Su_[phase.name()] = vDotGas * alphaLiq;
+        // Sp_[phase.name()] <- kept zero beacause mDot liquid is zero
+    }
 
     // Limit alphaPhiCorr on each phase
     phasei = 0;
@@ -951,8 +990,8 @@ void Foam::multiphaseADMixture::solveAlphas
 
         surfaceScalarField& alphaPhiCorr = alphaPhiCorrs[phasei];
 
-        volScalarField::Internal& Su = Su_[phase.name()];
-        volScalarField::Internal& Sp = Sp_[phase.name()];
+        volScalarField::Internal& Su = Su_[phase.name()]; // <-- add const?
+        volScalarField::Internal& Sp = Sp_[phase.name()]; // <-- add const?
 
         MULES::limit
         (
@@ -991,7 +1030,6 @@ void Foam::multiphaseADMixture::solveAlphas
         // volScalarField& alpha1 = phase;
         
         const volScalarField::Internal& Su = Su_[phase.name()];
- 
         const volScalarField::Internal& Sp = Sp_[phase.name()];
  
         surfaceScalarField& alphaPhi = alphaPhiCorrs[phasei];

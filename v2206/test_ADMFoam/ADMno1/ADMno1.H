@@ -377,7 +377,8 @@ public:
 
     PtrList<volScalarField::Internal> vDotPtrs_test;
 
-    volScalarField vDot_test;
+    volScalarField vDotGas_test;
+    // volScalarField vDotSludge_test;
 
     scalar amplifier;
 
