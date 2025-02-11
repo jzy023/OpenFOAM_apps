@@ -161,8 +161,7 @@ private:
         void solveAlphas
         (
             const scalar cAlpha,
-            const volScalarField::Internal& vDotGas
-            // ,const volScalarField::Internal& vDotSludge
+            const PtrListDictionary<volScalarField::Internal>& vDotList
         );
 
         tmp<surfaceVectorField> nHatfv
@@ -270,8 +269,7 @@ public:
         //- Solve for the mixture phaseADM-fractions
         void solve
         (
-            const volScalarField::Internal& vDotGas
-            // ,const volScalarField::Internal& vDotSludge
+            const PtrListDictionary<volScalarField::Internal>& vDotList
         );
 
         //- Correct the mixture properties

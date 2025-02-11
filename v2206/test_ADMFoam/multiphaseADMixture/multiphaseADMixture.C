@@ -595,8 +595,7 @@ Foam::multiphaseADMixture::surfaceTensionForce() const
 
 void Foam::multiphaseADMixture::solve
 (
-    const volScalarField::Internal& vDotGas
-    // ,const volScalarField::Internal& vDotSludge
+    const PtrListDictionary<volScalarField::Internal>& vDotList
 )
 {
     correct();
@@ -634,8 +633,7 @@ void Foam::multiphaseADMixture::solve
             solveAlphas
             (
                 cAlpha,
-                vDotGas
-                // ,vDotSludge    
+                vDotList
             );
             rhoPhiSum += (runTime.deltaT()/totalDeltaT)*rhoPhi_;
         }
@@ -647,8 +645,7 @@ void Foam::multiphaseADMixture::solve
         solveAlphas
         (
             cAlpha,
-            vDotGas
-            // ,vDotSludge    
+            vDotList   
         );
     }
 
@@ -877,8 +874,7 @@ Foam::multiphaseADMixture::nearInterface() const
 void Foam::multiphaseADMixture::solveAlphas
 (
     const scalar cAlpha,
-    const volScalarField::Internal& vDotGas
-    // ,const volScalarField::Internal& vDotSludge
+    const PtrListDictionary<volScalarField::Internal>& vDotList
 )
 {
     static label nSolves(-1);
@@ -886,9 +882,6 @@ void Foam::multiphaseADMixture::solveAlphas
 
     const word alphaScheme("div(phi,alpha)");
     const word alpharScheme("div(phirb,alpha)");
-
-    // base phase (liquid)
-    volScalarField::Internal alphaLiq = phases_.lookup("liquid")->internalField();
 
     surfaceScalarField phic(mag(phi_/mesh_.magSf()));
     phic = min(cAlpha*phic, max(phic));
@@ -959,27 +952,31 @@ void Foam::multiphaseADMixture::solveAlphas
         Sp_[phase.name()] = dimensionedScalar("Sp", dimless/dimTime, Zero);
     }
 
-    // calculate Su and Sp
-    for (phaseADM& phase : phases_)
-    {
-        if (phase.name() == "liquid")
-        {
-            // Info<< "DEBUG!!! >>> skipped Su Sp calc for " 
-            //     << phase.name() << endl;
-            
-            continue;
-        }
+    // Base phase (liquid)
+    volScalarField::Internal alphaLiq = phases_.lookup("liquid")->internalField();
 
-        // load vDot for gas and sludge generation
+    // Calculate Su and Sp for gas and sludge phase
         // Pair<tmp<volScalarField>> vDotAlphal =
         // mixture->vDotAlphal();
         // const volScalarField& vDotcAlphal = vDotAlphal[0]();
         // const volScalarField& vDotvAlphal = vDotAlphal[1]();
         // const volScalarField vDotvmcAlphal(vDotvAlphal - vDotcAlphal);
+    
+    for (phaseADM& phase : phases_)
+    {
+        // load vDot for gas and sludge generation
+        if (phase.name() == "liquid")
+        {
+            continue;
+        }
+        else
+        {
+            Su_[phase.name()] = vDotList[phase.name()] * alphaLiq;
+            // Sp_[phase.name()] <- kept zero beacause liquid vol stays constant
 
-        // TODO: make vDot a listDictionary to incoperate future sludge implementation
-        Su_[phase.name()] = vDotGas * alphaLiq;
-        // Sp_[phase.name()] <- kept zero beacause mDot liquid is zero
+            // adding Su of gas and sludge to liquid
+            Sp_["liquid"] += vDotList[phase.name()] * alphaLiq;
+        }
     }
 
     // Limit alphaPhiCorr on each phase
@@ -1072,9 +1069,6 @@ void Foam::multiphaseADMixture::solveAlphas
 
         ++phasei;
     }
-
-    // Reset rhoPhi
-    // rhoPhi_ = dimensionedScalar(dimMass/dimTime, Zero);
 
     if (true)
     // (acorr == nAlphaCorr - 1)
@@ -1287,7 +1281,7 @@ bool Foam::multiphaseADMixture::read()
 // testing
 void Foam::multiphaseADMixture::checkPhases()
 {
-    //- Liquid phase (mandatory)
+    // checking for liquid phase (mandatory)
     if(!phases_.found("liquid"))
     {
         FatalErrorInFunction
@@ -1296,27 +1290,32 @@ void Foam::multiphaseADMixture::checkPhases()
             << exit(FatalError);
     }
 
-    // checking number of phases
-    // TODO: open for further development
+    // TODO: may be able to get rid of this
+    // checking number of phases 
     if (phases_.size() > 3)
     {
         FatalErrorInFunction
-            << "Current implementation does not allow more than 3 phases:\n" 
-            << "(liquid, gas, sludge)" // TODO: hard code this
+            << "Current implementation does not allow phases other than these 3 phases:\n" 
+            << "(liquid, gas, sludge)"
             << exit(FatalError);
     }
 
-    // checking rho field
-    if (phases_.lookup("liquid")->isRhoField())
-    {
-        FatalErrorInFunction
-            << "Phase 'liquid' must have homogeneous rho field\n" 
-            << "Please remove or set isRhoField to be false for 'liquid' phase"
-            << exit(FatalError);
-    }
-
+    // check phases
     for (phaseADM& ph : phases_)
     {
+        if 
+        (
+            (ph.name() != "liquid")
+         && (ph.name() != "gas") 
+         && (ph.name() != "sludge")
+        )
+        {
+            FatalErrorInFunction
+                << "Current implementation does not allow phases other than these 3 phases:\n" 
+                << "(liquid, gas, sludge)"
+                << exit(FatalError);
+        }
+
         if (ph.isRhoField())
         {
             namePhaseRhoFields_.append(ph.name());

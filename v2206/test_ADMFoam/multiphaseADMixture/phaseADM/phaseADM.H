@@ -179,6 +179,7 @@ public:
         {
             if (name_ == "liquid")
             {
+                // force liquid phase to have homogeneous rho field
                 return false;
             }
             else

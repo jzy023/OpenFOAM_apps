@@ -38,6 +38,7 @@ Description
 
 #include "ADMno1Parameter.H"
 #include "autoPtr.H"
+#include "PtrListDictionary.H"
 #include "runTimeSelectionTables.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -375,10 +376,10 @@ public:
 
     PtrList<volScalarField::Internal> dGPtrs_test;
 
-    PtrList<volScalarField::Internal> vDotPtrs_test;
+    PtrListDictionary<volScalarField::Internal> vDotList_test;
+    // PtrList<volScalarField::Internal> vDotPtrs_test;
 
     volScalarField vDotGas_test;
-    // volScalarField vDotSludge_test;
 
     scalar amplifier;
 
@@ -389,7 +390,11 @@ public:
         volScalarField& Ptotal
     );
 
-    void gasTest(volScalarField& Ptotal);
+    void gasTest
+    (
+        volScalarField& T, // DEBUG
+        volScalarField& Ptotal
+    );
 
     //- Return GPtrs_test
     PtrList<volScalarField>& G_test();

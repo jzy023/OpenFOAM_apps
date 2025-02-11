@@ -634,9 +634,6 @@ const Foam::word Foam::ADMno1::propertiesName("admno1Properties");
 //     nIaa_ = 3.0 / (para_.pHL().ULaa - para_.pHL().LLaa);  // aa
 //     nIac_ = 3.0 / (para_.pHL().ULac - para_.pHL().LLac);  // ac
 //     nIh2_ = 3.0 / (para_.pHL().ULh2 - para_.pHL().LLh2);  // h2
-
-//     // DEBUG
-//     Vfrac_ = (Vgas_/Vliq_).value();
 // }
 
 
@@ -675,7 +672,8 @@ void Foam::ADMno1::calcThermal
     volScalarField& T
 )
 {
-    TopDummy_.field() = T.field();
+    // DEBUG MULTI
+    // TopDummy_.field() = T.field();
 
     fac_ = (1.0 / para_.Tbase().value() - 1.0 / TopDummy_) / R_;
     
@@ -686,12 +684,6 @@ void Foam::ADMno1::calcThermal
     Kaco2_ = para_.Ka().co2 * exp(7646.0 * fac_);
     KaIN_ = para_.Ka().IN * exp(51965.0 * fac_);
     KaW_ = para_.Ka().W * exp(55900.0 * fac_);
-
-    // Info<< "KHco2: " << max(KHco2_.field()) << endl;
-    // Info<< "Kaco2: " << max(Kaco2_.field()) << endl;
-    // Info<< "KaIN_: " << max(KaIN_.field()) << endl;
-    // Info<< "KaW_: " << max(KaW_.field()) << endl;
-
 }
 
 
@@ -735,19 +727,19 @@ void Foam::ADMno1::gasPressure()
 void Foam::ADMno1::gasPhaseRate()
 {
     GRPtrs_[0] = 
-    (
+    (   // <-- kg COD m-3
         para_.DTOS() * para_.kLa() 
       * (YPtrs_[7].internalField() - R_ * TopDummy_.internalField() * GPtrs_[0].internalField() * KHh2_)
     );
 
     GRPtrs_[1] = 
-    (
+    (   // <-- kg COD m-3
         para_.DTOS() * para_.kLa() 
       * (YPtrs_[8].internalField() - R_ * TopDummy_.internalField() * GPtrs_[1].internalField() * KHch4_)
     );
 
     GRPtrs_[2] = 
-    (
+    (   // <-- mol COD m-3
         para_.DTOS() * para_.kLa() // Sco2 instead of SIC
       * (MPtrs_[0].internalField() - R_ * TopDummy_.internalField() * GPtrs_[2].internalField() * KHco2_)
     );
@@ -1274,18 +1266,6 @@ volScalarField::Internal Foam::ADMno1::fShp
       - SohN + (YPtrs_[10].internalField() - MPtrs_[1].internalField()) - EPtrs_[4] 
       - para_.MTOm() * (EPtrs_[3]/64.0 + EPtrs_[2]/112.0 + EPtrs_[1]/160.0 + EPtrs_[0]/208.0)
     );
-
-    // DEBUG
-    // Info<< ">>>\n" <<
-    //        "E(x):\t" << max(E.field()) << "\n" << // endl;
-    //        "x:\t" << max(ShpTemp.field()) << "\n" <<
-    //        "SvaN:\t" << max(SvaN.field()) << "\n" <<
-    //        "SbuN:\t" << max(SbuN.field()) << "\n" <<
-    //        "SproN:\t" << max(SproN.field()) << "\n" <<
-    //        "SacN:\t" << max(SacN.field()) << "\n" <<
-    //        "Shco3N:\t" << max(Shco3N.field()) << "\n" <<
-    //        "Snh3:\t" << max(MPtrs_[1].field()) << "\n" <<
-    //        "SohN:\t" << max(SohN.field()) << "\n" << endl;
 
     return E;
 }
