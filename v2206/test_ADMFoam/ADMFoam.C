@@ -206,7 +206,7 @@ int main(int argc, char *argv[])
         // PtrList<volScalarField>& GPtrs_test = reaction->G_test();
         
         // --- ADM calculation
-        #include "ADMEqn.H"
+        // #include "ADMEqn.H"
 
         runTime.write();
 

@@ -39,12 +39,17 @@
     // Update the pressure BCs to ensure flux consistency
     constrainPressure(p_rgh, U, phiHbyA, rAUf, MRF);
 
-    const volScalarField vDotGas = reaction->vDotGas_test;
+    const volScalarField alphaLiq = *mixture.phases().lookup("liquid");
+
+    // const PtrListDictionary<volScalarField::Internal> vDotList = reaction->vDotList_test;
+    const volScalarField vDotGas = reaction->vDotGas_test * alphaLiq;
+
 
     while (pimple.correctNonOrthogonal())
     {
         fvScalarMatrix p_rghEqn
         (
+            // fvm::laplacian(rAUf, p_rgh) == fvc::div(phiHbyA)
             fvm::laplacian(rAUf, p_rgh) == fvc::div(phiHbyA) + vDotGas
         );
 
