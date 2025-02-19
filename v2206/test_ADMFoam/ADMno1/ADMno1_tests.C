@@ -943,29 +943,36 @@ void Foam::ADMno1::gasTest
 
     // TODO: maybe just return a single vDot instead Gh2, Gch4 and Gco2 sepreately?
     // (m3) [Pa * K-1 * m3 * mol-1] * K * Pa-1 * [mol * m-3 * s-1] (K)
-    vDotList_test["gas"].field() = // <-- check dimensions for Ptotal for multiphase
-    (  
-        (/*volMeshField * */ R_ * TopDummy_.internalField() / Ptotal.field())                    
-      * (
-            (para_.MTOm() * GRPtrs_test[2].field())
-          + (para_.MTOm() * GRPtrs_test[0].field() / 16.0) // converting from kgCOD/m3 to mol/m3 (1kg H2 needs 8kg O2)                       
-          + (para_.MTOm() * GRPtrs_test[1].field() / 64.0) // converting from kgCOD/m3 to mol/m3 (1kg CH4 needs 4kg O2)                  
-        )
-      * amplifier * max(T - TSat, T0) // DEBUG MULTI (K) just to trigger phase change on the bottom
-    );
-
-    vDotGas_test.field() = vDotList_test["gas"].field();
-
-    // vDotGas_test.field() = // <-- check dimensions for Ptotal for multiphase
-    // (
+    // vDotList_test["gas"].field() = // <-- check dimensions for Ptotal for multiphase
+    // (  
     //     (/*volMeshField * */ R_ * TopDummy_.internalField() / Ptotal.field())                    
     //   * (
     //         (para_.MTOm() * GRPtrs_test[2].field())
     //       + (para_.MTOm() * GRPtrs_test[0].field() / 16.0) // converting from kgCOD/m3 to mol/m3 (1kg H2 needs 8kg O2)                       
     //       + (para_.MTOm() * GRPtrs_test[1].field() / 64.0) // converting from kgCOD/m3 to mol/m3 (1kg CH4 needs 4kg O2)                  
     //     )
-    //   * amplifier * max(TopDummy_ - 310, T0) // DEBUG MULTI (K) just to trigger phase change on the bottom
+    //   * amplifier * max(T - TSat, T0) // DEBUG MULTI (K) just to trigger phase change on the bottom
     // );
+
+    // Info<< "DEBUG!!!/n"
+    //     << max
+    //         (
+    //             R_ * TopDummy_.internalField() / Ptotal.field()               
+    //          * (
+    //                 (para_.MTOm() * GRPtrs_test[2].field())
+    //               + (para_.MTOm() * GRPtrs_test[0].field() / 16.0) // converting from kgCOD/m3 to mol/m3 (1kg H2 needs 8kg O2)                       
+    //               + (para_.MTOm() * GRPtrs_test[1].field() / 64.0) // converting from kgCOD/m3 to mol/m3 (1kg CH4 needs 4kg O2)                  
+    //             )
+    //         )
+    //     << endl;
+            
+
+    vDotList_test["gas"].field() = // <-- check dimensions for Ptotal for multiphase
+    (  
+        amplifier * max(T - TSat, T0) // DEBUG MULTI (K) just to trigger phase change on the bottom
+    );
+
+    vDotGas_test.field() = vDotList_test["gas"].field();
     
 
     // ==================================================================================

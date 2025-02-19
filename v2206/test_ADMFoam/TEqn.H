@@ -24,7 +24,7 @@
 
     fvOptions.correct(T);
 
-    rhok = 1.0 - beta*(T - TRef);
+    // rhok = 1.0 - beta*(T - TRef);
 }
 
 // TODO:

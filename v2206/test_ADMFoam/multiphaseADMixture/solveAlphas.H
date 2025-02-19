@@ -88,6 +88,7 @@ void Foam::multiphaseADMixture::solveAlphas
 
     // ------------------------------------------------------
     volScalarField::Internal alphaLiq = phases_.lookup("liquid")->internalField();
+    // volScalarField::Internal coeff = 
 
     // Set Su and Sp to zero
     for (phaseADM& alpha : phases_)
@@ -108,12 +109,17 @@ void Foam::multiphaseADMixture::solveAlphas
         }
         else
         {
+            volScalarField::Internal coeff = 
+            (
+                1 - alphaLiq * (1 - scalar(1000 / 1.3))
+            );
+            
             // adding Su of liquid to other phases
-            Su_[alpha.name()] = vDotList[alpha.name()] * alphaLiq;
+            Su_[alpha.name()] = vDotList[alpha.name()] * alphaLiq; //* coeff;
             // Sp_[alpha.name()] = [add implicity source term]
 
             // adding Su of other phases to liquid
-            Su_["liquid"] -= vDotList[alpha.name()] * alphaLiq;
+            Su_["liquid"] -= vDotList[alpha.name()] * alphaLiq; //* coeff;
             // Sp_["liquid"] = [add implicity source term]
         }
     }
@@ -148,7 +154,7 @@ void Foam::multiphaseADMixture::solveAlphas
         //   - fvm::Sp(divU, alpha)
         //   ==
         //     Su 
-        // //   + fvm::Sp(Sp, alpha)
+        //   + fvm::Sp(Sp, alpha)
         // );
 
         fvScalarMatrix alphaEqn
@@ -160,6 +166,7 @@ void Foam::multiphaseADMixture::solveAlphas
                 phi_,
                 upwind<scalar>(mesh_, phi_)
             ).fvmDiv(phi_, alpha)
+          - fvm::Sp(divU, alpha)
           ==
             Su
         );
