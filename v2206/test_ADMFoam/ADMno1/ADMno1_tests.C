@@ -969,7 +969,8 @@ void Foam::ADMno1::gasTest
 
     vDotList_test["gas"].field() = // <-- check dimensions for Ptotal for multiphase
     (  
-        amplifier * max(T - TSat, T0) // DEBUG MULTI (K) just to trigger phase change on the bottom
+        // amplifier * max(T - TSat, T0) // DEBUG MULTI (K) just to trigger phase change on the bottom
+        amplifier * (T - TSat) / TSat * pos(T - TSat)
     );
 
     vDotGas_test.field() = vDotList_test["gas"].field();

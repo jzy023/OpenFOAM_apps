@@ -58,8 +58,8 @@ volVectorField U
 
 #include "createPhi.H"
 
-// singlePhaseTransportModel laminarTransport(U, phi);
-// #include "readTransportProperties.H"
+singlePhaseTransportModel laminarTransport(U, phi);
+#include "readTransportProperties.H"
 
 // Info<< "Creating turbulence model\n" << endl;
 // autoPtr<incompressible::turbulenceModel> turbulence

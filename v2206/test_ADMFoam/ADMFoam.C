@@ -161,7 +161,9 @@ int main(int argc, char *argv[])
                 }
             }
 
-            // #include "TEqn.H"
+            // surfaceScalarField& rhoPhi(mixture.rhoPhi());
+
+            #include "TEqn.H"
             
             // testing
             // > multiphaseInterFoam

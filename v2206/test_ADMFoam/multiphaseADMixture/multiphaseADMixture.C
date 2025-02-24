@@ -31,11 +31,13 @@ License
 #include "fixedValueFvsPatchFields.H"
 #include "Time.H"
 #include "subCycle.H"
+#include "fvcMeshPhi.H"
 
 #include "surfaceInterpolate.H"
 #include "fvMatrix.H"
 #include "fvmDdt.H"
 #include "fvmSup.H"
+#include "fvcDdt.H"
 #include "fvcDiv.H"
 #include "fvcGrad.H"
 #include "fvcSnGrad.H"
@@ -873,6 +875,7 @@ Foam::multiphaseADMixture::nearInterface() const
 
 
 #include "solveAlphas.H"
+#include "solveVolTransfer.H"
 
 
 // void Foam::multiphaseADMixture::solveAlphas

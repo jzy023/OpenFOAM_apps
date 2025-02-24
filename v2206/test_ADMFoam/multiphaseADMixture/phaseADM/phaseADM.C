@@ -108,6 +108,18 @@ Foam::phaseADM::phaseADM
         dimDensity, 
         setRho()
     )
+    ,
+    alphaPhi_
+    (
+        IOobject
+        (
+            IOobject::groupName("alphaPhi", phaseName),
+            U.mesh().time().timeName(),
+            U.mesh()
+        ),
+        U.mesh(),
+        dimensionedScalar(dimensionSet(0, 3, -1, 0, 0), Zero)
+    )
 {
     // DEBUG
     // Info<< setIsRhoField() << endl;

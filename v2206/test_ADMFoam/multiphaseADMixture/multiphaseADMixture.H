@@ -51,10 +51,8 @@ SourceFiles
 #include "PtrListDictionary.H"
 #include "volFields.H"
 #include "surfaceFields.H"
-// #include "fvcDiv.H"
-// #include "fvmSup.H"
-// #include "fvMatrix.H"
-// #include "CMULES.H"
+#include "fvMatrix.H"
+
 #include "phaseADM.H"
 // #include "phase.H"
 
@@ -236,6 +234,11 @@ public:
             return rhoPhi_;
         }
 
+        surfaceScalarField& rhoPhi()
+        {
+            return rhoPhi_;
+        }
+
         //- Return the mixture density
         tmp<volScalarField> rho() const;
 
@@ -331,6 +334,13 @@ public:
 
             return phaseNames;
         }
+
+        //- 
+        tmp<fvScalarMatrix> volTransfer
+        (
+            const volScalarField& p,
+            const PtrListDictionary<volScalarField::Internal>& vDotList
+        );
 
 };
 

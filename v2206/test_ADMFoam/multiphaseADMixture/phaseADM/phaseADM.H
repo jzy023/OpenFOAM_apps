@@ -43,6 +43,9 @@ SourceFiles
 #include "dictionaryEntry.H"
 #include "incompressible/viscosityModels/viscosityModel/viscosityModel.H"
 
+#include "fixedValueFvPatchFields.H"
+#include "surfaceInterpolate.H"
+
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
 namespace Foam
@@ -65,6 +68,12 @@ class phaseADM
         // testing
         bool isRhoField_ = false;
         dimensionedScalar rho_;
+
+        //- Volumetric flux
+        surfaceScalarField alphaPhi_;
+ 
+        //- Mass flux
+        // surfaceScalarField alphaRhoPhi_;
 
 
 public:
@@ -157,6 +166,18 @@ public:
 
 
     // testing
+
+        //- Get alphaPhi
+        tmp<surfaceScalarField> alphaPhi() const
+        {
+            return tmp<surfaceScalarField>(alphaPhi_);
+        }
+        
+        surfaceScalarField& alphaPhi()
+        {
+            return alphaPhi_;
+        }
+
         //- Set rho
         scalar setRho()
         {
