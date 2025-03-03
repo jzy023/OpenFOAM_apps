@@ -148,7 +148,6 @@ multiphaseADMixture mixture(U, phi);
 // set flux required
 for (word name : mixture.phaseNames())
 {
-    Info << name << endl;
     mesh.setFluxRequired("alpha." + name);
 }
 

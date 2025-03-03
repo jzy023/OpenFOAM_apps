@@ -5,9 +5,6 @@ void Foam::multiphaseADMixture::solveAlphas
     const PtrListDictionary<volScalarField::Internal>& vDotList
 )
 {
-    // static label nSolves(-1);
-    // ++nSolves;
-
     const dictionary& alphaControls = mesh_.solverDict("alpha");
     label nAlphaCorr(alphaControls.get<label>("nAlphaCorr"));
 
@@ -57,9 +54,6 @@ void Foam::multiphaseADMixture::solveAlphas
                 );
             }
 
-            // Ensure that the flux at inflow BCs is preserved
-            // TODO:
-
             ++phasei;
         }                                     
 
@@ -81,7 +75,6 @@ void Foam::multiphaseADMixture::solveAlphas
         Su_["gas"] +=
             fvc::div(phi_)*min(max(phases_["gas"], scalar(0)), scalar(1));
 
-
         // TODO: this works without addressing phase pairs because there are only 3 phases and
         //       there are only [gas -> liquid] and [liquid -> sludge] 
         for (phaseADM& alpha : phases_)
@@ -99,155 +92,69 @@ void Foam::multiphaseADMixture::solveAlphas
                     min(max(alphaLiq, scalar(0)), scalar(1))
                 );
 
-                // adding Su of liquid to other phases
-                Su_[alpha.name()] += 
-                (
-                    (vDotList[alpha.name()] * alphaLiqCrr * 1000 * pos(alphaLiqCrr - scalar(0))) 
-                  / 1.3
-                );
-
-                Sp_[alpha.name()] -=
-                (
-                    (vDotList[alpha.name()] * alphaLiqCrr * 1000 * pos(alphaLiqCrr - scalar(0)))
-                  * ((1 / 1.3) - (1 / 1000))
-                );
-
-                // adding Su of other phases to liquid
-                Su_["liquid"] += 
-                (
-                  - (vDotList[alpha.name()] * alphaLiqCrr * 1000 * pos(alphaLiqCrr - scalar(0)))
-                  / 1000
-                );
-
-                Sp_["liquid"] -=
-                (
-                  - (vDotList[alpha.name()] * alphaLiqCrr * 1000 * pos(alphaLiqCrr - scalar(0)))
-                  * ((1 / 1000) - (1 / 1.3))
-                );
-
-                // const volScalarField::Internal alphaLiqLimited 
-                // (
-                //     max(min(alphaLiq, scalar(1)), scalar(0))
-                // );
-
-                // const volScalarField::Internal alphaGasLimited 
-                // (
-                //     max(min(alphaGas, scalar(1)), scalar(0))
-                // );
-
-                // const volScalarField::Internal coeffLiq = 
-                // (
-                //     (1 / 1000) - (alphaLiqLimited * ((1 / 1000) - (1 / 1.3)))
-                // );
-
-                // const volScalarField::Internal coeffGas = 
-                // (
-                //     (1 / 1.3) - (alphaGasLimited * ((1 / 1.3) - (1 / 1000)))
-                // );
-
                 // // adding Su of liquid to other phases
-                // // Sp_[alpha.name()] = [add implicity source term] !!!!
-                // Su_[alpha.name()] +=
+                // Su_[alpha.name()] += 
+                // (
+                //     (vDotList[alpha.name()] * alphaLiqCrr * 1000 * pos(alphaLiqCrr - scalar(0))) 
+                //   / 1.3
+                // );
+
+                // Sp_[alpha.name()] -=
                 // (
                 //     (vDotList[alpha.name()] * alphaLiqCrr * 1000 * pos(alphaLiqCrr - scalar(0)))
-                //   * coeffGas
+                //   * ((1 / 1.3) - (1 / 1000))
                 // );
 
                 // // adding Su of other phases to liquid
-                // // Sp_["liquid"] = [add implicity source term] !!!!
-                // Su_["liquid"] -=
+                // Su_["liquid"] += 
                 // (
-                //     (vDotList[alpha.name()] * alphaLiqCrr * 1000 * pos(alphaLiqCrr - scalar(0)))
-                //   * coeffLiq
+                //   - (vDotList[alpha.name()] * alphaLiqCrr * 1000 * pos(alphaLiqCrr - scalar(0)))
+                //   / 1000
                 // );
+
+                // Sp_["liquid"] -=
+                // (
+                //   - (vDotList[alpha.name()] * alphaLiqCrr * 1000 * pos(alphaLiqCrr - scalar(0)))
+                //   * ((1 / 1000) - (1 / 1.3))
+                // );
+
+                const volScalarField::Internal alphaLiqLimited 
+                (
+                    max(min(alphaLiq, scalar(1)), scalar(0))
+                );
+
+                const volScalarField::Internal alphaGasLimited 
+                (
+                    max(min(alphaGas, scalar(1)), scalar(0))
+                );
+
+                const volScalarField::Internal coeffLiq = 
+                (
+                    (1 / 1000) - (alphaLiqLimited * ((1 / 1000) - (1 / 1.3)))
+                );
+
+                const volScalarField::Internal coeffGas = 
+                (
+                    (1 / 1.3) - (alphaGasLimited * ((1 / 1.3) - (1 / 1000)))
+                );
+
+                // adding Su of liquid to other phases
+                // Sp_[alpha.name()] = [add implicity source term] !!!!
+                Su_[alpha.name()] +=
+                (
+                    (vDotList[alpha.name()] * alphaLiqCrr * 1000 * pos(alphaLiqCrr - scalar(0)))
+                  * coeffGas
+                );
+
+                // adding Su of other phases to liquid
+                // Sp_["liquid"] = [add implicity source term] !!!!
+                Su_["liquid"] -=
+                (
+                    (vDotList[alpha.name()] * alphaLiqCrr * 1000 * pos(alphaLiqCrr - scalar(0)))
+                  * coeffLiq
+                );
             }
-
-           // forAll(Su_, celli)
-           // {
-           //     if (Su_["gas"][celli] > 1e-16)
-           //     {
-           //         Info<< ">>> DEBUG!!!"
-           //             << "\n>>> celli: " << celli
-           //             << "\n>>> (Su[gas] - Su[liquid]): " << (Su_["gas"][celli] + Su_["liquid"][celli])
-           //             << "\n>>> (coeffGas - coeffLiq): "  << (coeffGas[celli] - coeffLiq[celli])
-           //             << "\n>>> coeffGas: "               << coeffGas[celli]
-           //             << endl;
-
-           //         break;
-           //     }
-           // }
         }
-
-        // const volScalarField::Internal alphaLiqCrr
-        // (
-        //     min(max(alphaLiq, scalar(0)), scalar(1))
-        // );
-
-        // // adding Su of liquid to other phases
-        // // Sp_[alpha.name()] = [add implicity source term] !!!!
-        // Su_["gas"] += 
-        // (
-        //     (vDotList["gas"] * alphaLiqCrr * 1000 * pos(alphaLiqCrr - scalar(0))) 
-        //   / 1.3
-        // );
-
-        // Sp_["gas"] -=
-        // (
-        //     (vDotList["gas"] * alphaLiqCrr * 1000 * pos(alphaLiqCrr - scalar(0)))
-        //   * ((1 / 1.3) - (1 / 1000))
-        // );
-
-        // // adding Su of other phases to liquid
-        // // Sp_["liquid"] = [add implicity source term] !!!!
-        // Su_["liquid"] += 
-        // (
-        //   - (vDotList["gas"] * alphaLiqCrr * 1000 * pos(alphaLiqCrr - scalar(0)))
-        //   / 1000
-        // );
-
-        // Sp_["liquid"] -=
-        // (
-        //   - (vDotList["gas"] * alphaLiqCrr * 1000 * pos(alphaLiqCrr - scalar(0)))
-        //   * ((1 / 1000) - (1 / 1.3))
-        // );
-
-        // const volScalarField::Internal alphaLiqLimited 
-        // (
-        //     max(min(alphaLiq, scalar(1)), scalar(0))
-        // );
-
-        // const volScalarField::Internal alphaGasLimited 
-        // (
-        //     max(min(alphaGas, scalar(1)), scalar(0))
-        // );
-
-        // const volScalarField::Internal coeffLiq = 
-        // (
-        //     (1 / 1000) - alphaLiqLimited 
-        //   * ((1 / 1000) - (1 / 1.3))
-        // );
-
-        // const volScalarField::Internal coeffGas = 
-        // (
-        //     (1 / 1.3) - alphaGasLimited 
-        //   * ((1 / 1.3) - (1 / 1000))
-        // );
-
-        // // adding Su of liquid to other phases
-        // // Sp_["gas"] = [add implicity source term] !!!!
-        // Su_["gas"] +=
-        // (
-        //     (vDotList["gas"] * alphaLiqCrr * 1000 * pos(alphaLiqCrr - scalar(0)))
-        //   * coeffGas
-        // );
-
-        // // adding Su of other phases to liquid
-        // // Sp_["liquid"] = [add implicity source term] !!!!
-        // Su_["liquid"] +=
-        // (
-        //   - (vDotList["gas"] * alphaLiqCrr * 1000 * pos(alphaLiqCrr - scalar(0)))
-        //   * coeffLiq
-        // );
     
     // ------------------------------------------------------
         // Limit phiAlphaCorr on each phase
@@ -266,8 +173,8 @@ void Foam::multiphaseADMixture::solveAlphas
                 alpha,
                 phi_,
                 alphaPhiCorr,
-                Sp, // zeroField(),
-                Su, // zeroField(),
+                Sp,
+                Su,
                 oneField(),
                 zeroField(),
                 true
@@ -291,13 +198,6 @@ void Foam::multiphaseADMixture::solveAlphas
         );
 
     // ------------------------------------------------------
-        // volScalarField divU
-        // (
-        //     mesh_.moving()
-        // ? fvc::div(phi_ + mesh_.phi())
-        // : fvc::div(phi_)
-        // );
-
         phasei = 0;
         for (phaseADM& alpha : phases_)
         {
@@ -305,21 +205,6 @@ void Foam::multiphaseADMixture::solveAlphas
             const volScalarField::Internal& Su = Su_[alpha.name()];
             const volScalarField::Internal& Sp = Sp_[alpha.name()];
             surfaceScalarField& alphaPhi = alphaPhiCorrs[phasei];
-
-            // fvScalarMatrix alphaEqn
-            // (
-            //     fv::EulerDdtScheme<scalar>(mesh_).fvmDdt(alpha)
-            //   + fv::gaussConvectionScheme<scalar>
-            //     (
-            //         mesh_,
-            //         phi_,
-            //         upwind<scalar>(mesh_, phi_)
-            //     ).fvmDiv(phi_, alpha)
-            //   - fvm::Sp(divU, alpha)
-            //   ==
-            //     Su 
-            //   + fvm::Sp(Sp, alpha)
-            // );
 
             fvScalarMatrix alphaEqn
             (
@@ -356,26 +241,6 @@ void Foam::multiphaseADMixture::solveAlphas
             ++phasei;
         }
 
-        // Info<< ">>> DEBUG!!!"
-        //     << "\n>>> alpha sum: " << max(phases_["gas"] + phases_["liquid"])
-        //     << endl;
-
-        // forAll(phases_["gas"], celli)
-        // {
-        //     if ((phases_["gas"][celli] + phases_["liquid"][celli]) > 1.1)
-        //     {
-        //         Info<< ">>> DEBUG!!!"
-        //             << "\n>>> celli: " << celli
-        //             << "\n>>> alpha sum: " << (phases_["gas"][celli] + phases_["liquid"][celli])
-        //             // << "\n>>> (Su[gas] - Su[liquid]): " << (Su_["gas"][celli] + Su_["liquid"][celli])
-        //             // << "\n>>> (coeffGas - coeffLiq): "  << (coeffGas[celli] - coeffLiq[celli])
-        //             // << "\n>>> coeffGas: "               << coeffGas[celli]
-        //             << endl;
-         
-        //         break;
-        //     }
-        // }
-
         if (acorr == nAlphaCorr - 1)
         {
             volScalarField sumAlpha
@@ -399,7 +264,6 @@ void Foam::multiphaseADMixture::solveAlphas
 
                 // Update rhoPhi
                 rhoPhi_ += alpha.rho() * alpha.alphaPhi();
-                // rhoPhi_ += fvc::interpolate(alpha.rho()) * alpha.alphaPhi();
             }
 
             Info<< "Phase-sum volume fraction, min, max = "

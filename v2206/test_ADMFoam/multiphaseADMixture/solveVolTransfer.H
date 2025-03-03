@@ -8,33 +8,6 @@ Foam::multiphaseADMixture::volTransfer
     auto teqn = tmp<fvScalarMatrix>::New(p, dimVolume/dimTime);
     auto& eqn = teqn.ref();
 
-    // auto tSp = tmp<volScalarField>::New
-    // (
-    //     IOobject
-    //     (
-    //         "Sp",
-    //         mesh_.time().timeName(),
-    //         mesh_
-    //     ),
-    //     mesh_,
-    //     dimensionedScalar(dimless/dimTime/dimPressure, Zero)
-    // );
-    // auto& Sp = tSp.ref();
-
-    // auto tSu = tmp<volScalarField>::New
-    // (
-    //     IOobject
-    //     (
-    //         "Su",
-    //         mesh_.time().timeName(),
-    //         mesh_
-    //     ),
-    //     mesh_,
-    //     dimensionedScalar(dimless/dimTime, Zero)
-    // );
-    // auto& Su = tSu.ref();
-
-
     auto tSp = tmp<volScalarField::Internal>::New
     (
         IOobject
@@ -75,8 +48,8 @@ Foam::multiphaseADMixture::volTransfer
       * ((1 / 1.3) - (1 / 1000))
     );
 
-    //
-    eqn += fvm::Sp(Sp, p) + Su;
+    // eqn += fvm::Sp(Sp, p) + Su;
+    eqn += Su;
     return teqn;
 
 

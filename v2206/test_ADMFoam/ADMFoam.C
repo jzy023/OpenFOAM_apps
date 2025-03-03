@@ -62,10 +62,6 @@ Note
 // > multiphaseInterFoam
 #include "multiphaseADMixture.H"
 
-// > icoReactingMultiphaseInterFoam
-// #include "multiphaseSystem.H"
-// #include "turbulentFluidThermoModel.H"
-
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -100,11 +96,6 @@ int main(int argc, char *argv[])
     #include "initCorrectPhi.H"
     const surfaceScalarField& rhoPhi(mixture.rhoPhi());
 
-    // > icoReactingMultiphaseInterFoam
-    // #include "createFieldRefs.H"
-    // #include "createFvOptions.H"
-
-
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -119,10 +110,7 @@ int main(int argc, char *argv[])
         // testing
         // > multiphaseInterFoam
         #include "alphaCourantNo.H"
-
-        // > icoReactingMultiphaseInterFoam
-        // #include "icoReactingMixture/alphaCourantNo.H"
-
+        
 
         #include "setDeltaT.H"
 
@@ -160,33 +148,19 @@ int main(int argc, char *argv[])
                     }
                 }
             }
-
-            // surfaceScalarField& rhoPhi(mixture.rhoPhi());
-
-            #include "TEqn.H"
             
             // testing
-            // > multiphaseInterFoam
             mixture.solve(reaction->vDotList_test);
             rho = mixture.rho();
-
-            // #include "alphaControls.H"      // <-- !!!
-            // #include "alphaEqnSubCycle.H"   // <-- !!!
-
-            // > icoReactingMultiphaseInterFoam
             
+            #include "TEqn.H"
 
-
-            // #include "UEqn.H"
             #include "multiphaseADMixture/UEqn.H"
-            // #include "icoReactingMixture/UEqn.H"
 
             // --- Pressure corrector loop
             while (pimple.correct())
             {
-                // #include "pEqn.H"
                 #include "multiphaseADMixture/pEqn.H"
-                // #include "icoReactingMixture/pEqn.H"
             }
 
             if (pimple.turbCorr())

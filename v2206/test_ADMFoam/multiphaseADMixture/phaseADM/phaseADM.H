@@ -71,10 +71,6 @@ class phaseADM
 
         //- Volumetric flux
         surfaceScalarField alphaPhi_;
- 
-        //- Mass flux
-        // surfaceScalarField alphaRhoPhi_;
-
 
 public:
 

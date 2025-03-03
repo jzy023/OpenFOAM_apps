@@ -149,20 +149,15 @@ Foam::multiphaseADMixture::multiphaseADMixture
     checkPhases();
     initRhoFileds();
 
-    // forAllConstIters(phaseModels_, iter)
     for (auto iter = phases_.cbegin(); iter != phases_.cend(); ++iter)
     {
-        // const multiphaseInter::phaseModel& pm = iter()(); iter().name()
- 
         Su_.insert
         (
-            // pm.name(),
             iter().name(),
             volScalarField::Internal
             (
                 IOobject
                 (
-                    // "Su" + pm.name(),
                     "Su" + iter().name(),
                     mesh_.time().timeName(),
                     mesh_
@@ -174,14 +169,12 @@ Foam::multiphaseADMixture::multiphaseADMixture
  
         Sp_.insert
         (
-            // pm.name(),
             iter().name(),
             volScalarField::Internal
             (
                 IOobject
                 (
-                    // "Sp" + pm.name(),
-                    "Su" + iter().name(),
+                    "Sp" + iter().name(),
                     mesh_.time().timeName(),
                     mesh_
                 ),
@@ -190,13 +183,6 @@ Foam::multiphaseADMixture::multiphaseADMixture
             )
         );
     }
-
-    // DEBUG:
-    // Info<< "\nDEBUG !!!\n"
-    //     << phases_.cbegin()->boundaryField().size()
-    //     << mesh_.boundary().size()
-    //     << endl;
-
 }
 
 
@@ -417,108 +403,6 @@ Foam::multiphaseADMixture::muf() const
 
     return tmuf;
 }
-
-
-
-
-// Foam::tmp<Foam::volScalarField>
-// Foam::multiphaseADMixture::rho() const
-// {
-//     auto iter = phases_.cbegin();
-
-//     tmp<volScalarField> trho = iter()*iter().rho();
-//     volScalarField& rho = trho.ref();
-
-//     for (++iter; iter != phases_.cend(); ++iter)
-//     {
-//         rho += iter()*iter().rho();
-//     }
-
-//     return trho;
-// }
-
-
-// Foam::tmp<Foam::scalarField>
-// Foam::multiphaseADMixture::rho(const label patchi) const
-// {
-//     auto iter = phases_.cbegin();
-
-//     // tmp<scalarField> trho = iter().boundaryField()[patchi]*rhoFieldsPtrs_[0].field();
-//     tmp<scalarField> trho = iter().boundaryField()[patchi]*iter().rho().value();
-//     scalarField& rho = trho.ref();
-
-//     for (++iter; iter != phases_.cend(); ++iter)
-//     {
-//         rho += iter().boundaryField()[patchi]*iter().rho().value();
-//     }
-
-//     return trho;
-// }
-
-
-// Foam::tmp<Foam::volScalarField>
-// Foam::multiphaseADMixture::mu() const
-// {
-//     auto iter = phases_.cbegin();
-
-//     tmp<volScalarField> tmu = iter()*iter().rho()*iter().nu();
-//     volScalarField& mu = tmu.ref();
-
-//     for (++iter; iter != phases_.cend(); ++iter)
-//     {
-//         mu += iter()*iter().rho()*iter().nu();
-//     }
-
-//     return tmu;
-// }
-
-
-// Foam::tmp<Foam::scalarField>
-// Foam::multiphaseADMixture::mu(const label patchi) const
-// {
-//     auto iter = phases_.cbegin();
-
-//     tmp<scalarField> tmu =
-//     (
-//         iter().boundaryField()[patchi]
-//        *iter().rho().value()
-//        *iter().nu(patchi)
-//     );
-
-//     scalarField& mu = tmu.ref();
-
-//     for (++iter; iter != phases_.cend(); ++iter)
-//     {
-//         mu +=
-//         (
-//             iter().boundaryField()[patchi]
-//            *iter().rho().value()
-//            *iter().nu(patchi)
-//         );
-//     }
-
-//     return tmu;
-// }
-
-
-// Foam::tmp<Foam::surfaceScalarField>
-// Foam::multiphaseADMixture::muf() const
-// {
-//     auto iter = phases_.cbegin();
-
-//     tmp<surfaceScalarField> tmuf =
-//         fvc::interpolate(iter())*iter().rho()*fvc::interpolate(iter().nu());
-//     surfaceScalarField& muf = tmuf.ref();
-
-//     for (++iter; iter != phases_.cend(); ++iter)
-//     {
-//         muf +=
-//             fvc::interpolate(iter())*iter().rho()*fvc::interpolate(iter().nu());
-//     }
-
-//     return tmuf;
-// }
-
 
 Foam::tmp<Foam::volScalarField>
 Foam::multiphaseADMixture::nu() const
@@ -876,134 +760,6 @@ Foam::multiphaseADMixture::nearInterface() const
 
 #include "solveAlphas.H"
 #include "solveVolTransfer.H"
-
-
-// void Foam::multiphaseADMixture::solveAlphas
-// (
-//     const scalar cAlpha
-// )
-// {
-//     static label nSolves(-1);
-//     ++nSolves;
-
-//     const word alphaScheme("div(phi,alpha)");
-//     const word alpharScheme("div(phirb,alpha)");
-
-//     surfaceScalarField phic(mag(phi_/mesh_.magSf()));
-//     phic = min(cAlpha*phic, max(phic));
-
-//     PtrList<surfaceScalarField> alphaPhiCorrs(phases_.size());
-//     int phasei = 0;
-
-//     for (phaseADM& alpha : phases_)
-//     {
-//         alphaPhiCorrs.set
-//         (
-//             phasei,
-//             new surfaceScalarField
-//             (
-//                 "phi" + alpha.name() + "Corr",
-//                 fvc::flux
-//                 (
-//                     phi_,
-//                     alpha,
-//                     alphaScheme
-//                 )
-//             )
-//         );
-
-//         surfaceScalarField& alphaPhiCorr = alphaPhiCorrs[phasei];
-
-//         for (phaseADM& alpha2 : phases_)
-//         {
-//             if (&alpha2 == &alpha) continue;
-
-//             surfaceScalarField phir(phic*nHatf(alpha, alpha2));
-
-//             alphaPhiCorr += fvc::flux
-//             (
-//                 -fvc::flux(-phir, alpha2, alpharScheme),
-//                 alpha,
-//                 alpharScheme
-//             );
-//         }
-
-//         MULES::limit
-//         (
-//             1.0/mesh_.time().deltaT().value(),
-//             geometricOneField(),
-//             alpha,
-//             phi_,
-//             alphaPhiCorr,
-//             zeroField(),
-//             zeroField(),
-//             oneField(),
-//             zeroField(),
-//             true
-//         );
-
-//         ++phasei;
-//     }
-
-//     MULES::limitSum(alphaPhiCorrs);
-
-//     rhoPhi_ = dimensionedScalar(dimMass/dimTime, Zero);
-
-//     volScalarField sumAlpha
-//     (
-//         IOobject
-//         (
-//             "sumAlpha",
-//             mesh_.time().timeName(),
-//             mesh_
-//         ),
-//         mesh_,
-//         dimensionedScalar(dimless, Zero)
-//     );
-
-//     phasei = 0;
-
-//     for (phaseADM& alpha : phases_)
-//     {
-//         surfaceScalarField& alphaPhi = alphaPhiCorrs[phasei];
-//         alphaPhi += upwind<scalar>(mesh_, phi_).flux(alpha);
-
-//         MULES::explicitSolve
-//         (
-//             geometricOneField(),
-//             alpha,
-//             alphaPhi
-//         );
-
-//         rhoPhi_ += alphaPhi*alpha.rho();
-
-//         Info<< alpha.name() << " volume fraction, min, max = "
-//             << alpha.weightedAverage(mesh_.V()).value()
-//             << ' ' << min(alpha).value()
-//             << ' ' << max(alpha).value()
-//             << endl;
-
-//         sumAlpha += alpha;
-
-//         ++phasei;
-//     }
-
-//     Info<< "phaseADM-sum volume fraction, min, max = "
-//         << sumAlpha.weightedAverage(mesh_.V()).value()
-//         << ' ' << min(sumAlpha).value()
-//         << ' ' << max(sumAlpha).value()
-//         << endl;
-
-//     // Correct the sum of the phaseADM-fractions to avoid 'drift'
-//     volScalarField sumCorr(1.0 - sumAlpha);
-//     for (phaseADM& alpha : phases_)
-//     {
-//         alpha += alpha*sumCorr;
-//     }
-
-//     calcAlphas();
-// }
-
 
 bool Foam::multiphaseADMixture::read()
 {
