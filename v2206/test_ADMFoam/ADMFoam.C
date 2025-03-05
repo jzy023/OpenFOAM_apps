@@ -153,10 +153,11 @@ int main(int argc, char *argv[])
             mixture.solve(reaction->vDotList_test);
             rho = mixture.rho();
             
-            #include "TEqn.H"
 
             #include "multiphaseADMixture/UEqn.H"
 
+            #include "TEqn.H"
+            
             // --- Pressure corrector loop
             while (pimple.correct())
             {

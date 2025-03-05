@@ -2,7 +2,7 @@
     alphat = turbulence->nut()/Prt;
     alphat.correctBoundaryConditions();
 
-    volScalarField alphaEff("alphaEff", turbulence->nu()/Pr + alphat);
+    volScalarField alphaEff("alphaEff", mixture.nu()/Pr + alphat);
     volScalarField kappaEff("kappaEff", rho*alphaEff);
 
     // fvScalarMatrix TEqn
@@ -23,8 +23,6 @@
       - fvm::laplacian(kappaEff, T)
       ==
         fvOptions(rho, T)
-    //   + fluid.heatTransfer(T)
-    //   + radiation->ST(T)
     );
 
     TEqn.relax();

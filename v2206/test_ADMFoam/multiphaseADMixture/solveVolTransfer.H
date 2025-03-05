@@ -42,6 +42,15 @@ Foam::multiphaseADMixture::volTransfer
         min(max(alphaLiq, scalar(0)), scalar(1))
     );
 
+    //
+    // Sp -=
+    //     (vDotList["gas"] * alphaLiqCrr * 1000 * pos(alphaLiqCrr - scalar(0))) 
+    //   * ((1 / 1.3) - (1 / 1000));
+
+    // Su -=
+    //   - (vDotList["gas"] * alphaLiqCrr * 1000 * pos(alphaLiqCrr - scalar(0))) * 310
+    //   * ((1 / 1.3) - (1 / 1000));
+
     Su +=
     (
         (vDotList["gas"] * alphaLiqCrr * 1000 * pos(alphaLiqCrr - scalar(0)))
@@ -50,6 +59,7 @@ Foam::multiphaseADMixture::volTransfer
 
     // eqn += fvm::Sp(Sp, p) + Su;
     eqn += Su;
+
     return teqn;
 
 

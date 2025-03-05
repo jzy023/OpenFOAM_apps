@@ -92,7 +92,7 @@ void Foam::multiphaseADMixture::solveAlphas
                     min(max(alphaLiq, scalar(0)), scalar(1))
                 );
 
-                // // adding Su of liquid to other phases
+                // adding Su of liquid to other phases
                 // Su_[alpha.name()] += 
                 // (
                 //     (vDotList[alpha.name()] * alphaLiqCrr * 1000 * pos(alphaLiqCrr - scalar(0))) 
