@@ -691,7 +691,6 @@ void Foam::multiphaseADMixture::correctBoundaryContactAngle
         theta += (thetaA - thetaR)*tanh(uwall/uTheta);
     }
 
-
     // Reset nHatPatch to correspond to the contact angle
 
     scalarField a12(nHatPatch & AfHatPatch);
@@ -724,7 +723,7 @@ Foam::tmp<Foam::volScalarField> Foam::multiphaseADMixture::K
 {
     tmp<surfaceVectorField> tnHatfv = nHatfv(alpha1, alpha2);
 
-    // correctContactAngle(alpha1, alpha2, tnHatfv.ref().boundaryFieldRef());
+    correctContactAngle(alpha1, alpha2, tnHatfv.ref().boundaryFieldRef());
 
     // Simple expression for curvature
     return -fvc::div(tnHatfv & mesh_.Sf());
@@ -758,8 +757,8 @@ Foam::multiphaseADMixture::nearInterface() const
 }
 
 
-#include "solveAlphas.H"
-#include "solveVolTransfer.H"
+#include "multiphaseSolveAlphas.H"
+#include "multiphaseSolveVolTransfer.H"
 
 bool Foam::multiphaseADMixture::read()
 {

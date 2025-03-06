@@ -92,31 +92,57 @@ void Foam::multiphaseADMixture::solveAlphas
                     min(max(alphaLiq, scalar(0)), scalar(1))
                 );
 
+                // initialize rho as field
+                const volScalarField::Internal rhoField
+                (
+                    IOobject
+                    (
+                        "rhoField",
+                        mesh_.time().timeName(),
+                        mesh_,
+                        IOobject::NO_READ,
+                        IOobject::NO_WRITE
+                    ),
+                    mesh_,
+                    phases_[alpha.name()].rho()
+                );
+
+                if (phases_[alpha.name()].isRhoField())
+                {    
+                    const volScalarField::Internal rhoField
+                    (
+                        rhoFieldsPtrs_[alpha.name()].internalField()
+                    );
+                }
+                
+
                 // adding Su of liquid to other phases
                 // Su_[alpha.name()] += 
                 // (
-                //     (vDotList[alpha.name()] * alphaLiqCrr * 1000 * pos(alphaLiqCrr - scalar(0))) 
-                //   / 1.3
+                //     (vDotList[alpha.name()] * alphaLiqCrr * phases_["liquid"].rho() * pos(alphaLiqCrr - scalar(0))) 
+                //   / rhoField
                 // );
 
                 // Sp_[alpha.name()] -=
                 // (
-                //     (vDotList[alpha.name()] * alphaLiqCrr * 1000 * pos(alphaLiqCrr - scalar(0)))
-                //   * ((1 / 1.3) - (1 / 1000))
+                //     (vDotList[alpha.name()] * alphaLiqCrr * phases_["liquid"].rho() * pos(alphaLiqCrr - scalar(0)))
+                //   * ((1 / rhoField) - (1 / phases_["liquid"].rho()))
                 // );
 
                 // // adding Su of other phases to liquid
                 // Su_["liquid"] += 
                 // (
-                //   - (vDotList[alpha.name()] * alphaLiqCrr * 1000 * pos(alphaLiqCrr - scalar(0)))
-                //   / 1000
+                //   - (vDotList[alpha.name()] * alphaLiqCrr * phases_["liquid"].rho() * pos(alphaLiqCrr - scalar(0)))
+                //   / phases_["liquid"].rho()
                 // );
 
                 // Sp_["liquid"] -=
                 // (
-                //   - (vDotList[alpha.name()] * alphaLiqCrr * 1000 * pos(alphaLiqCrr - scalar(0)))
-                //   * ((1 / 1000) - (1 / 1.3))
+                //   - (vDotList[alpha.name()] * alphaLiqCrr * phases_["liquid"].rho() * pos(alphaLiqCrr - scalar(0)))
+                //   * ((1 / phases_["liquid"].rho()) - (1 / rhoField))
                 // );
+                
+
 
                 const volScalarField::Internal alphaLiqLimited 
                 (
@@ -130,19 +156,19 @@ void Foam::multiphaseADMixture::solveAlphas
 
                 const volScalarField::Internal coeffLiq = 
                 (
-                    (1 / 1000) - (alphaLiqLimited * ((1 / 1000) - (1 / 1.3)))
+                    (1 / phases_["liquid"].rho()) - (alphaLiqLimited * ((1 / phases_["liquid"].rho()) - (1 / rhoField)))
                 );
 
                 const volScalarField::Internal coeffGas = 
                 (
-                    (1 / 1.3) - (alphaGasLimited * ((1 / 1.3) - (1 / 1000)))
+                    (1 / rhoField) - (alphaGasLimited * ((1 / rhoField) - (1 / phases_["liquid"].rho())))
                 );
 
                 // adding Su of liquid to other phases
                 // Sp_[alpha.name()] = [add implicity source term] !!!!
                 Su_[alpha.name()] +=
                 (
-                    (vDotList[alpha.name()] * alphaLiqCrr * 1000 * pos(alphaLiqCrr - scalar(0)))
+                    (vDotList[alpha.name()] * alphaLiqCrr * phases_["liquid"].rho() * pos(alphaLiqCrr - scalar(0)))
                   * coeffGas
                 );
 
@@ -150,7 +176,7 @@ void Foam::multiphaseADMixture::solveAlphas
                 // Sp_["liquid"] = [add implicity source term] !!!!
                 Su_["liquid"] -=
                 (
-                    (vDotList[alpha.name()] * alphaLiqCrr * 1000 * pos(alphaLiqCrr - scalar(0)))
+                    (vDotList[alpha.name()] * alphaLiqCrr * phases_["liquid"].rho() * pos(alphaLiqCrr - scalar(0)))
                   * coeffLiq
                 );
             }
