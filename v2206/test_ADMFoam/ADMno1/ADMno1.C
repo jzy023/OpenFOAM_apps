@@ -667,9 +667,9 @@ Foam::autoPtr<Foam::ADMno1> Foam::ADMno1::New
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
-void Foam::ADMno1::calcThermal
+void Foam::ADMno1::calcThermal  
 (
-    volScalarField& T
+    const volScalarField& T
 )
 {
     // DEBUG MULTI
@@ -1398,7 +1398,7 @@ void Foam::ADMno1::clear()
 void Foam::ADMno1::correct
 (
     const surfaceScalarField &flux,
-    volScalarField& T
+    const volScalarField& T
 )
 {
     //- Calculate thermal factor and adjust parameters

@@ -174,9 +174,11 @@ int main(int argc, char *argv[])
         }
 
         // ADM1 reaction source terms
+        const volScalarField &alphaLiq = mixture.phases()["liquid"];
+
         reaction->clear();
-        reaction->correct(phi, T, p);
-        // reaction->correct(phi, T);
+        reaction->correct(phi, alphaLiq, T, p); // <-- phiAlpha? or add "alpha"
+        // reaction->correct(phi, T); // <-- phiAlpha? or add "alpha"
 
         PtrList<volScalarField>& YPtrs = reaction->Y();
         PtrList<volScalarField>& GPtrs = reaction->G();

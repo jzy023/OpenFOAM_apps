@@ -115,7 +115,6 @@ void Foam::multiphaseADMixture::solveAlphas
                     );
                 }
                 
-
                 // adding Su of liquid to other phases
                 // Su_[alpha.name()] += 
                 // (
@@ -142,8 +141,6 @@ void Foam::multiphaseADMixture::solveAlphas
                 //   * ((1 / phases_["liquid"].rho()) - (1 / rhoField))
                 // );
                 
-
-
                 const volScalarField::Internal alphaLiqLimited 
                 (
                     max(min(alphaLiq, scalar(1)), scalar(0))

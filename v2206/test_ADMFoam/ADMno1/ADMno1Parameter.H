@@ -56,8 +56,8 @@ private:
 
     //- Conversion [bar] to [Pa] 
     const scalar BTOP_ = 1e5;
-
-    //- Conversion [M * bar-1] to [mol * m-3 * Pa-1] 
+                                        
+    //- Conversion [M * bar-1 * K-1] to [Pa * K-1 * m3 * mol-1]
     const scalar kTOK_ = 1e-2;
 
     //- Base dimension ([kg * m-3]; [mol * m-3]; mass fraction)

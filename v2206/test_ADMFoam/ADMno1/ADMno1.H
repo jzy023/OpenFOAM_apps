@@ -190,7 +190,7 @@ private:
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
     //- Adjust for thermal condition
-    void calcThermal(volScalarField& T);
+    void calcThermal (const volScalarField& T);
 
     //- Gas phase pressure
     void gasPressure();
@@ -337,7 +337,11 @@ public:
     void clear();
 
     //- Correct components consumption rate
-    void correct(const surfaceScalarField &flux, volScalarField& T);
+    void correct
+    (
+        const surfaceScalarField &flux,
+        const volScalarField& T
+    );
 
     //- Return components consumption rate matrix, i.e. source term.
     tmp<fvScalarMatrix> R(label i) const;
@@ -383,17 +387,47 @@ public:
 
     scalar amplifier;
 
+    //- Calculate derivative of species dY
+    void dYUpdate
+    (
+        const surfaceScalarField &flux,
+        const volScalarField &alphaLiq
+    );
+
+    //- Calculate Sh2 (iteratively)
+    volScalarField::Internal fSh2
+    (
+        const surfaceScalarField &flux,
+        const volScalarField &alphaLiq,
+        volScalarField &Sh2Temp
+    );
+
+    volScalarField::Internal dfSh2
+    (
+        const surfaceScalarField &flux,
+        const volScalarField &alphaLiq,
+        volScalarField &Sh2Temp
+    );
+
+    void calcSh2
+    (
+        const surfaceScalarField &flux,
+        const volScalarField &alphaLiq
+    );
+
     void correct
     (
-        const surfaceScalarField &flux, 
-        volScalarField& T,
-        volScalarField& Ptotal
+        const surfaceScalarField &flux,
+        const volScalarField &alphaLiq, 
+        const volScalarField& T,
+        const volScalarField& Ptotal
     );
 
     void gasTest
     (
-        volScalarField& T, // DEBUG
-        volScalarField& Ptotal
+        const volScalarField& T, // DEBUG
+        const volScalarField &alphaLiq, 
+        const volScalarField& Ptotal
     );
 
     //- Return GPtrs_test
