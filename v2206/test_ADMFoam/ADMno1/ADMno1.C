@@ -533,7 +533,7 @@ const Foam::word Foam::ADMno1::propertiesName("admno1Properties");
 //             (
 //                 IOobject
 //                 (
-//                     "Inh" + Foam::name(i),
+//                     IOobject::groupName("Inh", Foam::name(i)),
 //                     mesh.time().timeName(),
 //                     mesh,
 //                     IOobject::NO_READ,

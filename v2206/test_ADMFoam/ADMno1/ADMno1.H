@@ -374,11 +374,12 @@ public:
 
     volScalarField Vgas_test;
 
+    PtrList<volScalarField> YiAlpha_test;
+    PtrList<volScalarField> GiAlpha_test;
+
     PtrList<volScalarField> GPtrs_test;
 
     PtrList<volScalarField::Internal> GRPtrs_test;
-
-    PtrList<volScalarField::Internal> dGPtrs_test;
 
     PtrListDictionary<volScalarField::Internal> vDotList_test;
     // PtrList<volScalarField::Internal> vDotPtrs_test;

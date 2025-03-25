@@ -174,7 +174,7 @@ int main(int argc, char *argv[])
         }
 
         // ADM1 reaction source terms
-        const volScalarField &alphaLiq = mixture.phases()["liquid"];
+        const volScalarField& alphaLiq = mixture.phases()["liquid"];
 
         reaction->clear();
         reaction->correct(phi, alphaLiq, T, p); // <-- phiAlpha? or add "alpha"

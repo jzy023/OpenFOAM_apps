@@ -2,18 +2,9 @@
     alphat = turbulence->nut()/Prt;
     alphat.correctBoundaryConditions();
 
+    // TODO: Cp or both phases?
     volScalarField alphaEff("alphaEff", mixture.nu()/Pr + alphat);
     volScalarField kappaEff("kappaEff", rho*alphaEff);
-
-    // fvScalarMatrix TEqn
-    // (
-    //     fvm::ddt(T)
-    //   + fvm::div(phi, T)
-    //   - fvm::laplacian(alphaEff, T)
-    //  ==
-    //     fvOptions(T)
-    //   + radiation->ST(rhoCpRef, T)
-    // );
 
     fvScalarMatrix TEqn
     (

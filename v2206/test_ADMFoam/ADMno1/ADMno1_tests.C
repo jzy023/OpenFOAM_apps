@@ -399,7 +399,7 @@ Foam::ADMno1::ADMno1
 
     dGPtrs_.resize(namesGaseous.size());
 
-    for (label i = 0; i < namesGaseous.size(); i++)
+    forAll(namesGaseous, i)
     {
         dGPtrs_.set
         (
@@ -589,7 +589,7 @@ Foam::ADMno1::ADMno1
             (
                 IOobject
                 (
-                    "Inh" + Foam::name(i),
+                    IOobject::groupName("Inh", Foam::name(i)),
                     mesh.time().timeName(),
                     mesh,
                     IOobject::NO_READ,
@@ -620,7 +620,7 @@ Foam::ADMno1::ADMno1
             (
                 IOobject
                 (
-                    "RRs" + Foam::name(i),
+                    IOobject::groupName("RRs", Foam::name(i)),
                     mesh.time().timeName(),
                     mesh,
                     IOobject::NO_READ,
@@ -651,7 +651,7 @@ Foam::ADMno1::ADMno1
             (
                 IOobject
                 (
-                    "GRs" + Foam::name(i),
+                    IOobject::groupName("GRs", Foam::name(i)),
                     mesh.time().timeName(),
                     mesh,
                     IOobject::NO_READ,
@@ -667,7 +667,86 @@ Foam::ADMno1::ADMno1
         );
     }
 
-    // testing
+    // testing ------------------------------------------------------------------------
+
+    iNames = namesSoluable.size();
+    YiAlpha_test.resize(nSpecies);
+
+    forAll(namesSoluable, i)
+    {
+        YiAlpha_test.set
+        (
+            i,
+            new volScalarField
+            (
+                IOobject
+                (
+                    namesSoluable[i] + ".Alpha_test",
+                    mesh.time().timeName(),
+                    mesh,
+                    IOobject::NO_READ,
+                    IOobject::AUTO_WRITE
+                ),
+                mesh,
+                dimensionedScalar
+                (
+                    YPtrs_[0].dimensions(),
+                    Zero
+                )
+            )
+        );
+    }
+    forAll(namesParticulate, i)
+    {
+        YiAlpha_test.set
+        (
+            i + iNames,
+            new volScalarField
+            (
+                IOobject
+                (
+                    namesParticulate[i] + ".Alpha_test",
+                    mesh.time().timeName(),
+                    mesh,
+                    IOobject::NO_READ,
+                    IOobject::AUTO_WRITE
+                ),
+                mesh,
+                dimensionedScalar
+                (
+                    YPtrs_[0].dimensions(),
+                    Zero
+                )
+            )
+        );
+    }
+
+    GiAlpha_test.resize(namesGaseous.size());
+
+    forAll(namesGaseous, i)
+    {
+        GiAlpha_test.set
+        (
+            i,
+            new volScalarField
+            (
+                IOobject
+                (
+                    namesGaseous[i] + ".Alpha_test",
+                    mesh.time().timeName(),
+                    mesh,
+                    IOobject::NO_READ,
+                    IOobject::AUTO_WRITE
+                ),
+                mesh,
+                dimensionedScalar
+                (
+                    YPtrs_[0].dimensions(),
+                    Zero
+                )
+            )
+        );
+    }
 
     GPtrs_test.resize(namesGaseous.size());
 
@@ -689,7 +768,6 @@ Foam::ADMno1::ADMno1
                 mesh,
                 dimensionedScalar
                 (
-                    namesGaseous[i] + "_test_Default", 
                     YPtrs_[0].dimensions(),
                     Zero
                 )
@@ -697,9 +775,9 @@ Foam::ADMno1::ADMno1
         );
     }
 
-    GRPtrs_test.resize(3);
+    GRPtrs_test.resize(namesGaseous.size());
 
-    for (int i = 0; i < 3; i++)
+    forAll(namesGaseous, i)
     {
         GRPtrs_test.set
         (
@@ -708,7 +786,7 @@ Foam::ADMno1::ADMno1
             (
                 IOobject
                 (
-                    "GRs_test_" + Foam::name(i),
+                    IOobject::groupName("GRs_test_", Foam::name(i)),
                     mesh.time().timeName(),
                     mesh,
                     IOobject::NO_READ,
@@ -718,33 +796,6 @@ Foam::ADMno1::ADMno1
                 dimensionedScalar
                 (
                     dGPtrs_[0].dimensions(), 
-                    Zero
-                )
-            )
-        );
-    }
-
-    dGPtrs_test.resize(namesGaseous.size());
-
-    for (label i = 0; i < namesGaseous.size(); i++)
-    {
-        dGPtrs_test.set
-        (
-            i,
-            new volScalarField::Internal
-            (
-                IOobject
-                (
-                    "d" + GPtrs_[i].name() + "_test",
-                    mesh.time().timeName(),
-                    mesh,
-                    IOobject::NO_READ,
-                    IOobject::NO_WRITE
-                ),
-                mesh,
-                dimensionedScalar
-                (
-                    GPtrs_[0].dimensions()/dimTime, 
                     Zero
                 )
             )
@@ -808,7 +859,7 @@ Foam::ADMno1::ADMno1
     //         (
     //             IOobject
     //             (
-    //                 "vDots_test_" + Foam::name(i+1),
+    //                 IOobject::groupName("vDots_test", Foam::name(i+1)),
     //                 mesh.time().timeName(),
     //                 mesh,
     //                 IOobject::NO_READ,
@@ -1011,20 +1062,6 @@ void Foam::ADMno1::gasTest
     // volScalarField GRMolar = GRMass / molarMass;
     // volScalarField volGasRate = GRMolar * R * T / P; <- (P_rgh or P?)
     
-
-    // ==================================================================================
-
-    // // field of cell volume for mesh 
-    // scalarField volMeshField = GPtrs_[0].mesh().V().field();            
-
-    // scalarField volGas = volMeshField / (1.0 + (1.0/Vfrac_test));
-    // scalarField volLiq = volMeshField / (1.0 + Vfrac_test);
-
-    // Info<< "volGas: " << volGas << ", volLiq: " << volLiq << endl;
-
-    // dGPtrs_test[0].field() = GRPtrs_test[0].field() * volLiq / volGas;
-    // dGPtrs_test[1].field() = GRPtrs_test[1].field() * volLiq / volGas;
-    // dGPtrs_test[2].field() = GRPtrs_test[2].field() * volLiq / volGas;
 
     // ==================================================================================
 
@@ -1272,6 +1309,17 @@ void Foam::ADMno1::correct
 
     //- Sh2 calculations
     calcSh2(flux);
+
+    //- calculate cell-vol-based concentration
+    forAll(YPtrs_, i)
+    {
+        YiAlpha_test[i] = alphaLiq * YPtrs_[i];
+    }
+
+    forAll(GPtrs_, i)
+    {
+        GiAlpha_test[i] = (1 - alphaLiq) * GPtrs_[i];
+    }
 }
 
 
@@ -1279,35 +1327,4 @@ Foam::PtrList<Foam::volScalarField>& Foam::ADMno1::G_test()
 {
     return GPtrs_test;
 }
-
-Foam::PtrList<Foam::volScalarField::Internal>& Foam::ADMno1::dG_test()
-{
-    return dGPtrs_test;
-}
-
-tmp<fvScalarMatrix> Foam::ADMno1::RG_test
-(
-    label i
-) const
-{
-    DimensionedField<scalar, volMesh> dG_test = dGPtrs_test[i];
-
-        tmp<fvScalarMatrix> tSu
-        (
-            new fvScalarMatrix
-            (
-                GPtrs_test[i],
-                dG_test.dimensions()*dimVolume
-                // dimMass/dimTime // <- for compressible flow and uses fvm::ddt(rho, Yi)
-            )
-        );
-
-    fvScalarMatrix& Su = tSu.ref();
-    
-    // https:// /documentation/guides/latest/api/fvMatrix_8C_source.html#l01708
-    Su += dG_test; 
-
-    return tSu;
-};
-
 

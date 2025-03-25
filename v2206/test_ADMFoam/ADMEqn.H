@@ -24,8 +24,8 @@ volScalarField Deff =
 
 
 {
-
     //- Fluid and Particulate Phase
+    // const surfaceScalarField alphaRhoPhiLiq(rhoPhi * alphaLiq);
     forAll(YPtrs, i)
     {
         if (i == 7)
@@ -37,12 +37,14 @@ volScalarField Deff =
 
         fvScalarMatrix YiEqn
         (
-            fvm::ddt(Yi)
-          + fvm::div(phi, Yi)
-          - fvm::laplacian(Deff, Yi)
+            fvm::ddt(alphaLiq, rho, Yi)
+        //   + fvm::div(rhoPhi, alphaLiq*Yi)
+          - fvm::laplacian(alphaLiq*Deff, Yi)
          ==
             fvOptions(Yi)
-          + reaction->R(i)
+          + alphaLiq*reaction->R(i)
+          + fvc::ddt(/*residualAlpha_*/ 1e-2*rho, Yi)
+          - fvm::ddt(/*residualAlpha_*/ 1e-2*rho, Yi)
         );
 
         YiEqn.relax();
@@ -55,18 +57,22 @@ volScalarField Deff =
     }
 
     //- Gas Phase
+    const volScalarField& alphaGas = 1 - alphaLiq;
+    // const surfaceScalarField alphaRhoPhiGas = rhoPhi * alphaGas;
     forAll(GPtrs, i)
     {
         volScalarField& Gi = GPtrs[i];
 
         fvScalarMatrix GiEqn
         (
-            fvm::ddt(Gi)
-          + fvm::div(phi, Gi)
-          - fvm::laplacian(Deff, Gi)
+            fvm::ddt(alphaGas, Gi)
+        //   + fvm::div(rhoPhi, alphaLiq*Gi)
+          - fvm::laplacian(alphaGas*Deff, Gi)
          ==
             fvOptions(Gi)
-          + reaction->RG(i)
+          + alphaGas*reaction->RG(i)
+          + fvc::ddt(/*residualAlpha_*/ 1e-2*rho, Gi)
+          - fvm::ddt(/*residualAlpha_*/ 1e-2*rho, Gi)
         );
 
         GiEqn.relax();
