@@ -299,7 +299,8 @@ Foam::ADMno1::ADMno1
                     mesh.time().timeName(),
                     mesh,
                     IOobject::MUST_READ,
-                    IOobject::AUTO_WRITE
+                    IOobject::NO_WRITE
+                    // IOobject::AUTO_WRITE
                 ),
                 mesh
             )
@@ -325,7 +326,8 @@ Foam::ADMno1::ADMno1
                     mesh.time().timeName(),
                     mesh,
                     IOobject::MUST_READ,
-                    IOobject::AUTO_WRITE
+                    IOobject::NO_WRITE
+                    // IOobject::AUTO_WRITE
                 ),
                 mesh
             )
@@ -382,7 +384,8 @@ Foam::ADMno1::ADMno1
                     mesh.time().timeName(),
                     mesh,
                     IOobject::READ_IF_PRESENT,
-                    IOobject::AUTO_WRITE
+                    IOobject::NO_WRITE
+                    // IOobject::AUTO_WRITE
                 ),
                 mesh,
                 dimensionedScalar
@@ -910,7 +913,8 @@ Foam::ADMno1::ADMno1
 void Foam::ADMno1::gasTest
 (
     const volScalarField& T, // DEBUG MULTI
-    const volScalarField &alphaLiq, 
+    const volScalarField& alphaLiq,
+    const volScalarField& alphaGas,
     const volScalarField& Ptotal    
 )
 {
@@ -929,7 +933,7 @@ void Foam::ADMno1::gasTest
         (
            "Ph2o_incellDefault", 
             GPtrs_[0].dimensions(),
-            Zero
+            Zero 
         )
     );
 
@@ -972,7 +976,7 @@ void Foam::ADMno1::gasTest
     GRPtrs_test[2] = // <- in dimension of [mol * m-3 * s-1]
     (                // TODO: may need correction from saturation pressure
         para_.DTOS() * para_.kLa()                                 // GPtrs is gas fraction based concentration for now !!
-      * (MPtrs_[0].internalField() - R_ * TopDummy_.internalField() * GPtrs_test[2].internalField() * KHco2_) 
+      * (MPtrs_[0].internalField() - R_ * TopDummy_.internalField() * GPtrs_test[2].internalField() * KHco2_)
     );// ^ Sco2 instead of SIC
 
     // GRPtrs_test[0] = // <- in dimension of [kg * m-3 * s-1]
@@ -1033,7 +1037,7 @@ void Foam::ADMno1::gasTest
             )
             ,
             scalar(0)
-        ) * scalar(1e-5)
+        ) * scalar(2e-5)
     );
 
     vDotGas_test.field() = vDotList_test["gas"].field();
@@ -1081,8 +1085,8 @@ void Foam::ADMno1::gasTest
 volScalarField::Internal Foam::ADMno1::fSh2
 (
     const surfaceScalarField &flux,
-    const volScalarField &alphaLiq, 
-    volScalarField &Sh2Temp
+    const volScalarField& alphaLiq, 
+    volScalarField& Sh2Temp
 )
 {
     volScalarField::Internal I_h2fa = calcInhibition // h2_fa
@@ -1136,8 +1140,8 @@ volScalarField::Internal Foam::ADMno1::fSh2
 volScalarField::Internal Foam::ADMno1::dfSh2
 (
     const surfaceScalarField &flux,
-    const volScalarField &alphaLiq, 
-    volScalarField &Sh2Temp
+    const volScalarField& alphaLiq, 
+    volScalarField& Sh2Temp
 )
 {
     volScalarField::Internal dI_h2fa = dCalcInhibition // h2_fa
@@ -1188,7 +1192,7 @@ volScalarField::Internal Foam::ADMno1::dfSh2
 void Foam::ADMno1::calcSh2
 (
     const surfaceScalarField &flux,
-    const volScalarField &alphaLiq
+    const volScalarField& alphaLiq
 )
 {
     //TODO: IO dictionary for these parameters
@@ -1241,7 +1245,7 @@ void Foam::ADMno1::calcSh2
 void Foam::ADMno1::dYUpdate
 (
     const surfaceScalarField &flux,
-    const volScalarField &alphaLiq
+    const volScalarField& alphaLiq
 )
 {
     for (label j = 0; j < 7; j++)
@@ -1273,7 +1277,8 @@ void Foam::ADMno1::dYUpdate
 void Foam::ADMno1::correct
 (
     const surfaceScalarField &flux,
-    const volScalarField &alphaLiq, 
+    const volScalarField& alphaLiq, 
+    const volScalarField& alphaGas, 
     const volScalarField& T,
     const volScalarField& Ptotal
 )
@@ -1283,7 +1288,13 @@ void Foam::ADMno1::correct
 
     // testing <- not impacting the simulation for now
     // gasTest(T, Ptotal);
-    gasTest(T, alphaLiq, Ptotal);
+    gasTest
+    (
+        T, 
+        alphaLiq,
+        alphaGas, 
+        Ptotal
+    );
 
     //- Gas phase pressure
     gasPressure();

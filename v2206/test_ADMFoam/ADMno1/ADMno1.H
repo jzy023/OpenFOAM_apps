@@ -227,13 +227,13 @@ private:
     volScalarField::Internal fSh2
     (
         const surfaceScalarField &flux,
-        volScalarField &Sh2Temp
+        volScalarField& Sh2Temp
     );
 
     volScalarField::Internal dfSh2
     (
         const surfaceScalarField &flux,
-        volScalarField &Sh2Temp
+        volScalarField& Sh2Temp
     );
 
     void calcSh2
@@ -392,34 +392,35 @@ public:
     void dYUpdate
     (
         const surfaceScalarField &flux,
-        const volScalarField &alphaLiq
+        const volScalarField& alphaLiq
     );
 
     //- Calculate Sh2 (iteratively)
     volScalarField::Internal fSh2
     (
         const surfaceScalarField &flux,
-        const volScalarField &alphaLiq,
-        volScalarField &Sh2Temp
+        const volScalarField& alphaLiq,
+        volScalarField& Sh2Temp
     );
 
     volScalarField::Internal dfSh2
     (
         const surfaceScalarField &flux,
-        const volScalarField &alphaLiq,
-        volScalarField &Sh2Temp
+        const volScalarField& alphaLiq,
+        volScalarField& Sh2Temp
     );
 
     void calcSh2
     (
         const surfaceScalarField &flux,
-        const volScalarField &alphaLiq
+        const volScalarField& alphaLiq
     );
 
     void correct
     (
         const surfaceScalarField &flux,
-        const volScalarField &alphaLiq, 
+        const volScalarField& alphaLiq,
+        const volScalarField& alphaGas, 
         const volScalarField& T,
         const volScalarField& Ptotal
     );
@@ -427,7 +428,8 @@ public:
     void gasTest
     (
         const volScalarField& T, // DEBUG
-        const volScalarField &alphaLiq, 
+        const volScalarField& alphaLiq,
+        const volScalarField& alphaGas,
         const volScalarField& Ptotal
     );
 

@@ -83,8 +83,21 @@ Foam::phaseADM::phaseADM
         ),
         U.mesh(),
         dimensionedScalar(dimensionSet(0, 3, -1, 0, 0), Zero)
+    ),
+    alphaRhoPhi_
+    (
+        IOobject
+        (
+            IOobject::groupName("alphaRhoPhi", phaseName),
+            U.mesh().time().timeName(),
+            U.mesh()
+        ),
+        U.mesh(),
+        dimensionedScalar(dimensionSet(1, 0, -1, 0, 0), Zero)
     )
 {
+    alphaPhi_.setOriented();
+    alphaRhoPhi_.setOriented();
 }
 
 

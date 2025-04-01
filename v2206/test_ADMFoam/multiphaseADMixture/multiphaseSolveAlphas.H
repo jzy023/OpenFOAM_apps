@@ -286,6 +286,7 @@ void Foam::multiphaseADMixture::solveAlphas
                 sumAlpha += alpha;
 
                 // Update rhoPhi
+                // rhoPhi_ += fvc::interpolate(phase.rho()) * phase.alphaPhi();
                 rhoPhi_ += alpha.rho() * alpha.alphaPhi();
             }
 

@@ -818,7 +818,7 @@ void Foam::ADMno1::gasSourceRate()
 volScalarField::Internal Foam::ADMno1::fSh2
 (
     const surfaceScalarField &flux,
-    volScalarField &Sh2Temp
+    volScalarField& Sh2Temp
 )
 {
     volScalarField::Internal I_h2fa = calcInhibition // h2_fa
@@ -871,7 +871,7 @@ volScalarField::Internal Foam::ADMno1::fSh2
 volScalarField::Internal Foam::ADMno1::dfSh2
 (
     const surfaceScalarField &flux,
-    volScalarField &Sh2Temp
+    volScalarField& Sh2Temp
 )
 {
     volScalarField::Internal dI_h2fa = dCalcInhibition // h2_fa

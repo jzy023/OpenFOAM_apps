@@ -72,6 +72,9 @@ class phaseADM
         //- Volumetric flux
         surfaceScalarField alphaPhi_;
 
+        //- Mass flux of the phase
+        surfaceScalarField alphaRhoPhi_;
+
 public:
 
     // Constructors
@@ -164,15 +167,21 @@ public:
     // testing
 
         //- Get alphaPhi
-        tmp<surfaceScalarField> alphaPhi() const
-        {
-            return tmp<surfaceScalarField>(alphaPhi_);
-        }
+        // tmp<surfaceScalarField> alphaPhi() const
+        // {
+        //     return tmp<surfaceScalarField>(alphaPhi_);
+        // }
         
+        const surfaceScalarField& alphaPhi() const
+        {
+            return alphaPhi_;
+        }
+
         surfaceScalarField& alphaPhi()
         {
             return alphaPhi_;
         }
+
 
         //- Set rho
         scalar setRho()

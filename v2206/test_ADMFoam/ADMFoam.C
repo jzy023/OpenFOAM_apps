@@ -93,6 +93,7 @@ int main(int argc, char *argv[])
 
     // testing
     // > multiphaseInterFoam
+    //- some references to multiphase simulation
     #include "initCorrectPhi.H"
     const surfaceScalarField& rhoPhi(mixture.rhoPhi());
 
@@ -153,7 +154,6 @@ int main(int argc, char *argv[])
             mixture.solve(reaction->vDotList_test);
             rho = mixture.rho();
             
-
             #include "multiphaseADMixture/UEqn.H"
 
             #include "TEqn.H"
@@ -174,10 +174,18 @@ int main(int argc, char *argv[])
         }
 
         // ADM1 reaction source terms
-        const volScalarField& alphaLiq = mixture.phases()["liquid"];
+        const volScalarField& alphaLiq = mixture.phases()["liquid"]; // + 1e-12;
+        const volScalarField& alphaGas = mixture.phases()["gas"]; // + 1e-12;
 
         reaction->clear();
-        reaction->correct(phi, alphaLiq, T, p); // <-- phiAlpha? or add "alpha"
+        reaction->correct
+        (   // <-- phiAlpha? or add "alpha"
+            phi, 
+            alphaLiq,
+            alphaGas,
+            T,
+            p
+        ); 
         // reaction->correct(phi, T); // <-- phiAlpha? or add "alpha"
 
         PtrList<volScalarField>& YPtrs = reaction->Y();
@@ -185,7 +193,7 @@ int main(int argc, char *argv[])
         // PtrList<volScalarField>& GPtrs_test = reaction->G_test();
         
         // --- ADM calculation
-        // #include "ADMEqn.H"
+        #include "ADMEqn.H"
 
         runTime.write();
 
