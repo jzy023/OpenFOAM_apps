@@ -299,8 +299,8 @@ Foam::ADMno1::ADMno1
                     mesh.time().timeName(),
                     mesh,
                     IOobject::MUST_READ,
-                    // IOobject::NO_WRITE
-                    IOobject::AUTO_WRITE
+                    IOobject::NO_WRITE
+                    // IOobject::AUTO_WRITE
                 ),
                 mesh
             )
@@ -326,8 +326,8 @@ Foam::ADMno1::ADMno1
                     mesh.time().timeName(),
                     mesh,
                     IOobject::MUST_READ,
-                    // IOobject::NO_WRITE
-                    IOobject::AUTO_WRITE
+                    IOobject::NO_WRITE
+                    // IOobject::AUTO_WRITE
                 ),
                 mesh
             )
@@ -384,8 +384,8 @@ Foam::ADMno1::ADMno1
                     mesh.time().timeName(),
                     mesh,
                     IOobject::READ_IF_PRESENT,
-                    // IOobject::NO_WRITE
-                    IOobject::AUTO_WRITE
+                    IOobject::NO_WRITE
+                    // IOobject::AUTO_WRITE
                 ),
                 mesh,
                 dimensionedScalar
@@ -546,7 +546,7 @@ Foam::ADMno1::ADMno1
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-    //-  Electrolytes initialization
+    //-  Medians initialization
 
     Info<< "Initializing concentrations for electrolytes" << endl;
 
@@ -684,8 +684,7 @@ Foam::ADMno1::ADMno1
             (
                 IOobject
                 (
-                    // namesSoluable[i] + ".Alpha_test",
-                    "multi.test." + namesSoluable[i],
+                    namesSoluable[i] + ".Alpha_test",
                     mesh.time().timeName(),
                     mesh,
                     IOobject::NO_READ,
@@ -709,8 +708,7 @@ Foam::ADMno1::ADMno1
             (
                 IOobject
                 (
-                    // namesParticulate[i] + ".Alpha_test",
-                    "multi.test." + namesParticulate[i],
+                    namesParticulate[i] + ".Alpha_test",
                     mesh.time().timeName(),
                     mesh,
                     IOobject::NO_READ,
@@ -737,8 +735,7 @@ Foam::ADMno1::ADMno1
             (
                 IOobject
                 (
-                    // namesGaseous[i] + ".Alpha_test",
-                    "multi.test." + namesGaseous[i],
+                    namesGaseous[i] + ".Alpha_test",
                     mesh.time().timeName(),
                     mesh,
                     IOobject::NO_READ,
@@ -1023,6 +1020,8 @@ void Foam::ADMno1::gasTest
     //     amplifier * (T - TSat) / TSat * pos(T - TSat)
     // );
     // );
+
+
 
     // TODO: maybe just return a single vDot instead Gh2, Gch4 and Gco2 sepreately?
     // (m3) [Pa * K-1 * m3 * mol-1] * K * Pa-1 * [mol * m-3 * s-1]

@@ -23,9 +23,26 @@ volScalarField Deff =
 );
 
 {
-
-    
     //- Fluid and Particulate Phase
+
+    const volScalarField residualAlpha_
+    (
+        IOobject
+        (
+            "residualAlpha",
+            mesh.time().timeName(),
+            mesh,
+            IOobject::NO_READ, // READ_IF_PRESENT,
+            IOobject::NO_WRITE
+        ),
+        mesh,
+        dimensionedScalar
+        (
+            dimless,
+            1e-4
+        )
+    );
+
     forAll(YPtrs, i)
     {
         if (i == 7)
@@ -37,12 +54,14 @@ volScalarField Deff =
 
         fvScalarMatrix YiEqn
         (
-            fvm::ddt(Yi)
-          + fvm::div(phi, Yi)
-          - fvm::laplacian(Deff, Yi)
+            fvm::ddt(alphaLiq, Yi)
+          + fvm::div(mixture.phases()["liquid"].alphaPhi(), Yi)
+          - fvm::laplacian(alphaLiq*Deff, Yi)
          ==
-            fvOptions(Yi)
-          + alphaLiq*reaction->R(i)
+            alphaLiq*reaction->R(i)
+          + fvOptions(Yi)
+          + fvc::ddt(residualAlpha_, Yi)
+          - fvm::ddt(residualAlpha_, Yi)
         );
 
         YiEqn.relax();
@@ -54,19 +73,23 @@ volScalarField Deff =
         fvOptions.correct(Yi);
     }
 
+
     //- Gas Phase
+    
     forAll(GPtrs, i)
     {
         volScalarField& Gi = GPtrs[i];
 
         fvScalarMatrix GiEqn
         (
-            fvm::ddt(Gi)
-          + fvm::div(phi, Gi)
-          - fvm::laplacian(Deff, Gi)
+            fvm::ddt(alphaGas, Gi)
+          + fvm::div(mixture.phases()["gas"].alphaPhi(), Gi)
+          - fvm::laplacian(alphaGas*Deff, Gi)
          ==
-            fvOptions(Gi)
-          + alphaGas*reaction->RG(i)
+            alphaGas*reaction->RG(i)
+          + fvOptions(Gi)
+          + fvc::ddt(residualAlpha_, Gi)
+          - fvm::ddt(residualAlpha_, Gi)
         );
 
         GiEqn.relax();
@@ -78,11 +101,67 @@ volScalarField Deff =
         fvOptions.correct(Gi);
     }
 
+
+    //- Fluid and Particulate Phase
+    // forAll(YPtrs, i)
+    // {
+    //     if (i == 7)
+    //     {
+    //         continue;
+    //     }
+        
+    //     volScalarField& Yi = YPtrs[i];
+    //     volScalarField YiAlpha = Yi;
+    //     YiAlpha.field() = alphaLiq.field() * Yi.field();
+
+    //     fvScalarMatrix YiEqn
+    //     (
+    //         fvm::ddt(YiAlpha)
+    //       + fvm::div(phi, YiAlpha)
+    //       - fvm::laplacian(Deff, YiAlpha)
+    //      ==
+    //     //   + alphaLiq*reaction->R(i)
+    //         fvOptions(YiAlpha)
+    //     );
+
+    //     YiEqn.relax();
+
+    //     fvOptions.constrain(YiEqn);
+
+    //     YiEqn.solve(mesh.solver("Yi"));
+
+    //     fvOptions.correct(Yi);
+    // }
+
+    // //- Gas Phase
+    // forAll(GPtrs, i)
+    // {
+    //     volScalarField& Gi = GPtrs[i];
+
+    //     fvScalarMatrix GiEqn
+    //     (
+    //         fvm::ddt(Gi)
+    //       + fvm::div(phi, Gi)
+    //       - fvm::laplacian(Deff, Gi)
+    //      ==
+    //       + alphaGas*reaction->RG(i)
+    //         fvOptions(Gi)
+    //     );
+
+    //     GiEqn.relax();
+
+    //     fvOptions.constrain(GiEqn);
+
+    //     GiEqn.solve(mesh.solver("Yi"));
+
+    //     fvOptions.correct(Gi);
+    // }
+
     // const surfaceScalarField& alphaRhoPhiLiq = phi * fvc::interpolate(alphaLiq * rho);
     // const surfaceScalarField& alphaRhoPhiLiq = rhoPhi * fvc::interpolate(alphaLiq);
     // const surfaceScalarField& alphaRhoPhiLiq = fvc::interpolate(rho)*mixture.phases()["liquid"].alphaPhi();
 
-    //- Fluid and Particulate Phase
+    // //- Fluid and Particulate Phase
 
     // forAll(YPtrs, i)
     // {
@@ -96,10 +175,10 @@ volScalarField Deff =
     //     fvScalarMatrix YiEqn
     //     (
     //         fvm::ddt(alphaLiq, rho, Yi)
-    //       + fvm::div(alphaRhoPhiLiq, Yi)
-    //       - fvm::laplacian(alphaLiq*rho*Deff, Yi)
+    //     //   + fvm::div(alphaRhoPhiLiq, Yi)
+    //     //   - fvm::laplacian(alphaLiq*rho*Deff, Yi)
     //      ==
-    //         alphaLiq*reaction->R(i)
+    //         alphaLiq*rho*reaction->R(i)
     //     //   + fvOptions(Yi)
     //     //   + fvc::ddt(residualAlpha_*rho, Yi)
     //     //   - fvm::ddt(residualAlpha_*rho, Yi)
