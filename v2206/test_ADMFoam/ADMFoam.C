@@ -119,6 +119,25 @@ int main(int argc, char *argv[])
 
         Info<< "Time = " << runTime.timeName() << nl << endl;
 
+        // ADM1 reaction source terms
+        const volScalarField& alphaLiq = mixture.phases()["liquid"];
+        const volScalarField& alphaGas = mixture.phases()["gas"];
+
+        reaction->clear();
+        reaction->correct
+        (   // <-- phiAlpha? or add "alpha"
+            phi, 
+            alphaLiq,
+            alphaGas,
+            T,
+            p
+        ); 
+        // reaction->correct(phi, T); // <-- phiAlpha? or add "alpha"
+
+        PtrList<volScalarField>& YPtrs = reaction->Y();
+        PtrList<volScalarField>& GPtrs = reaction->G();
+
+
         // --- Pressure-velocity PIMPLE corrector loop
         while (pimple.loop())
         {
@@ -154,15 +173,18 @@ int main(int argc, char *argv[])
             mixture.solve(reaction->vDotList_test);
             rho = mixture.rho();
             
-            #include "multiphaseADMixture/UEqn.H"
+            #include "multiEqns/UEqn.H"
 
-            #include "TEqn.H"
+            #include "multiEqns/TEqn.H"
             
             // --- Pressure corrector loop
             while (pimple.correct())
             {
-                #include "multiphaseADMixture/pEqn.H"
+                #include "multiEqns/pEqn.H"
             }
+
+            // --- ADM calculation
+            #include "multiEqns/ADMEqn.H"
 
             if (pimple.turbCorr())
             {
@@ -172,29 +194,6 @@ int main(int argc, char *argv[])
             }
 
         }
-
-        // ADM1 reaction source terms
-
-        const volScalarField& alphaLiq = mixture.phases()["liquid"];
-        const volScalarField& alphaGas = mixture.phases()["gas"];
-
-        reaction->clear();
-        reaction->correct
-        (   // <-- phiAlpha? or add "alpha"
-            phi, 
-            alphaLiq,
-            alphaGas,
-            T,
-            p
-        ); 
-        // reaction->correct(phi, T); // <-- phiAlpha? or add "alpha"
-
-        PtrList<volScalarField>& YPtrs = reaction->Y();
-        PtrList<volScalarField>& GPtrs = reaction->G();
-        // PtrList<volScalarField>& GPtrs_test = reaction->G_test();
-        
-        // --- ADM calculation
-        #include "ADMEqn.H"
 
         runTime.write();
 

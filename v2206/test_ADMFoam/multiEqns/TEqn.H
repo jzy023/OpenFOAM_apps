@@ -4,14 +4,16 @@
 
     // TODO: Cp or both phases?
     volScalarField alphaEff("alphaEff", mixture.nu()/Pr + alphat);
+    volScalarField kappaEff("kappaEff", rho*alphaEff);
 
     fvScalarMatrix TEqn
     (
-        fvm::ddt(T)
-      + fvm::div(phi, T)
-      - fvm::laplacian(alphaEff, T)
+        fvm::ddt(rho, T)
+      + fvm::div(rhoPhi, T, "div(phi,T)")
+      - fvm::Sp(fvc::ddt(rho) + fvc::div(rhoPhi), T)
+      - fvm::laplacian(kappaEff, T)
       ==
-        fvOptions(T)
+        fvOptions(rho, T)
     );
 
     TEqn.relax();
