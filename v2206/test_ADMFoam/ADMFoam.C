@@ -61,6 +61,7 @@ Note
 // testing
 // > multiphaseInterFoam
 #include "multiphaseADMixture.H"
+#include "CMULES.H"
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -96,12 +97,20 @@ int main(int argc, char *argv[])
     //- some references to multiphase simulation
     #include "initCorrectPhi.H"
     const surfaceScalarField& rhoPhi(mixture.rhoPhi());
+    const volScalarField& alphaLiq = mixture.phases()["liquid"];
+    const volScalarField& alphaGas = mixture.phases()["gas"];
+
 
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
     Info<< "\nStarting time loop\n" << endl;
 
+    // ADM1 reaction source terms
+    PtrList<volScalarField>& YPtrs = reaction->Y(); // <-- TODO: const?
+    PtrList<volScalarField>& GPtrs = reaction->G(); // <-- TODO: const?
+
+    // Loop
     while (runTime.run())
     {
         #include "readDyMControls.H"
@@ -120,9 +129,6 @@ int main(int argc, char *argv[])
         Info<< "Time = " << runTime.timeName() << nl << endl;
 
         // ADM1 reaction source terms
-        const volScalarField& alphaLiq = mixture.phases()["liquid"];
-        const volScalarField& alphaGas = mixture.phases()["gas"];
-
         reaction->clear();
         reaction->correct
         (   // <-- phiAlpha? or add "alpha"
@@ -133,9 +139,6 @@ int main(int argc, char *argv[])
             p
         ); 
         // reaction->correct(phi, T); // <-- phiAlpha? or add "alpha"
-
-        PtrList<volScalarField>& YPtrs = reaction->Y();
-        PtrList<volScalarField>& GPtrs = reaction->G();
 
 
         // --- Pressure-velocity PIMPLE corrector loop
@@ -184,7 +187,8 @@ int main(int argc, char *argv[])
             }
 
             // --- ADM calculation
-            #include "multiEqns/ADMEqn.H"
+            // #include "multiEqns/ADMEqn.H"
+            #include "multiEqns/ADMEqnTest.H"
 
             if (pimple.turbCorr())
             {

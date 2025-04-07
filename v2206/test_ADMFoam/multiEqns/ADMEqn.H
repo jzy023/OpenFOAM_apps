@@ -24,24 +24,110 @@ volScalarField Deff =
 
 {
     //- Fluid and Particulate Phase
+    
+    int nCorr = 10;
 
-    const volScalarField residualAlpha_
-    (
-        IOobject
+    forAll(YPtrs, i)
+    {
+        if (i == 7)
+        {
+            continue;
+        }
+
+        volScalarField& Yi = YPtrs[i];
+
+        tmp<surfaceScalarField> tPhiYi;
+        for (int i = 0; i < nCorr; i++)
+        {
+            fvScalarMatrix YiEqn
+            (
+                fvm::ddt(Yi)
+              + fvm::div(phi, Yi)
+              - fvm::laplacian(Deff, Yi)
+            //   + fvm::div(mixture.phases()["liquid"].alphaPhi(), Yi)
+            ==
+                alphaLiq*fvOptions(Yi)
+            );
+
+            YiEqn.relax();
+            fvOptions.constrain(YiEqn);
+            YiEqn.solve();
+            fvOptions.correct(Yi);
+
+            tPhiYi = YiEqn.flux();
+        }
+
+        MULES::explicitSolve
         (
-            "residualAlpha",
-            mesh.time().timeName(),
-            mesh,
-            IOobject::NO_READ, // READ_IF_PRESENT,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        dimensionedScalar
+            geometricOneField(),
+            Yi,
+            phi,
+            tPhiYi.ref(),
+            oneField(),
+            zeroField()
+        );
+    }
+
+    //- Gas Phase
+    
+    forAll(GPtrs, i)
+    {
+        volScalarField& Gi = GPtrs[i];
+
+        tmp<surfaceScalarField> tPhiGi;
+        for (int i = 0; i < nCorr; i++)
+        {
+            fvScalarMatrix GiEqn
+            (
+                fvm::ddt(Gi)
+              + fvm::div(phi, Gi)
+              - fvm::laplacian(Deff, Gi)
+            ==
+                alphaGas*fvOptions(Gi)
+            );
+
+            GiEqn.relax();
+            fvOptions.constrain(GiEqn);
+            GiEqn.solve();
+            fvOptions.correct(Gi);
+
+            tPhiGi = GiEqn.flux();
+        }
+
+        MULES::explicitSolve
         (
-            dimless,
-            1e-3
-        )
-    );
+            geometricOneField(),
+            Gi,
+            phi,
+            tPhiGi.ref(),
+            oneField(),
+            zeroField()
+        );
+    }
+
+
+
+    // --------------------------------------------------------------------------------------------------
+
+    // //- Fluid and Particulate Phase
+
+    // const volScalarField residualAlpha_
+    // (
+    //     IOobject
+    //     (
+    //         "residualAlpha",
+    //         mesh.time().timeName(),
+    //         mesh,
+    //         IOobject::NO_READ, // READ_IF_PRESENT,
+    //         IOobject::NO_WRITE
+    //     ),
+    //     mesh,
+    //     dimensionedScalar
+    //     (
+    //         dimless,
+    //         1e-3
+    //     )
+    // );
 
     // forAll(YPtrs, i)
     // {
@@ -56,7 +142,7 @@ volScalarField Deff =
     //     (
     //         fvm::ddt(alphaLiq, Yi)
     //       + fvm::div(mixture.phases()["liquid"].alphaPhi(), Yi)
-    //       - fvm::laplacian(alphaLiq*Deff, Yi)
+    //       - fvm::laplacian(Deff, Yi)
     //      ==
     //         // alphaLiq*reaction->R(i)
     //         alphaLiq*fvOptions(Yi)
@@ -84,7 +170,7 @@ volScalarField Deff =
     //     (
     //         fvm::ddt(alphaGas, Gi)
     //       + fvm::div(mixture.phases()["gas"].alphaPhi(), Gi)
-    //       - fvm::laplacian(alphaGas*Deff, Gi)
+    //       - fvm::laplacian(Deff, Gi)
     //      ==
     //         // alphaGas*reaction->RG(i)
     //         alphaGas*fvOptions(Gi)
@@ -101,6 +187,8 @@ volScalarField Deff =
     //     fvOptions.correct(Gi);
     // }
 
+
+    // --------------------------------------------------------------------------------------------------
 
     // //- Fluid and Particulate Phase
     // forAll(YPtrs, i)
@@ -163,82 +251,81 @@ volScalarField Deff =
     //     Gi = GiAlpha / max(alphaGas, scalar(1e-3));
     // }
 
+
+    // --------------------------------------------------------------------------------------------------
+
     // const surfaceScalarField& alphaRhoPhiLiq = phi * fvc::interpolate(alphaLiq * rho);
     // const surfaceScalarField& alphaRhoPhiLiq = rhoPhi * fvc::interpolate(alphaLiq);
     // const dimensionedScalar& rhoLiq = mixture.phases()["liquid"].rho();
     // const dimensionedScalar& rhoGas = mixture.phases()["gas"].rho();
 
-    const volScalarField rhoLiq
-    (
-        IOobject
-        (
-            "rhoLiq",
-            runTime.timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        mixture.phases()["liquid"].rho()
-    );
+    // const volScalarField rhoLiq
+    // (
+    //     IOobject
+    //     (
+    //         "rhoLiq",
+    //         runTime.timeName(),
+    //         mesh,
+    //         IOobject::NO_READ,
+    //         IOobject::NO_WRITE
+    //     ),
+    //     mesh,
+    //     mixture.phases()["liquid"].rho()
+    // );
 
-    const volScalarField rhoGas
-    (
-        IOobject
-        (
-            "rhoGas",
-            runTime.timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        mixture.phases()["gas"].rho()
-    );
-
-    const surfaceScalarField& alphaRhoPhiLiq = fvc::interpolate(rhoLiq)*mixture.phases()["liquid"].alphaPhi();
-    const surfaceScalarField& alphaRhoPhiGas = fvc::interpolate(rhoGas)*mixture.phases()["gas"].alphaPhi();
+    // const volScalarField rhoGas
+    // (
+    //     IOobject
+    //     (
+    //         "rhoGas",
+    //         runTime.timeName(),
+    //         mesh,
+    //         IOobject::NO_READ,
+    //         IOobject::NO_WRITE
+    //     ),
+    //     mesh,
+    //     mixture.phases()["gas"].rho()
+    // );
 
     // const surfaceScalarField& alphaRhoPhiLiq = fvc::interpolate(rhoLiq)*mixture.phases()["liquid"].alphaPhi();
     // const surfaceScalarField& alphaRhoPhiGas = fvc::interpolate(rhoGas)*mixture.phases()["gas"].alphaPhi();
 
+    // //- Fluid and Particulate Phase
 
-    //- Fluid and Particulate Phase
-
-    forAll(YPtrs, i)
-    {
-        if (i == 7)
-        {
-            continue;
-        }
+    // forAll(YPtrs, i)
+    // {
+    //     if (i == 7)
+    //     {
+    //         continue;
+    //     }
         
-        volScalarField& Yi = YPtrs[i];
+    //     volScalarField& Yi = YPtrs[i];
 
-        fvScalarMatrix YiEqn
-        (
-            fvm::ddt(alphaLiq, rhoLiq, Yi)
-          + fvm::div(alphaRhoPhiLiq, Yi, "div(alphaRhoPhi.*,Yi)")
-          - fvm::laplacian
-            (
-                fvc::interpolate(alphaLiq)*
-                fvc::interpolate(rhoLiq*Deff),
-                Yi
-            )
-         ==
-            // alphaLiq*rhoLiq*reaction->R(i)
-        //   + fvOptions(Yi)
-            fvc::ddt(residualAlpha_*rhoLiq, Yi)
-          - fvm::ddt(residualAlpha_*rhoLiq, Yi)
-        );
+    //     fvScalarMatrix YiEqn
+    //     (
+    //         fvm::ddt(alphaLiq, rhoLiq, Yi)
+    //       + fvm::div(alphaRhoPhiLiq, Yi, "div(alphaRhoPhi.*,Yi)")
+    //       - fvm::laplacian
+    //         (
+    //             fvc::interpolate(alphaLiq)*
+    //             fvc::interpolate(rhoLiq*Deff),
+    //             Yi
+    //         )
+    //      ==
+    //         // alphaLiq*rhoLiq*reaction->R(i)
+    //     //   + fvOptions(Yi)
+    //         fvc::ddt(residualAlpha_*rhoLiq, Yi)
+    //       - fvm::ddt(residualAlpha_*rhoLiq, Yi)
+    //     );
 
-        YiEqn.relax();
+    //     YiEqn.relax();
 
-        fvOptions.constrain(YiEqn);
+    //     fvOptions.constrain(YiEqn);
 
-        YiEqn.solve(mesh.solver("Yi"));
+    //     YiEqn.solve(mesh.solver("Yi"));
 
-        fvOptions.correct(Yi);
-    }
+    //     fvOptions.correct(Yi);
+    // }
 
     // //- Gas Phase
     
@@ -273,6 +360,7 @@ volScalarField Deff =
     // }
 
 
+    // --------------------------------------------------------------------------------------------------
 
     //- testing  Gas Phase 
     // forAll(GPtrs_test, i)
