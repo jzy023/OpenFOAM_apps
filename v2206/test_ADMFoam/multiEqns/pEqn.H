@@ -48,7 +48,7 @@
         (
             fvm::laplacian(rAUf, p_rgh) 
           - fvc::div(phiHbyA)
-          + mixture.volTransfer(p_rgh, reaction->vDotList_test) //vDotGas;
+        //   + mixture.volTransfer(p_rgh, reaction->vDotList_test) //vDotGas;
         );
 
         p_rghEqn.setReference(pRefCell, getRefCellValue(p_rgh, pRefCell));

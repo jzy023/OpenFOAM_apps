@@ -199,7 +199,11 @@ private:
     void gasPhaseRate();
 
     //- Gas exit rates dG
-    void gasSourceRate();
+    void gasSourceRate
+    (
+        // const volScalarField& alphaLiq,
+        // const volScalarField& alphaGas
+    );
 
     //- Calculate inhibition rates
     void inhibitions();
@@ -378,11 +382,8 @@ public:
     PtrList<volScalarField> GiAlpha_test;
 
     PtrList<volScalarField> GPtrs_test;
-
     PtrList<volScalarField::Internal> GRPtrs_test;
-
-    PtrListDictionary<volScalarField::Internal> vDotList_test;
-    // PtrList<volScalarField::Internal> vDotPtrs_test;
+    PtrList<volScalarField::Internal> dGPtrs_test;
 
     volScalarField vDotGas_test;
 

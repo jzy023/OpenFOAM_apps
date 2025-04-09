@@ -1,0 +1,65 @@
+Rosen code is operating under the basis of a semi-confined volume where the pressure with
+in can vary due to the gas generation and a limited pressure release mechanism
+
+
+Meaning if we want to keep the main body of the orginal code, we need to make sure the
+study case is operating under the setup for the pressure field.
+
+However in a CFD case, the pressure is set as BC and projected by Poisson's Equation.
+Here we would have a conflict since once the BC of the pressure field is decided then 
+due to the ideal gas law, the concentration for the gaseous species are fixed (?)
+
+The conflict remians where, if we have initial concentrations for the gaseous species,
+meaning with R and T, the partial pressure for each species and the total pressure of 
+the domain is determined, then what do we do if it doesnt match the pressure field BC?
+
+
+To make the minium change of the original code, we want ot keep tehe origianl operating
+state as much as possible:
+1. pressure field is not predetermined
+2. pressure is calculate by gas gneration
+3. concentrations for each phases are only based on there respective fractional volumes
+
+
+We can try:
+1. verify dynamics in pressure field: completely confined space with gas generation
+   in this case ideally the pressure should slowly build up.
+   if so then we can proceed the following:
+
+2. calculate the total pressure field based on the initial condition: > gaseous concentration
+                                                                      > temperature field
+                                                                      > ideal gas constant
+
+3. update the presure field (uniformally?) for the whole domain
+
+4. partial pressure are calculated in step 3, so we can have the saturated concentration 
+for the dissolved gaseous species, now we follow the same steps with teh Rosen code
+
+5. now we have how much new gas is being generated (in mole), we can dump the sum from each
+cell uniformally for the sum of volume of gas phase:
+> mDot_sum / volGas_Sum = CDot_ave (average concentration change rate)
+
+
+We are using an average concentration change rate for all cells for gaseous species, which
+kind of defeats the purpose of having a CFD simulation. we are doing this to avoid the fact 
+that some cells are purly fluid, causing singularity at: CDot = mDot / volGas.
+
+This would give us an uniform partial pressure (saturated concentration) across the domain,
+which aligns with the ideal of Henry's Law.
+
+
+With the setup above, all we care about are:
+> solable concentration fields
+> vDotGas calculated from mDot_sum and ideal gas law
+
+
+The change we are going to make to ensure all of the above:
+
+for solver:
+> pressure field correction
+> GPtrs_[i] are uniform value?
+> add alphaLiq in vDotGas calculation
+> check on dYUpdate(phi)
+
+for case:
+> pressure BCs

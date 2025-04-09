@@ -727,27 +727,49 @@ void Foam::ADMno1::gasPressure()
 void Foam::ADMno1::gasPhaseRate()
 {
     GRPtrs_[0] = 
-    (   // <-- kg COD m-3
+    (   // concentration rate but liquid fraction based <-- kg COD m-3
         para_.DTOS() * para_.kLa() 
       * (YPtrs_[7].internalField() - R_ * TopDummy_.internalField() * GPtrs_[0].internalField() * KHh2_)
     );
 
     GRPtrs_[1] = 
-    (   // <-- kg COD m-3
+    (   // concentration rate but liquid fraction based <-- kg COD m-3
         para_.DTOS() * para_.kLa() 
       * (YPtrs_[8].internalField() - R_ * TopDummy_.internalField() * GPtrs_[1].internalField() * KHch4_)
     );
 
     GRPtrs_[2] = 
-    (   // <-- mol COD m-3
+    (   // concentration rate but liquid fraction based <-- mol COD m-3
         para_.DTOS() * para_.kLa() // Sco2 instead of SIC
       * (MPtrs_[0].internalField() - R_ * TopDummy_.internalField() * GPtrs_[2].internalField() * KHco2_)
     );
 }
 
 
-void Foam::ADMno1::gasSourceRate()
+void Foam::ADMno1::gasSourceRate
+(
+    // const volScalarField& alphaLiq,
+    // const volScalarField& alphaGas
+)
 {
+    // dGPtrs_[0].field() = 
+    // (
+    //     (GRPtrs_[0].field() * alphaLiq / alphaGas) 
+    //   - (GPtrs_[0].field() * qGasLocal.field() / volGas)
+    // );
+
+    // dGPtrs_[1].field() = 
+    // (
+    //     (GRPtrs_[1].field() * alphaLiq / alphaGas) 
+    //   - (GPtrs_[1].field() * qGasLocal.field() / volGas)
+    // );
+
+    // dGPtrs_[2].field() = 
+    // (
+    //     (GRPtrs_[2].field() * alphaLiq / alphaGas) 
+    //   - (GPtrs_[2].field() * qGasLocal.field() / volGas)
+    // );
+
     // field of cell volume for mesh 
     scalarField volMeshField = GPtrs_[0].mesh().V().field();            
 
@@ -790,9 +812,6 @@ void Foam::ADMno1::gasSourceRate()
     {
         if ( qGasLocal.field()[i] < 0.0 ) { qGasLocal.field()[i] = 1e-16; }
     }
-
-    // Info<< "DEBUG: Pgas: " << max(Pgas_.field()) << endl;
-    // Info<< "DEBUG: qGas: " << max(qGasLocal.field() / (para_.DTOS() * (volMeshField / (Vgas_ + Vliq_).value()))) << endl;
 
     dGPtrs_[0].field() = 
     (

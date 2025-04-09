@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
             }
             
             // testing
-            mixture.solve(reaction->vDotList_test);
+            // mixture.solve(reaction->vDotGas_test);
             rho = mixture.rho();
             
             #include "multiEqns/UEqn.H"
