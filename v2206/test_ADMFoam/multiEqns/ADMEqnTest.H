@@ -24,18 +24,12 @@ volScalarField Deff =
 
 {
     // volScalarField& Yi = YPtrs[6];
-
-    // Deff *= pos(alphaLiq - 0.99);
-
-    // tmp<surfaceScalarField> tPhiYi;
-
     // for (int i = 0; i < 3; i++)
     // {
     //     fvScalarMatrix YiEqn
     //     (
     //         fvm::ddt(Yi)
-    //       + fvm::div(mixture.phases()["liquid"].alphaPhi(), Yi, "div(phi,test)")
-    //     //   + fvm::div(phi, Yi, "div(phi,test)")
+    //       + fvm::div(phi, Yi, "div(phi,test)")
     //       - fvm::laplacian(Deff, Yi)
     //     ==
     //         alphaLiq*fvOptions(Yi)
@@ -61,6 +55,43 @@ volScalarField Deff =
 
     // --------------------------------------------------------------------------------------------------
 
+        volScalarField& Yi = YPtrs[6];
+
+        // Deff *= pos(alphaLiq - 0.99);
+        // tmp<surfaceScalarField> tPhiYi;
+
+        for (int i = 0; i < 2; i++)
+        {
+            fvScalarMatrix YiEqn
+            (
+                fvm::ddt(Yi)
+              - fvm::laplacian(alphaLiq*Deff, Yi)
+              + fvm::div(mixture.phases()["liquid"].alphaPhi(), Yi, "div(phi,test)")
+            //   + fvm::div(phi, Yi, "div(phi,test)")
+            ==
+                alphaLiq*fvOptions(Yi)
+            );
+
+            YiEqn.relax();
+            fvOptions.constrain(YiEqn);
+            YiEqn.solve();
+            fvOptions.correct(Yi);
+
+            // tPhiYi = YiEqn.flux();
+        }
+
+        // MULES::explicitSolve
+        // (
+        //     geometricOneField(),
+        //     Yi,
+        //     phi,
+        //     tPhiYi.ref(),
+        //     oneField(),
+        //     zeroField()
+        // );
+
+    // --------------------------------------------------------------------------------------------------
+
         //- Fluid and Particulate Phase
 
         // const volScalarField residualAlpha_
@@ -77,21 +108,22 @@ volScalarField Deff =
         //     dimensionedScalar
         //     (
         //         dimless,
-        //         1e-6
+        //         1e-3
         //     )
         // );
             
         // volScalarField& Yi = YPtrs[6];
 
-        // Deff *= pos(alphaLiq - 0.99);
+        // // Deff *= pos(alphaLiq - 0.99);
 
         // for (size_t i = 0; i < 3; i++)
         // {
         //     fvScalarMatrix YiEqn
         //     (
         //         fvm::ddt(alphaLiq, Yi)
+        //       - fvm::laplacian(alphaLiq*Deff, Yi)
         //       + fvm::div(mixture.phases()["liquid"].alphaPhi(), Yi, "div(phi,test)")
-        //       - fvm::laplacian(Deff, Yi)
+        //     //   + fvm::div(phi, Yi, "div(phi,test)")
         //     ==
         //     //     alphaLiq*fvOptions(Yi)
         //        fvc::ddt(residualAlpha_, Yi)

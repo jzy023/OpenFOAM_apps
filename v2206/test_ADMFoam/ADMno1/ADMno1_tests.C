@@ -1042,22 +1042,22 @@ void Foam::ADMno1::gasTest
 
     // TODO: maybe just return a single vDot instead Gh2, Gch4 and Gco2 sepreately?
     // (m3) [Pa * K-1 * m3 * mol-1] * K * Pa-1 * [mol * m-3 * s-1]
-    // vDotList_test["gas"].field() = // <-- check dimensions for Ptotal for multiphase
-    // (  
-    //     max
-    //     (
-    //         (/*volMeshField * */ R_ * TopDummy_.internalField() / Ptotal.field())                
-    //       * (
-    //             (para_.MTOm() * GRPtrs_test[2].field())
-    //           + (para_.MTOm() * GRPtrs_test[0].field() / 16.0) // converting from kgCOD/m3 to mol/m3 (1kg H2 needs 8kg O2)                       
-    //           + (para_.MTOm() * GRPtrs_test[1].field() / 64.0) // converting from kgCOD/m3 to mol/m3 (1kg CH4 needs 4kg O2)                  
-    //         )
-    //         ,
-    //         scalar(0)
-    //     ) * scalar(2e-5)
-    // );
+    vDotList_test["gas"].field() = // <-- check dimensions for Ptotal for multiphase
+    (  
+        max
+        (
+            (/*volMeshField * */ R_ * TopDummy_.internalField() / Ptotal.field())                
+          * (
+                (para_.MTOm() * GRPtrs_test[2].field())
+              + (para_.MTOm() * GRPtrs_test[0].field() / 16.0) // converting from kgCOD/m3 to mol/m3 (1kg H2 needs 8kg O2)                       
+              + (para_.MTOm() * GRPtrs_test[1].field() / 64.0) // converting from kgCOD/m3 to mol/m3 (1kg CH4 needs 4kg O2)                  
+            )
+            ,
+            scalar(0)
+        ) * scalar(2e-5)
+    );
 
-    // vDotGas_test.field() = vDotList_test["gas"].field();
+    vDotGas_test.field() = vDotList_test["gas"].field();
     
 
     // ==================================================================================
@@ -1300,43 +1300,43 @@ void Foam::ADMno1::correct
     const volScalarField& Ptotal
 )
 {
-    // //- Calculate thermal factor and adjust parameters
-    // // calcThermal(T); // DEBUG MULTI
+    //- Calculate thermal factor and adjust parameters
+    // calcThermal(T); // DEBUG MULTI
 
-    // // testing <- not impacting the simulation for now
-    // // gasTest(T, Ptotal);
-    // gasTest
-    // (
-    //     T, 
-    //     alphaLiq,
-    //     alphaGas, 
-    //     Ptotal
-    // );
+    // testing <- not impacting the simulation for now
+    // gasTest(T, Ptotal);
+    gasTest
+    (
+        T, 
+        alphaLiq,
+        alphaGas, 
+        Ptotal
+    );
 
-    // //- Gas phase pressure
-    // gasPressure();
+    //- Gas phase pressure
+    gasPressure();
 
-    // //- Inhibition rates
-    // inhibitions();
+    //- Inhibition rates
+    inhibitions();
 
-    // //- calculate raction rates
-    // kineticRate();
+    //- calculate raction rates
+    kineticRate();
 
-    // //- calculate gas phase transfer rates
-    // gasPhaseRate();
+    //- calculate gas phase transfer rates
+    gasPhaseRate();
 
-    // //- calculate dY with STOI
-    // // dYUpdate(flux, alphaLiq);
-    // dYUpdate(flux);
+    //- calculate dY with STOI
+    // dYUpdate(flux, alphaLiq);
+    dYUpdate(flux);
 
-    // //- calculate gas exit rates
-    // gasSourceRate();
+    //- calculate gas exit rates
+    gasSourceRate();
 
-    // //- Acid-base calculations
-    // calcShp();
+    //- Acid-base calculations
+    calcShp();
 
-    // //- Sh2 calculations
-    // calcSh2(flux);
+    //- Sh2 calculations
+    calcSh2(flux);
 
     //- calculate cell-vol-based concentration
     forAll(YPtrs_, i)

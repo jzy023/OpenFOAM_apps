@@ -9,7 +9,7 @@
     fvScalarMatrix TEqn
     (
         fvm::ddt(rho, T)
-      + fvm::div(rhoPhi, T, "div(phi,T)")
+      + fvm::div(rhoPhi, T)
       - fvm::Sp(fvc::ddt(rho) + fvc::div(rhoPhi), T)
       - fvm::laplacian(kappaEff, T)
       ==

@@ -187,8 +187,8 @@ int main(int argc, char *argv[])
             }
 
             // --- ADM calculation
-            // #include "multiEqns/ADMEqn.H"
-            #include "multiEqns/ADMEqnTest.H"
+            #include "multiEqns/ADMEqn.H"
+            // #include "multiEqns/ADMEqnTest.H"
 
             if (pimple.turbCorr())
             {
