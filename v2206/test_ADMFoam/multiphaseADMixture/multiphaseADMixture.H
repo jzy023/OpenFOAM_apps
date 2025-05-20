@@ -172,7 +172,8 @@ private:
         (
             const volScalarField& alpha1,
             const volScalarField& alpha2
-        ) const;
+        );
+        // const;
 
         void correctContactAngle
         (
@@ -283,6 +284,18 @@ public:
 
 
     // testing
+        //-
+        surfaceScalarField nHatf_;
+        void nHatf
+        (
+            scalar somehting,
+            const volScalarField& alpha1,
+            const volScalarField& alpha2
+        ) 
+        // const
+        {
+            nHatf_ = nHatfv(alpha1, alpha2) & mesh_.Sf();
+        }
         
         //- Mass transfer phase source terms
         typedef HashTable<volScalarField::Internal> SuSpTable;

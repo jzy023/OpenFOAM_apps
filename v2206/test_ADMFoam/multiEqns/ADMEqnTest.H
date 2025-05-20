@@ -23,6 +23,77 @@ volScalarField Deff =
 );
 
 {
+    volScalarField& Yi = YPtrs[6];
+    // volScalarField& Yi = speciesMixture.Y(i);
+
+    //compute diffusion coefficient
+    // surfaceScalarField D = speciesMixture.DmY(i);
+
+    //calculate Henry's transfer flux
+    // surfaceScalarField phiH = speciesMixture.phiH(i);
+    // surfaceScalarField phiHUp = speciesMixture.phiHUp(i);
+    // surfaceScalarField phiHDown = speciesMixture.phiHDown(i);
+    
+    // surfaceScalarField phiH = DmY(i)*(1-HY_[i])/fvc::interpolate((alpha1_+HY_[i]*(1-alpha1_)))*fvc::snGrad(alpha1_)*mesh_.magSf();
+    dimensionedScalar DmY
+    (
+        Deff.dimensions(),
+        1e-16
+    );
+    scalar HY = 0.1;
+    surfaceScalarField phiH = 
+    (
+        DmY * (1 - HY) / fvc::interpolate((alphaLiq + HY * (1 - alphaLiq)))
+      * fvc::snGrad(alphaLiq)*mesh.magSf()
+    );
+
+    volScalarField SpY = (Yi-Yi.oldTime())/runTime.deltaT();
+
+    while (pimple.correctNonOrthogonal())
+    {
+        //compute Y equation
+        fvScalarMatrix YiEqn
+        (
+            fvm::ddt(Yi)
+          + fvm::div(phiH,Yi,"div(phiH,Yi)")
+          - fvm::laplacian(DmY,Yi)
+        //   - fvm::laplacian(Deff,Yi)
+          ==
+            SpY
+        );
+
+        // if (phiHScheme == "Gauss linear") YiEqn += fvm::div(phiH,Yi,"div(phiH,Yi)");
+        // else if (phiHScheme == "Gauss upwind")
+        // {
+        //     YiEqn += fvm::div(phiHUp,Yi,"div(phiH,Yi)")
+        //     + fvm::div(phiHDown,Yi,"div(phiH,Yi)");
+        // }
+        // else
+        // {
+        //     Info<< "div(phiH,Yi) should be equal to Gauss linear or Gauss upwind"
+		// 	<< endl
+		// 	<< abort(FatalError);
+        // }
+
+        //solve equations
+        if (pimple.finalNonOrthogonalIter())
+        {
+            YiEqn.solve(mesh.solver("YiFinal"));
+        }
+        else
+        {
+            YiEqn.solve(mesh.solver("Yi"));
+        }
+    }
+
+    Info<< "Species concentration = "
+    << Yi.weightedAverage(mesh.V()).value()
+    << "  Min(Yi) = " << gMin(Yi.internalField())
+    << "  Max(Yi) = " << gMax(Yi.internalField())
+    << endl;
+
+    // --------------------------------------------------------------------------------------------------
+
     // volScalarField& Yi = YPtrs[6];
     // for (int i = 0; i < 3; i++)
     // {
@@ -55,30 +126,30 @@ volScalarField Deff =
 
     // --------------------------------------------------------------------------------------------------
 
-        volScalarField& Yi = YPtrs[6];
+        // volScalarField& Yi = YPtrs[6];
 
-        // Deff *= pos(alphaLiq - 0.99);
-        // tmp<surfaceScalarField> tPhiYi;
+        // // Deff *= pos(alphaLiq - 0.99);
+        // // tmp<surfaceScalarField> tPhiYi;
 
-        for (int i = 0; i < 2; i++)
-        {
-            fvScalarMatrix YiEqn
-            (
-                fvm::ddt(Yi)
-              - fvm::laplacian(alphaLiq*Deff, Yi)
-              + fvm::div(mixture.phases()["liquid"].alphaPhi(), Yi, "div(phi,test)")
-            //   + fvm::div(phi, Yi, "div(phi,test)")
-            ==
-                alphaLiq*fvOptions(Yi)
-            );
+        // for (int i = 0; i < 2; i++)
+        // {
+        //     fvScalarMatrix YiEqn
+        //     (
+        //         fvm::ddt(Yi)
+        //       - fvm::laplacian(alphaLiq*Deff, Yi)
+        //       + fvm::div(mixture.phases()["liquid"].alphaPhi(), Yi, "div(phi,test)")
+        //     //   + fvm::div(phi, Yi, "div(phi,test)")
+        //     ==
+        //         alphaLiq*fvOptions(Yi)
+        //     );
 
-            YiEqn.relax();
-            fvOptions.constrain(YiEqn);
-            YiEqn.solve();
-            fvOptions.correct(Yi);
+        //     YiEqn.relax();
+        //     fvOptions.constrain(YiEqn);
+        //     YiEqn.solve();
+        //     fvOptions.correct(Yi);
 
-            // tPhiYi = YiEqn.flux();
-        }
+        //     // tPhiYi = YiEqn.flux();
+        // }
 
         // MULES::explicitSolve
         // (

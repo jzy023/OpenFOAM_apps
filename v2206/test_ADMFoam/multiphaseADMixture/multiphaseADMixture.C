@@ -138,6 +138,24 @@ Foam::multiphaseADMixture::multiphaseADMixture
     ),
 
     // testing 
+    nHatf_
+    (
+        IOobject
+        (
+            "nHatf", 
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE 
+        ),
+        mesh_, 
+        dimensionedScalar
+        (
+            dimArea,
+            Zero
+        )
+    ),
+
     rhoFieldsPtrs_(0)
 
 {
@@ -579,10 +597,14 @@ Foam::tmp<Foam::surfaceScalarField> Foam::multiphaseADMixture::nHatf
 (
     const volScalarField& alpha1,
     const volScalarField& alpha2
-) const
+) 
+// const
 {
     // Face unit interface normal flux
-    return nHatfv(alpha1, alpha2) & mesh_.Sf();
+    // return nHatfv(alpha1, alpha2) & mesh_.Sf();
+
+    // nHatf_ = nHatfv(alpha1, alpha2) & mesh_.Sf();
+    return nHatf_;
 }
 
 
