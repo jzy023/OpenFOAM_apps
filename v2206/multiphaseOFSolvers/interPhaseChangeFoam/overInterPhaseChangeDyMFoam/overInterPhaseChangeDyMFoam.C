@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2016-2020 OpenCFD Ltd.
+    Copyright (C) 2021 OpenCFD OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -24,19 +24,24 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Application
-    interCondensatingEvaporatingFoam
+    overInterPhaseChangeDyMFoam
 
 Group
-    grpMultiphaseSolvers
+    grpMultiphaseSolvers grpMovingMeshSolvers
 
 Description
-    Solver for two incompressible, non-isothermal immiscible fluids with
-    phase-change (evaporation-condensation) between a fluid and its vapour.
-    Uses a VOF (volume of fluid) phase-fraction based interface capturing
-    approach.
+    Solver for two incompressible, isothermal, immiscible fluids with
+    phase-change (e.g. cavitation) using VOF (i.e. volume of fluid)
+    phase-fraction based interface capturing, with optional dynamic mesh
+    motion (including overset) and mesh topology changes including adaptive
+    re-meshing.
 
-    The momentum, energy and other fluid properties are of the "mixture" and a
+    The momentum and other fluid properties are of the "mixture" and a
     single momentum equation is solved.
+
+    The set of phase-change models provided are designed to simulate cavitation
+    but other mechanisms of phase-change are supported within this solver
+    framework.
 
     Turbulence modelling is generic, i.e. laminar, RAS or LES may be selected.
 
@@ -45,19 +50,19 @@ Description
 #include "fvCFD.H"
 #include "dynamicFvMesh.H"
 #include "CMULES.H"
-#include "EulerDdtScheme.H"
-#include "localEulerDdtScheme.H"
-#include "CrankNicolsonDdtScheme.H"
 #include "subCycle.H"
 #include "interfaceProperties.H"
-#include "twoPhaseMixtureEThermo.H"
-#include "temperaturePhaseChangeTwoPhaseMixture.H"
+#include "phaseChangeTwoPhaseMixture.H"
 #include "turbulentTransportModel.H"
-#include "turbulenceModel.H"
 #include "pimpleControl.H"
 #include "fvOptions.H"
 #include "CorrectPhi.H"
 
+#include "cellCellStencilObject.H"
+#include "localMin.H"
+#include "interpolationCellPoint.H"
+#include "transform.H"
+#include "oversetAdjustPhi.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -65,32 +70,45 @@ int main(int argc, char *argv[])
 {
     argList::addNote
     (
-        "Solver for two incompressible, non-isothermal immiscible fluids with"
-        " phase-change,"
-        " using VOF phase-fraction based interface capturing.\n"
-        "With optional mesh motion and mesh topology changes including"
-        " adaptive re-meshing."
+        "Solver for two incompressible, isothermal, immiscible fluids with"
+        " phase-change\n"
+        "using VOF (volume of fluid) phase-fraction based interface capturing,"
+        " with optional dynamic mesh motion (including overset)\n"
+        "and mesh topology changes including adaptive re-meshing."
     );
 
     #include "postProcess.H"
 
-    #include "addCheckCaseOptions.H"
     #include "setRootCaseLists.H"
     #include "createTime.H"
     #include "createDynamicFvMesh.H"
-    #include "initContinuityErrs.H"
-    #include "createDyMControls.H"
-    #include "createFields.H"
-    #include "createAlphaFluxes.H"
-    #include "initCorrectPhi.H"
-    #include "createUfIfPresent.H"
 
+    #include "createDyMControls.H"
+    #include "initContinuityErrs.H"
+    #include "createFields.H"
+
+    volScalarField rAU
+    (
+        IOobject
+        (
+            "rAU",
+            runTime.timeName(),
+            mesh,
+            IOobject::READ_IF_PRESENT,
+            IOobject::AUTO_WRITE
+        ),
+        mesh,
+        dimensionedScalar("rAUf", dimTime/rho.dimensions(), 1.0)
+    );
+
+    #include "createUf.H"
     #include "CourantNo.H"
     #include "setInitialDeltaT.H"
 
-    volScalarField& T = thermo->T();
-
     turbulence->validate();
+
+    #include "setCellMask.H"
+    #include "setInterpolatedCells.H"
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -103,14 +121,10 @@ int main(int argc, char *argv[])
         // Store divU from the previous mesh so that it can be mapped
         // and used in correctPhi to ensure the corrected phi has the
         // same divergence
+        volScalarField divU("divU0", fvc::div(fvc::absolute(phi, U)));
 
-        volScalarField divU("divU", fvc::div(fvc::absolute(phi, U)));
-
-        {
-            #include "CourantNo.H"
-            #include "alphaCourantNo.H"
-            #include "setDeltaT.H"
-        }
+        #include "CourantNo.H"
+        #include "setDeltaT.H"
 
         ++runTime;
 
@@ -121,50 +135,58 @@ int main(int argc, char *argv[])
         {
             if (pimple.firstIter() || moveMeshOuterCorrectors)
             {
+                scalar timeBeforeMeshUpdate = runTime.elapsedCpuTime();
+
                 mesh.update();
 
                 if (mesh.changing())
                 {
-                    // Do not apply previous time-step mesh compression flux
-                    // if the mesh topology changed
-                    if (mesh.topoChanging())
-                    {
-                        talphaPhi1Corr0.clear();
-                    }
+                    Info<< "Execution time for mesh.update() = "
+                        << runTime.elapsedCpuTime() - timeBeforeMeshUpdate
+                        << " s" << endl;
 
                     gh = (g & mesh.C()) - ghRef;
                     ghf = (g & mesh.Cf()) - ghRef;
 
-                    MRF.update();
+                     // Update cellMask field for blocking out hole cells
+                    #include "setCellMask.H"
+                    #include "setInterpolatedCells.H"
+                    #include "correctPhiFaceMask.H"
 
-                    if (correctPhi)
-                    {
-                        // Calculate absolute flux
-                        // from the mapped surface velocity
-                        phi = mesh.Sf() & Uf();
+                    mixture->correct();
 
-                        #include "correctPhi.H"
+                    // Make the flux relative to the mesh motion
+                    fvc::makeRelative(phi, U);
+                }
 
-                        // Make the flux relative to the mesh motion
-                        fvc::makeRelative(phi, U);
-                    }
-
-                    if (checkMeshCourantNo)
-                    {
-                        #include "meshCourantNo.H"
-                    }
+                if (mesh.changing() && checkMeshCourantNo)
+                {
+                    #include "meshCourantNo.H"
                 }
             }
 
+            #include "alphaControls.H"
+
+            surfaceScalarField rhoPhi
+            (
+                IOobject
+                (
+                    "rhoPhi",
+                    runTime.timeName(),
+                    mesh
+                ),
+                mesh,
+                dimensionedScalar(dimMass/dimTime, Zero)
+            );
+
             mixture->correct();
 
-            #include "alphaControls.H"      // <-- !!!
-            #include "alphaEqnSubCycle.H"   // <-- !!!
+            #include "alphaEqnSubCycle.H"
+            rhoPhi *= faceMask;
 
             interface.correct();
 
             #include "UEqn.H"
-            #include "TEqn.H"
 
             // --- Pressure corrector loop
             while (pimple.correct())
@@ -177,8 +199,6 @@ int main(int argc, char *argv[])
                 turbulence->correct();
             }
         }
-
-        rho = alpha1*rho1 + alpha2*rho2;
 
         runTime.write();
 

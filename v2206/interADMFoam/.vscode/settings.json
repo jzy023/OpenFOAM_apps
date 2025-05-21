@@ -1,0 +1,18 @@
+{
+    "files.associations": {
+        "bashrc": "shellscript",
+        "interADMFoam.C": "cpp",
+        "temperaturePhaseChangeTwoPhaseMixture.C": "cpp",
+        "thermoIncompressibleTwoPhaseMixture.C": "cpp",
+        "twoPhaseMixtureEThermo.C": "cpp",
+        "constant.C": "cpp",
+        "interfaceHeatResistance.C": "cpp",
+        "temperaturePhaseChangeTwoPhaseMixtureNew.C": "cpp",
+        "ostream": "cpp",
+        "ADMno1_tests.C": "cpp",
+        "numbers": "cpp",
+        "typeindex": "cpp",
+        "typeinfo": "cpp",
+        "ADMno1.C": "cpp"
+    }
+}

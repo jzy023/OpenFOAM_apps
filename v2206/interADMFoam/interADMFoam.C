@@ -24,7 +24,7 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Application
-    interCondensatingEvaporatingFoam
+    interADMFoam
 
 Group
     grpMultiphaseSolvers
@@ -57,6 +57,8 @@ Description
 #include "pimpleControl.H"
 #include "fvOptions.H"
 #include "CorrectPhi.H"
+
+#include "ADMno1.H"
 
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -158,8 +160,8 @@ int main(int argc, char *argv[])
 
             mixture->correct();
 
-            #include "alphaControls.H"      // <-- !!!
-            #include "alphaEqnSubCycle.H"   // <-- !!!
+            #include "alphaControls.H"
+            #include "alphaEqnSubCycle.H"
 
             interface.correct();
 

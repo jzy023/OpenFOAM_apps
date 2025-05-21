@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "bashrc": "shellscript",
+        "phaseChangeTwoPhaseMixture.C": "cpp",
+        "interPhaseChangeFoam.C": "cpp",
+        "overInterPhaseChangeDyMFoam.C": "cpp",
+        "SchnerrSauer.C": "cpp",
+        "Kunz.C": "cpp",
+        "Merkle.C": "cpp",
+        "phaseChangeTwoPhaseMixtureNew.C": "cpp"
+    }
+}
