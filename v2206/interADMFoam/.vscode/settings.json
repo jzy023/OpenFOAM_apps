@@ -51,6 +51,8 @@
         "__node_handle": "cpp",
         "atomic": "cpp",
         "filesystem": "cpp",
-        "ios": "cpp"
+        "ios": "cpp",
+        "amdInterfaceProperties.C": "cpp",
+        "admInterfaceProperties.C": "cpp"
     }
 }

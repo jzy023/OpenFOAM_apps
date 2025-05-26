@@ -7,7 +7,8 @@ EXE_INC = \
     -I$(interFoam) \
     -I$(VoF) \
     -I./ADMno1/lnInclude \
-    -ItemperaturePhaseChangeTwoPhaseMixtures/lnInclude \
+	-I./admInterfaceProperties/lnInclude \
+    -I./temperaturePhaseChangeTwoPhaseMixtures/lnInclude \
     -I$(LIB_SRC)/finiteVolume/lnInclude \
     -I$(LIB_SRC)/fvOptions/lnInclude\
     -I$(LIB_SRC)/meshTools/lnInclude \
@@ -24,6 +25,7 @@ EXE_INC = \
 EXE_LIBS = \
     -L$(FOAM_USER_LIBBIN) \
     -lADM \
+	-ladmInterfaceProperties \
     -lfiniteVolume \
     -lfvOptions \
     -lmeshTools \
