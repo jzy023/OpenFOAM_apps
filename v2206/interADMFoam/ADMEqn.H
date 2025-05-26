@@ -23,7 +23,8 @@ volScalarField Deff =
 );
 
 {
-    volScalarField& Yi = YPtrs[6];
+    volScalarField& Yi = reaction->Y()[6];
+    // volScalarField& Yi = YPtrs[6];
     // volScalarField& Yi = speciesMixture.Y(i);
 
     //compute diffusion coefficient
@@ -43,8 +44,8 @@ volScalarField Deff =
     scalar HY = 0.1;
     surfaceScalarField phiH = 
     (
-        DmY * (1 - HY) / fvc::interpolate((alphaLiq + HY * (1 - alphaLiq)))
-      * fvc::snGrad(alphaLiq)*mesh.magSf()
+        DmY * (1 - HY) / fvc::interpolate((alpha1 + HY * (1 - alpha1)))
+      * fvc::snGrad(alpha1)*mesh.magSf()
     );
 
     volScalarField SpY = (Yi-Yi.oldTime())/runTime.deltaT();
@@ -103,7 +104,7 @@ volScalarField Deff =
     //       + fvm::div(phi, Yi, "div(phi,test)")
     //       - fvm::laplacian(Deff, Yi)
     //     ==
-    //         alphaLiq*fvOptions(Yi)
+    //         alpha1*fvOptions(Yi)
     //     );
 
     //     YiEqn.relax();
@@ -128,7 +129,7 @@ volScalarField Deff =
 
         // volScalarField& Yi = YPtrs[6];
 
-        // // Deff *= pos(alphaLiq - 0.99);
+        // // Deff *= pos(alpha1 - 0.99);
         // // tmp<surfaceScalarField> tPhiYi;
 
         // for (int i = 0; i < 2; i++)
@@ -136,11 +137,11 @@ volScalarField Deff =
         //     fvScalarMatrix YiEqn
         //     (
         //         fvm::ddt(Yi)
-        //       - fvm::laplacian(alphaLiq*Deff, Yi)
+        //       - fvm::laplacian(alpha1*Deff, Yi)
         //       + fvm::div(mixture.phases()["liquid"].alphaPhi(), Yi, "div(phi,test)")
         //     //   + fvm::div(phi, Yi, "div(phi,test)")
         //     ==
-        //         alphaLiq*fvOptions(Yi)
+        //         alpha1*fvOptions(Yi)
         //     );
 
         //     YiEqn.relax();
@@ -185,18 +186,18 @@ volScalarField Deff =
             
         // volScalarField& Yi = YPtrs[6];
 
-        // // Deff *= pos(alphaLiq - 0.99);
+        // // Deff *= pos(alpha1 - 0.99);
 
         // for (size_t i = 0; i < 3; i++)
         // {
         //     fvScalarMatrix YiEqn
         //     (
-        //         fvm::ddt(alphaLiq, Yi)
-        //       - fvm::laplacian(alphaLiq*Deff, Yi)
+        //         fvm::ddt(alpha1, Yi)
+        //       - fvm::laplacian(alpha1*Deff, Yi)
         //       + fvm::div(mixture.phases()["liquid"].alphaPhi(), Yi, "div(phi,test)")
         //     //   + fvm::div(phi, Yi, "div(phi,test)")
         //     ==
-        //     //     alphaLiq*fvOptions(Yi)
+        //     //     alpha1*fvOptions(Yi)
         //        fvc::ddt(residualAlpha_, Yi)
         //      - fvm::ddt(residualAlpha_, Yi)
         //     );
@@ -214,9 +215,9 @@ volScalarField Deff =
         
         // volScalarField& Yi = YPtrs[6];
         // volScalarField YiAlpha = Yi;
-        // YiAlpha.field() = max(alphaLiq, scalar(1e-3))().field() * Yi.field();
+        // YiAlpha.field() = max(alpha1, scalar(1e-3))().field() * Yi.field();
 
-        // Deff *= pos(alphaLiq - 0.99);
+        // Deff *= pos(alpha1 - 0.99);
 
         // for (size_t i = 0; i < 3; i++)
         // {
@@ -227,14 +228,14 @@ volScalarField Deff =
         //       + fvm::div(mixture.phases()["liquid"].alphaPhi(), Yi, "div(phi,test)")
         //       - fvm::laplacian(Deff, YiAlpha)
         //     ==
-        //         alphaLiq*fvOptions(YiAlpha)
+        //         alpha1*fvOptions(YiAlpha)
         //     );
 
         //     YiEqn.relax();
         //     fvOptions.constrain(YiEqn);
         //     YiEqn.solve();
         //     fvOptions.correct(YiAlpha);
-        //     Yi = YiAlpha / max(alphaLiq, scalar(1e-3));
+        //     Yi = YiAlpha / max(alpha1, scalar(1e-3));
         // }
     
 
@@ -280,11 +281,11 @@ volScalarField Deff =
 
     //     fvScalarMatrix YiEqn
     //     (
-    //         fvm::ddt(alphaLiq, rhoLiq, Yi)
+    //         fvm::ddt(alpha1, rhoLiq, Yi)
     //       + fvm::div(alphaRhoPhiLiq, Yi, "div(alphaRhoPhi.*,Yi)")
     //       - fvm::laplacian
     //         (
-    //             fvc::interpolate(alphaLiq)*
+    //             fvc::interpolate(alpha1)*
     //             fvc::interpolate(rhoLiq*Deff),
     //             Yi
     //         )

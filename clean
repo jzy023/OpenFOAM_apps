@@ -1,0 +1,2 @@
+find . -type f -name "*.Identifier" -exec rm -f {} +
+find . -type f -name "*Zone" -exec rm -f {} +

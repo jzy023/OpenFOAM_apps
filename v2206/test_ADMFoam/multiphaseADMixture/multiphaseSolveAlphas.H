@@ -44,7 +44,8 @@ void Foam::multiphaseADMixture::solveAlphas
 
                 phic = min(cAlpha*phic, max(phic));
 
-                surfaceScalarField phir(phic*nHatf(alpha, alpha2));
+                // surfaceScalarField phir(phic*nHatf(alpha, alpha2));
+                surfaceScalarField phir(phic*nHatf_);
 
                 alphaPhiCorr += fvc::flux
                 (

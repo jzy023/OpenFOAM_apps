@@ -24,7 +24,7 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Application
-    interCondensatingEvaporatingFoam
+    interADMFoam
 
 Group
     grpMultiphaseSolvers
@@ -58,6 +58,9 @@ Description
 #include "fvOptions.H"
 #include "CorrectPhi.H"
 
+#include "ADMno1.H"
+#include "upwind.H"
+#include "downwind.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -116,6 +119,17 @@ int main(int argc, char *argv[])
 
         Info<< "Time = " << runTime.timeName() << nl << endl;
 
+        // ADM1 reaction source terms
+        // reaction->clear();
+        // reaction->correct
+        // (
+        //     phi, 
+        //     alpha1, // alphaLiq,
+        //     alpha2, // alphaGas,
+        //     Top,
+        //     p
+        // ); 
+
         // --- Pressure-velocity PIMPLE corrector loop
         while (pimple.loop())
         {
@@ -156,10 +170,11 @@ int main(int argc, char *argv[])
                 }
             }
 
-            mixture->correct();
+            // mixture->correct();
 
-            #include "alphaControls.H"      // <-- !!!
-            #include "alphaEqnSubCycle.H"   // <-- !!!
+            #include "alphaControls.H"
+            #include "YiMulesEqn.H"
+            #include "alphaEqnSubCycle.H"
 
             interface.correct();
 
@@ -179,6 +194,8 @@ int main(int argc, char *argv[])
         }
 
         rho = alpha1*rho1 + alpha2*rho2;
+
+        // #include "ADMEqn.H"
 
         runTime.write();
 
