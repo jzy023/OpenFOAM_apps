@@ -49,7 +49,8 @@ Description
 #include "localEulerDdtScheme.H"
 #include "CrankNicolsonDdtScheme.H"
 #include "subCycle.H"
-#include "interfaceProperties.H"
+// #include "interfaceProperties.H"
+#include "admInterfaceProperties.H"
 #include "twoPhaseMixtureEThermo.H"
 #include "temperaturePhaseChangeTwoPhaseMixture.H"
 #include "turbulentTransportModel.H"
@@ -170,21 +171,21 @@ int main(int argc, char *argv[])
                 }
             }
 
-            // mixture->correct();
-
             #include "alphaControls.H"
-            #include "YiMulesEqn.H"
+            #include "admMulesEqn.H"
             #include "alphaEqnSubCycle.H"
 
-            interface.correct();
+            interface.solve();
 
-            #include "UEqn.H"
-            #include "TEqn.H"
+            // #include "UEqn.H"
+            #include "GeoEqns/UEqn.H"
+            // #include "TEqn.H"
 
             // --- Pressure corrector loop
             while (pimple.correct())
             {
-                #include "pEqn.H"
+                // #include "pEqn.H"
+                #include "GeoEqns/pEqn.H"
             }
 
             if (pimple.turbCorr())
@@ -195,7 +196,7 @@ int main(int argc, char *argv[])
 
         rho = alpha1*rho1 + alpha2*rho2;
 
-        // #include "ADMEqn.H"
+        #include "admEqn.H"
 
         runTime.write();
 

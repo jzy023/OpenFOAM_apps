@@ -2,12 +2,38 @@
 	word alpharScheme("div(phirb,alpha)");
 	word YiScheme("div(phi,Yi)");
 
+    volScalarField& Yi = reaction->Y()[6];
+
     // -------------------------------------------------------------------------------
 
+    // Standard face-flux compression coefficient
+    surfaceScalarField phic(mag(phi/mesh.magSf()));
+
+    surfaceScalarField phir(phic*interface.nHatf());
+
+    // basicTwoPhaseMultiComponentTransportMixture& speciesMixture =pSpeciesMixture();
+    // const speciesTable& solutionSpecies = speciesMixture.species();
+
+    // forAll(solutionSpecies, i)
+	{
+        // volScalarField& Yi = reaction->Y()[6];
+        // volScalarField& Yi = speciesMixture.Y(i);
+
+        scalar maxYi = max(gMax(Yi),gMax(Yi.boundaryField())) + 1e-30;
+
+        Yi.oldTime() == Yi.oldTime()/maxYi;
+        Yi == Yi/maxYi;
+
+		surfaceScalarField phiComp = fvc::flux
+        (
+            -fvc::flux(-phir, alpha2, alpharScheme),
+            alpha1,
+            alpharScheme
+        );
+
+    // -------------------------------------------------------------------------------
     // {
-        // scalar HY = 1e-6; 
         scalar HY = 0.1;
-        volScalarField& Yi = reaction->Y()[6];
 
         //Direction of interfacial flux
         surfaceScalarField fluxDir = fvc::snGrad(alpha1)*mesh.magSf();
@@ -30,36 +56,7 @@
 
         // return sgn*max(mag(deltaYi1),mag(deltaYi2));
         surfaceScalarField compressionCoeff = sgn*max(mag(deltaYi1),mag(deltaYi2));
-
     // }
-
-
-    // -------------------------------------------------------------------------------
-
-    // Standard face-flux compression coefficient
-    surfaceScalarField phic(mag(phi/mesh.magSf()));
-
-    surfaceScalarField phir(phic*interface.nHatf());
-
-    // basicTwoPhaseMultiComponentTransportMixture& speciesMixture =pSpeciesMixture();
-    // const speciesTable& solutionSpecies = speciesMixture.species();
-
-    // forAll(solutionSpecies, i)
-	{
-        volScalarField& Yi = reaction->Y()[6];
-        // volScalarField& Yi = speciesMixture.Y(i);
-
-        scalar maxYi = max(gMax(Yi),gMax(Yi.boundaryField())) + 1e-30;
-
-        Yi.oldTime() == Yi.oldTime()/maxYi;
-        Yi == Yi/maxYi;
-
-		surfaceScalarField phiComp = fvc::flux
-        (
-            -fvc::flux(-phir, alpha2, alpharScheme),
-            alpha1,
-            alpharScheme
-        );
 
         tmp<surfaceScalarField> tYiPhi1Un
         (

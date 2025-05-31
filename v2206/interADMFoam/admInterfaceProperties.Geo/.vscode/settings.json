@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "bashrc": "shellscript",
+        "interfaceProperties.C": "cpp",
+        "admInterfaceProperties.C": "cpp"
+    }
+}

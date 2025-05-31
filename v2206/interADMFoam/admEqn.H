@@ -87,11 +87,92 @@ volScalarField Deff =
         }
     }
 
-    Info<< "Species concentration = "
-    << Yi.weightedAverage(mesh.V()).value()
-    << "  Min(Yi) = " << gMin(Yi.internalField())
-    << "  Max(Yi) = " << gMax(Yi.internalField())
+    // Info<< "Species concentration = "
+    // << Yi.weightedAverage(mesh.V()).value()
+    Info<< "Species concentration (sum) = "
+    << gSum(Yi.internalField())
+    << "  Min(" << Yi.name() << ") = " << gMin(Yi.internalField())
+    << "  Max(" << Yi.name() << ") = " << gMax(Yi.internalField())
     << endl;
+
+    //calculate mass transfer flux ----------------------------------------------
+    Info<< "correcting Yi" << endl;
+    // speciesMixture.correct();
+
+    //calculate alpha downwind
+    surfaceScalarField fluxDir = fvc::snGrad(alpha1)*mesh.magSf();
+    surfaceScalarField alphaDown = downwind<scalar>(mesh,fluxDir).interpolate(alpha1);
+
+    //Re-initialize transfer flux
+	phiD_ =0*phiD_;
+
+    // if (phiHScheme_ == "Gauss upwind")
+    // {
+	// 	forAll(species_, i)
+	// 	{
+	// 		phiD_+=Mw_[i]*
+	// 			 (
+	// 			 	DmY(i)*fvc::snGrad(Yi)*mesh.magSf()
+	// 	           -fvc::flux(phiHUp(i),Yi,"div(phiH,Yi)")
+	// 	           -fvc::flux(phiHDown(i),Yi,"div(phiH,Yi)")
+	// 			 );
+	// 	}
+    // }
+    // else if (phiHScheme_ == "Gauss linear")
+    // {
+	// 	forAll(species_, i)
+	// 	{
+			phiD_+= // Mw_*
+				 (
+				 	DmY*fvc::snGrad(Yi)*mesh.magSf()
+				   -fvc::flux(phiH,Yi,"div(phiH,Yi)")
+				 );
+	// 	}
+    // }
+    // else
+    // {
+    //     Info<< "div(phiH,Yi) should be equal to Gauss linear or Gauss upwind"
+	// 	<< endl
+	// 	<< abort(FatalError);
+    // }
+
+    //Compute flux
+	Mflux_ = fvc::div(phiD_*alphaDown)-alpha1*fvc::div(phiD_);
+
+    volScalarField alpha2 = 1-alpha1;
+
+	//compute Yi1 and Yi2
+	// forAll(species_, i)
+	// {
+		// volScalarField& Yi = Yi;
+		// volScalarField& Y1i = phase1SpeciesMixture_.Y(i);
+		// volScalarField& Y2i = phase2SpeciesMixture_.Y(i);
+		// dimensionedScalar HYi = HY_[i];
+		Y1i = Yi/(alpha1+HY*(1-alpha1));
+		Y2i = HY*Yi/(alpha1+HY*(1-alpha1));
+	// }
+
+    // //set saturation
+    // phase1SpeciesMixture_.setSaturation(alpha1);
+    // phase2SpeciesMixture_.setSaturation(alpha2);
+
+    // //correct each phase
+    // phase1SpeciesMixture_.correct();
+    // phase2SpeciesMixture_.correct();
+
+	//compute Yi from Y1i and Y2i
+	// forAll(species_, i)
+	// {
+		// volScalarField& Yi = Yi;
+		// volScalarField& Y1i = phase1SpeciesMixture_.Y(i);
+		// volScalarField& Y2i = phase2SpeciesMixture_.Y(i);
+		Yi = Y1i*alpha1 + Y2i*(1-alpha1);
+	// }
+
+    // DEBUG
+    Info<< "max(Mflux) = "
+        << gMax(Mflux_.internalField())
+        << endl;
 
     // --------------------------------------------------------------------------------------------------
 

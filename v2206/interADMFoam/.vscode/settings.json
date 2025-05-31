@@ -53,6 +53,12 @@
         "filesystem": "cpp",
         "ios": "cpp",
         "amdInterfaceProperties.C": "cpp",
-        "admInterfaceProperties.C": "cpp"
+        "admInterfaceProperties.C": "cpp",
+        "surfaceTensionModelNew.C": "cpp",
+        "constantSurfaceTension.C": "cpp",
+        "iosfwd": "cpp",
+        "interfaceCompression.C": "cpp",
+        "wallEnergyConstantContactAngleFvPatchScalarField.C": "cpp",
+        "surfaceTensionModel.C": "cpp"
     }
 }

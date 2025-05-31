@@ -28,9 +28,6 @@ private:
 
     //-number of non-orthogonal corrector loop
     label nNonOrthogonalCorrectors_;
-
-    // Interface normal vector at cell center
-    volVectorField nI_;
     
     // Capillary pressure
     volScalarField pc_;
@@ -42,7 +39,6 @@ private:
         
     // Capillary pressure residual
     scalar eqnResidual_;
-
 
 // Public data
 public:
@@ -57,11 +53,21 @@ public:
         const IOdictionary& dict
     );
 
-
     // Member functions 
 
     void calculatePhic();
 
+    void solve();
+
+    const volScalarField& pc()
+    {
+        return pc_;
+    }
+
+    const surfaceScalarField& phic()
+    {
+        return phic_;
+    }
 };
 
 }

@@ -25,18 +25,20 @@ admInterfaceProperties
         dict
     ),
     alpha1_(alpha1),
-    nI_
+    //- Sharp force coefficient (put 0.98-0.99 for static problems, 0.4-0.5 for dynamic)
+    cPc_
     (
-        IOobject
+        readScalar
         (
-            "nI",
-            alpha1_.time().timeName(),
-            alpha1_.mesh(),
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        alpha1_.mesh(),
-        dimensionedVector(dimless, Zero)
+            alpha1.mesh().solutionDict().subDict("PIMPLE").lookup("cPc")
+        )
+    ),
+    nNonOrthogonalCorrectors_
+    (
+        readLabel
+        (
+            alpha1.mesh().solutionDict().subDict("PIMPLE").lookup("nNonOrthogonalCorrectors")
+        )
     ),
     pc_
     (
@@ -50,6 +52,22 @@ admInterfaceProperties
         ),
         alpha1_.mesh()
     ),
+    //Specific cell where the capillary pressure value is used as refference
+    pcRefCell_
+    (
+        readLabel
+        (
+            alpha1.mesh().solutionDict().subDict("PIMPLE").lookup("pcRefCell")
+        )
+    ),
+    //value of the capillary pressure in the specific cell
+    pcRefValue_
+    (
+        readScalar
+        (
+            alpha1.mesh().solutionDict().subDict("PIMPLE").lookup("pcRefValue")
+        )
+    ),
     phic_
     (
         IOobject
@@ -61,11 +79,17 @@ admInterfaceProperties
         alpha1_.mesh(),
         dimensionedScalar("phic", dimPressure / dimLength*dimArea, 0.0)
     )
-    
 {
+    setRefCell
+    (
+        pc_,
+        alpha1_.mesh().solutionDict().subDict("PIMPLE"),
+        pcRefCell_,
+        pcRefValue_
+    );
 
+    this->correct();
 };
-
 
 void Foam::admInterfaceProperties::calculatePhic()
 {
@@ -112,7 +136,7 @@ void Foam::admInterfaceProperties::calculatePhic()
         solverPerformance residual = pcEqn.solve();
 
         
-	if (nonOrth==0) eqnResidual_ = residual.initialResidual();
+	    if (nonOrth==0) eqnResidual_ = residual.initialResidual();
 
 		//add flux of pc to capillary flux
         if (nonOrth == nNonOrthogonalCorrectors_)
@@ -121,3 +145,12 @@ void Foam::admInterfaceProperties::calculatePhic()
         }
     }
 }
+
+
+void Foam::admInterfaceProperties::solve()
+{
+    this->correct();
+    
+    calculatePhic();
+}
+
