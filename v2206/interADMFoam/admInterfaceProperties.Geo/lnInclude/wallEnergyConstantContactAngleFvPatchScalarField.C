@@ -1,1 +1,0 @@
-../derivedFvPatchFields/wallEnergyConstantContactAngle/wallEnergyConstantContactAngleFvPatchScalarField.C

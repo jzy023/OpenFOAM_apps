@@ -1,6 +1,0 @@
-SOURCE = \
-admInterfaceProperties.C \
-alphaContactAngle/alphaContactAngleTwoPhaseFvPatchScalarField.C \
-derivedFvPatchFields/wallEnergyConstantContactAngle/wallEnergyConstantContactAngleFvPatchScalarField.C \
-
-# sources
