@@ -33,7 +33,7 @@
 
     // -------------------------------------------------------------------------------
     // {
-        scalar HY = 0.1;
+        // scalar HY = 1e-6; // 0.1;
 
         //Direction of interfacial flux
         surfaceScalarField fluxDir = fvc::snGrad(alpha1)*mesh.magSf();

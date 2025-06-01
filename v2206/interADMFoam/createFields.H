@@ -258,3 +258,12 @@ volScalarField Y2i
         0.0
     )
 );
+
+const dimensionedScalar DmY
+(
+    dimArea/dimTime,
+    1e-16
+);
+    
+// const scalar HY = 1e-6;
+const scalar HY = 0.8;

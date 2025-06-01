@@ -36,12 +36,6 @@ volScalarField Deff =
     // surfaceScalarField phiHDown = speciesMixture.phiHDown(i);
     
     // surfaceScalarField phiH = DmY(i)*(1-HY_[i])/fvc::interpolate((alpha1_+HY_[i]*(1-alpha1_)))*fvc::snGrad(alpha1_)*mesh_.magSf();
-    dimensionedScalar DmY
-    (
-        Deff.dimensions(),
-        1e-16
-    );
-    scalar HY = 0.1;
     surfaceScalarField phiH = 
     (
         DmY * (1 - HY) / fvc::interpolate((alpha1 + HY * (1 - alpha1)))
