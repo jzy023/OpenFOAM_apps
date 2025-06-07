@@ -265,5 +265,23 @@ const dimensionedScalar DmY
     1e-16
 );
     
-// const scalar HY = 1e-6;
-const scalar HY = 0.8;
+const scalar HY = 1e-6;
+// const scalar HY = 0.8;
+
+// 
+PtrList<volScalarField>& Si = reaction->Y(); // <-- TODO: const?
+PtrList<volScalarField>& Gi = reaction->G(); // <-- TODO: const?
+
+Info<< "Creating admMixture\n" << endl;
+autoPtr<admMixture> testMixture
+(
+    admMixture::New
+    (
+        reaction->Y(),
+        reaction->G(),
+        alpha1,
+        U,
+        thermo->transportPropertiesDict(),
+        phi
+    )
+);

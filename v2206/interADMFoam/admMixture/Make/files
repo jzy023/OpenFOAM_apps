@@ -1,0 +1,4 @@
+admMixture.C
+admMixtureNew.C
+
+LIB = $(FOAM_LIBBIN)/libadmMixture

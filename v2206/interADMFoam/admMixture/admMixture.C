@@ -1,0 +1,451 @@
+/*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
+     \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2016-2020 OpenCFD Ltd.
+-------------------------------------------------------------------------------
+License
+    This file is part of OpenFOAM.
+
+    OpenFOAM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+
+\*---------------------------------------------------------------------------*/
+
+#include "admMixture.H"
+
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
+
+namespace Foam
+{
+    defineTypeNameAndDebug(admMixture, 0);
+    defineRunTimeSelectionTable
+    (
+        admMixture,
+        components
+    );
+}
+
+
+// * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
+
+//- Species transport equations
+void Foam::admMixture::massTransferCoeffs()
+{
+    alpha2_ = 1 - interface_.alpha();
+            
+    // calculate and return mean diffusion coefficient
+    // TODO: multispecies? add turbulent diffusivity too?
+    DalphaS_ = fvc::interpolate(DG_ * alpha2_);
+    DalphaG_ = 
+    (
+        fvc::interpolate(DS_ * alpha1_)
+        // fvc::interpolate(DS_ * alpha1_ + H_ * DS2_ * alpha2_) / fvc::interpolate(alpha1_ + H_ * alpha2_)
+    );
+            
+    //- Calculate interface mass transfer flux by Henry's Law
+    // TODO: check for gas [all 0 if H_ -> 0]
+    // surfaceScalarField phiHUp = speciesMixture.phiHUp(i);
+    // surfaceScalarField phiHDown = speciesMixture.phiHDown(i);
+    phiHS_ = 
+    (
+        DalphaS_ * (1 - H_) / fvc::interpolate((alpha1_ + H_ * (1 - alpha1_)))
+      * fvc::snGrad(alpha1_) * mesh_.magSf()
+    );
+}
+
+
+//- interface compreassion coefficient
+surfaceScalarField Foam::admMixture::compressionCoeff
+(
+    // label i,
+    // const PtrList<volScalarField>& Ci
+    const volScalarField& Yi
+)
+{
+    // Reference of species
+    // const volScalarField& Yi = Ci[i];
+
+    // Direction of interfacial flux
+    surfaceScalarField fluxDir = fvc::snGrad(interface_.alpha())*mesh_.magSf();
+
+    // Upwind and downwind alpha1
+    surfaceScalarField alphaUp = upwind<scalar>(mesh_,fluxDir).interpolate(interface_.alpha());
+    surfaceScalarField alphaDown = downwind<scalar>(mesh_,fluxDir).interpolate(interface_.alpha());
+
+    // Upwind and downwnd Yi
+    surfaceScalarField YiUp = upwind<scalar>(mesh_,fluxDir).interpolate(Yi);
+    surfaceScalarField YiDown = downwind<scalar>(mesh_,fluxDir).interpolate(Yi);
+        
+    dimensionedScalar sgn = 
+    (
+        sign(max(alphaDown * YiDown) - max((1 - alphaUp) * YiUp))
+    );
+
+    // Normal compression coefficient
+    surfaceScalarField deltaYi1 = 
+    (
+        max
+        (
+          - max(Yi),
+            min
+            (
+                max(Yi),
+                (YiDown - YiUp) / (alphaDown - alphaUp + 1e-4)
+            )
+        )
+    );
+        
+    // Standard compression coefficient
+    surfaceScalarField deltaYi2 = 
+    (
+        max
+        (
+          - max(Yi),
+            min
+            (
+                max(Yi),
+                (
+                    YiDown / (alphaDown + (1 - alphaDown) * H_)
+                  - H_ * YiUp / (alphaUp + (1 - alphaUp) * H_)
+                )
+            )
+        )
+    );
+
+    return sgn * max(mag(deltaYi1),mag(deltaYi2));
+}
+
+
+void Foam::admMixture::speciesMules()
+{
+    word alpharScheme("div(phirb,alpha)");
+	word YiScheme("div(phi,Yi)");
+
+    // Standard face-flux compression coefficient
+    surfaceScalarField phic(mag(phi_ / mesh_.magSf()));
+
+    surfaceScalarField phir(phic * interface_.nHatf());
+
+    // // TODO: move this to general solve() function
+    // alpha2_ = 1 - interface_.alpha();
+
+    // TODO: optimization to use 1 bounded solver for all species from the same phase
+    // Soluables
+    forAll(Si_, i)
+	{
+        volScalarField& Yi = Si_[i];
+
+        scalar maxYi = max(gMax(Yi), gMax(Yi.boundaryField())) + 1e-30;
+
+        Yi.oldTime() == Yi.oldTime() / maxYi;
+        Yi == Yi / maxYi;
+
+		surfaceScalarField phiComp = fvc::flux
+        (
+            -fvc::flux(-phir, alpha2_, alpharScheme),
+            interface_.alpha(),
+            alpharScheme
+        );
+
+        tmp<surfaceScalarField> tYiPhi1Un
+        (
+            fvc::flux
+            (
+                phi_,
+                Yi,
+                YiScheme
+            )
+		 +  phiComp * compressionCoeff(Yi)
+        );
+
+        {
+            surfaceScalarField YiPhi10 = tYiPhi1Un;
+
+            MULES::explicitSolve
+            (
+                geometricOneField(),
+                Yi,
+                phi_,
+                YiPhi10,
+                zeroField(),
+                zeroField(),
+                oneField(),
+                zeroField()
+            );
+        }
+
+        Yi.oldTime() == Yi.oldTime() * maxYi;
+        Yi == Yi*maxYi;
+    }
+}
+
+
+// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
+
+Foam::admMixture::admMixture
+(
+    // const thermoIncompressibleTwoPhaseMixture& mixture,
+    // const fvMesh& mesh
+    PtrList<volScalarField>& Si,
+    PtrList<volScalarField>& Gi,
+    const volScalarField& alpha1,
+    const volVectorField& U,
+    const IOdictionary& dict,
+    const surfaceScalarField& phi
+)
+:
+    IOdictionary
+    (
+        IOobject
+        (
+            "phaseChangeProperties",
+            U.mesh().time().constant(),
+            U.mesh(),
+            IOobject::MUST_READ_IF_MODIFIED,
+            IOobject::NO_WRITE
+        )
+    ),
+    Si_(Si),
+    Gi_(Gi),
+    interface_
+    (
+        alpha1,
+        U,
+        dict
+    ),
+    alpha1_(interface_.alpha()),
+    alpha2_(1.0 - alpha1_),
+    mesh_(U.mesh()),
+    phi_(phi),
+    H_
+    (
+        "test",
+        dimless,
+        1e-8
+    ),
+    DS_
+    (
+        "test1",
+        dimArea/dimTime,
+        1e-8
+    ),
+    DG_
+    (
+        "test2",
+        dimArea/dimTime,
+        1e-8
+    ),
+    DalphaS_
+    (
+        IOobject
+		(
+			"DalphaS",
+            alpha1_.time().timeName(),
+			mesh_,
+			IOobject::NO_READ,
+			IOobject::NO_WRITE
+		),
+		mesh_,
+		dimensionedScalar
+        (
+            "DalphaSdefault",
+            dimArea/dimTime,
+            SMALL
+        )
+    ),
+    DalphaG_
+    (
+        IOobject
+		(
+			"DalphaG",
+            alpha1_.time().timeName(),
+			mesh_,
+			IOobject::NO_READ,
+			IOobject::NO_WRITE
+		),
+		mesh_,
+		dimensionedScalar
+        (
+            "DalphaGdefault",
+            dimArea/dimTime,
+            SMALL
+        )
+    ),
+    phiHS_
+    (
+        IOobject
+		(
+			"phiH",
+            alpha1_.time().timeName(),
+			mesh_,
+			IOobject::NO_READ,
+			IOobject::NO_WRITE
+		),
+		mesh_,
+		dimensionedScalar
+        (
+            "phiHdefault",
+            dimVolume/dimTime,
+            SMALL
+        )
+    )
+    // mixture_(mixture),
+    // mesh_(mesh)
+{
+    // alpha2_ = 1 - alpha1_;
+    // alpha2_ = 1 - interface_.alpha();
+}
+
+
+// * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //
+
+void Foam::admMixture::func()
+{
+    // // Calculate mass transfer flux ----------------------------------------------
+    // Info<< "correcting Yi" << endl;
+
+    // //calculate alpha downwind
+    // surfaceScalarField fluxDir = fvc::snGrad(alpha1_)*mesh.magSf();
+    // surfaceScalarField alphaDown = downwind<scalar>(mesh,fluxDir).interpolate(alpha1_);
+
+    // // Re-initialize transfer flux
+    // phiD_ = 0 * phiD_;
+
+    // if (phiHScheme_ == "Gauss upwind")
+    // {
+    // 	forAll(species_, i)
+    // 	{
+    // 		phiD_+=Mw_[i]*
+    // 			 (
+    // 			 	DmY(i)*fvc::snGrad(Yi)*mesh.magSf()
+    // 	           -fvc::flux(phiHUp(i),Yi,"div(phiHS,Yi)")
+    // 	           -fvc::flux(phiHDown(i),Yi,"div(phiHS,Yi)")
+    // 			 );
+    // 	}
+    // }
+    // else if (phiHScheme_ == "Gauss linear")
+    // {
+    // 	forAll(species_, i)
+    // 	{
+    //         phiD_ += // Mw_*
+    //             (
+    //                 DmY * fvc::snGrad(Yi) * mesh_.magSf()
+    //               -fvc::flux(phiHS,Yi,"div(phiHS,Yi)")
+    //             );
+    // 	}
+    // }
+    // else
+    // {
+    //     Info<< "div(phiHS,Yi) should be equal to Gauss linear or Gauss upwind"
+    // 	<< endl
+    // 	<< abort(FatalError);
+    // }
+
+    // // Compute flux
+    // Mflux_ = fvc::div(phiD_ * alphaDown) - alpha1_ * fvc::div(phiD_);
+
+    // // alpha2_ = 1 - alpha1_;
+
+    // // compute Yi1 and Yi2
+    // forAll(species_, i)
+    // {
+    //     volScalarField& Yi = Yi;
+    //     volScalarField& Y1i = phase1SpeciesMixture_.Y(i);
+    //     volScalarField& Y2i = phase2SpeciesMixture_.Y(i);
+    //     dimensionedScalar HYi = HY_[i];
+    //     Y1i = Yi/(alpha1+H_*(1-alpha1));
+    //     Y2i = H_*Yi/(alpha1+H_*(1-alpha1));
+    // }
+
+    // // set saturation
+    // phase1SpeciesMixture_.setSaturation(alpha1);
+    // phase2SpeciesMixture_.setSaturation(alpha2);
+
+    // // correct each phase
+    // phase1SpeciesMixture_.correct();
+    // phase2SpeciesMixture_.correct();
+
+    // compute Yi from Y1i and Y2i
+    // forAll(species_, i)
+    // {
+    //     volScalarField& Yi = Yi;
+    //     volScalarField& Y1i = phase1SpeciesMixture_.Y(i);
+    //     volScalarField& Y2i = phase2SpeciesMixture_.Y(i);
+    //     Yi = Y1i*alpha1 + Y2i*(1-alpha1);
+    // }
+
+    // // DEBUG
+    // Info<< "max(Mflux) = "
+    //     << gMax(Mflux_.internalField())
+    //     << endl;
+};
+
+
+void Foam::admMixture::solve()
+{
+    // DEBUG
+    Info<< ">>> testing admMixture::solve()" << endl;
+
+    massTransferCoeffs();
+
+    speciesMules();
+
+    interface_.solve();
+}
+
+
+// Foam::Pair<Foam::tmp<Foam::volScalarField>>
+// Foam::admMixture::vDotAlphal() const
+// {
+//     volScalarField alphalCoeff
+//     (
+//         1.0/mixture_.rho1() - mixture_.alpha1()
+//        *(1.0/mixture_.rho1() - 1.0/mixture_.rho2())
+//     );
+
+//     Pair<tmp<volScalarField>> mDotAlphal = this->mDotAlphal();
+
+//     return Pair<tmp<volScalarField>>
+//     (
+//         alphalCoeff*mDotAlphal[0],
+//         alphalCoeff*mDotAlphal[1]
+//     );
+// }
+
+
+// Foam::Pair<Foam::tmp<Foam::volScalarField>>
+// Foam::admMixture::vDot() const
+// {
+//     dimensionedScalar pCoeff(1.0/mixture_.rho1() - 1.0/mixture_.rho2());
+//     Pair<tmp<volScalarField>> mDot = this->mDot();
+
+//     return Pair<tmp<volScalarField>>(pCoeff*mDot[0], pCoeff*mDot[1]);
+// }
+
+
+// bool Foam::admMixture::read()
+// {
+//     if (regIOobject::read())
+//     {
+//         return true;
+//     }
+
+//     return false;
+// }
+
+
+// ************************************************************************* //

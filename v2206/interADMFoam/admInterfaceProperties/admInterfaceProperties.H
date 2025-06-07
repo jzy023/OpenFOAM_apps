@@ -17,59 +17,64 @@ class admInterfaceProperties
     public interfaceProperties
 {
 
-// Private data
-private:
+    // Private data
+    private:
 
-    // Replicate of interfaceProperties.alpha1_
-    const volScalarField& alpha1_;
+        // Replicate of interfaceProperties.alpha1_
+        const volScalarField& alpha1_;
 
-    //- Sharp force coefficient (put 0.98-0.99 for static problems, 0.4-0.5 for dynamic)
-    scalar cPc_;
+        //- Sharp force coefficient (put 0.98-0.99 for static problems, 0.4-0.5 for dynamic)
+        scalar cPc_;
 
-    //-number of non-orthogonal corrector loop
-    label nNonOrthogonalCorrectors_;
-    
-    // Capillary pressure
-    volScalarField pc_;
-    label pcRefCell_;
-    scalar pcRefValue_;
-    
-    // Capillary flow    
-    surfaceScalarField phic_;
+        //-number of non-orthogonal corrector loop
+        label nNonOrthogonalCorrectors_;
         
-    // Capillary pressure residual
-    scalar eqnResidual_;
+        // Capillary pressure
+        volScalarField pc_;
+        label pcRefCell_;
+        scalar pcRefValue_;
+        
+        // Capillary flow    
+        surfaceScalarField phic_;
+            
+        // Capillary pressure residual
+        scalar eqnResidual_;
 
-// Public data
-public:
+    // Public data
+    public:
 
-    // Constructors
+        // Constructors
 
-    //- Construct from volume fraction field gamma and IOdictionary
-    admInterfaceProperties
-    (
-        const volScalarField& alpha1,
-        const volVectorField& U,
-        const IOdictionary& dict
-    );
+        //- Construct from volume fraction field gamma and IOdictionary
+        admInterfaceProperties
+        (
+            const volScalarField& alpha1,
+            const volVectorField& U,
+            const IOdictionary& dict
+        );
 
-    // Member functions 
+        // Member functions 
 
-    void calculatePhic();
+        void calculatePhic();
 
-    void solve();
+        void solve();
 
-    const volScalarField& pc()
-    {
-        return pc_;
-    }
+        // TODO: make them inline
+        inline const volScalarField& alpha();
 
-    const surfaceScalarField& phic()
-    {
-        return phic_;
-    }
+        inline const volScalarField& pc();
+
+        inline const surfaceScalarField& phic();
 };
 
 }
 
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#include "admInterfacePropertiesI.H"
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
 #endif
+
+// ************************************************************************* //

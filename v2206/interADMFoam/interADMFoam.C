@@ -49,8 +49,7 @@ Description
 #include "localEulerDdtScheme.H"
 #include "CrankNicolsonDdtScheme.H"
 #include "subCycle.H"
-// #include "interfaceProperties.H"
-#include "admInterfaceProperties.H"
+
 #include "twoPhaseMixtureEThermo.H"
 #include "temperaturePhaseChangeTwoPhaseMixture.H"
 #include "turbulentTransportModel.H"
@@ -59,9 +58,12 @@ Description
 #include "fvOptions.H"
 #include "CorrectPhi.H"
 
-#include "ADMno1.H"
 #include "upwind.H"
 #include "downwind.H"
+#include "ADMno1.H"
+// #include "interfaceProperties.H"
+#include "admInterfaceProperties.H"
+#include "admMixture.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -98,7 +100,7 @@ int main(int argc, char *argv[])
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
-    Info<< "\nStarting time loop\n" << endl;
+    Info<< "\nStarting time loop\n" << endl; 
 
     while (runTime.run())
     {
@@ -173,9 +175,12 @@ int main(int argc, char *argv[])
 
             #include "alphaControls.H"
             #include "admMulesEqn.H"
-            #include "alphaEqnSubCycle.H"
-
             interface.solve();
+            #include "alphaEqnSubCycle.H"
+            
+            testMixture->solve();
+            #include "admMixture/admEqn.H"   
+
 
             // #include "UEqn.H"
             #include "GeoEqns/UEqn.H"
