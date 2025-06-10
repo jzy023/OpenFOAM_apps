@@ -48,6 +48,7 @@ SourceFiles
 #include "upwind.H"
 #include "downwind.H"
 #include "CMULES.H"
+#include "interfaceProperties.H"
 #include "admInterfaceProperties.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -141,7 +142,7 @@ protected:
         //- MULES solver for species
         void speciesMules
         (
-            const admInterfaceProperties& interface
+            const interfaceProperties& interface
         );
 
 
@@ -246,7 +247,7 @@ public:
         void func();
 
         //- Solve mixture 
-        void solve (const admInterfaceProperties& interface);
+        void solve (const interfaceProperties& interface);
 
         inline const volScalarField& alpha() const;
 

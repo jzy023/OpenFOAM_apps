@@ -28,10 +28,10 @@
     surfaceScalarField phig
     (
         (
-            // interface.surfaceTensionForce()
+            interface.surfaceTensionForce()
           - ghf*fvc::snGrad(rho)
         )*rAUf*mesh.magSf()
-        +rAUf*interface.phic()
+        // +rAUf*interface.phic()
     );
 
     phiHbyA += phig;
@@ -70,8 +70,8 @@
     // Make the fluxes relative to the mesh motion
     fvc::makeRelative(phi, U);
 
-    // p == p_rgh + rho*gh;
-    p == p_rgh + interface.pc() + rho*gh;
+    p == p_rgh + rho*gh;
+    // p == p_rgh + interface.pc() + rho*gh;
 
     if (p_rgh.needReference())
     {
@@ -81,8 +81,8 @@
             p.dimensions(),
             pRefValue - getRefCellValue(p, pRefCell)
         );
-        // p_rgh = p - rho*gh;
-        p_rgh = p - interface.pc() - rho*gh;
+        p_rgh = p - rho*gh;
+        // p_rgh = p - interface.pc() - rho*gh;
     }
 
     if (!correctPhi)

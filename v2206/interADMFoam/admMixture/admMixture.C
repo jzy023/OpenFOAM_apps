@@ -132,7 +132,7 @@ surfaceScalarField Foam::admMixture::compressionCoeff
 
 void Foam::admMixture::speciesMules
 (
-    const admInterfaceProperties& interface
+    const interfaceProperties& interface
 )
 {
     word alpharScheme("div(phirb,alpha)");
@@ -394,7 +394,7 @@ void Foam::admMixture::func()
 
 void Foam::admMixture::solve
 (
-    const admInterfaceProperties& interface
+    const interfaceProperties& interface
 )
 {
     // DEBUG

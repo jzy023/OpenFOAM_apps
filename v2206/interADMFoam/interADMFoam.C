@@ -62,8 +62,8 @@ Description
 #include "upwind.H"
 #include "downwind.H"
 #include "ADMno1.H"
-// #include "interfaceProperties.H"
-#include "admInterfaceProperties.H"
+#include "interfaceProperties.H"
+// #include "admInterfaceProperties.H"
 #include "admMixture.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

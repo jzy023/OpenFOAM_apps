@@ -22,12 +22,12 @@
             fvc::reconstruct
             (
                 (
-                    // interface.surfaceTensionForce()
+                    interface.surfaceTensionForce()
                   - ghf*fvc::snGrad(rho)
                   - fvc::snGrad(p_rgh)
                 ) * mesh.magSf()
                 //capillary flux
-                + interface.phic()
+                // + interface.phic()
             )
         );
 

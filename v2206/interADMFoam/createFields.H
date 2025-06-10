@@ -121,22 +121,22 @@ surfaceScalarField rhoPhi
     fvc::interpolate(rho)*phi
 );
 
-// // Construct interface from alpha1 distribution
-// interfaceProperties interface
-// (
-//     alpha1,
-//     U,
-//     thermo->transportPropertiesDict()
-// );
-// testing
-admInterfaceProperties interface
+// Construct interface from alpha1 distribution
+interfaceProperties interface
 (
     alpha1,
     U,
     thermo->transportPropertiesDict()
 );
-const volScalarField& pc = interface.pc();
-mesh.setFluxRequired(pc.name());
+// // testing
+// admInterfaceProperties interface
+// (
+//     alpha1,
+//     U,
+//     thermo->transportPropertiesDict()
+// );
+// const volScalarField& pc = interface.pc();
+// mesh.setFluxRequired(pc.name());
 
 
 // Construct incompressible turbulence model
@@ -170,8 +170,8 @@ if (p_rgh.needReference())
         p.dimensions(),
         pRefValue - getRefCellValue(p, pRefCell)
     );
-    // p_rgh = p - rho*gh;
-    p_rgh = p - pc - rho*gh;
+    p_rgh = p - rho*gh;
+    // p_rgh = p - pc - rho*gh;
 }
 
 mesh.setFluxRequired(p_rgh.name());
@@ -242,53 +242,6 @@ volScalarField Mflux_
 	mesh,
 	dimensionedScalar("MFlux", dimMass/dimVolume/dimTime, 0.0)
 );
-
-volScalarField Y1i
-(
-    IOobject
-	(
-		"Y1i",
-        runTime.timeName(),
-		mesh,
-		IOobject::NO_READ,
-        IOobject::NO_WRITE
-	),
-	mesh,
-	dimensionedScalar
-    (
-        "Y1i",
-        reaction->Y()[6].dimensions(), 
-        0.0
-    )
-);
-
-volScalarField Y2i
-(
-    IOobject
-	(
-		"Y2i",
-        runTime.timeName(),
-		mesh,
-		IOobject::NO_READ,
-        IOobject::NO_WRITE
-	),
-	mesh,
-	dimensionedScalar
-    (
-        "Y2i",
-        reaction->Y()[6].dimensions(), 
-        0.0
-    )
-);
-
-const dimensionedScalar DmY
-(
-    dimArea/dimTime,
-    1e-16
-);
-    
-const scalar HY = 1e-6;
-// const scalar HY = 0.8;
 
 // 
 PtrList<volScalarField>& Si = reaction->Y(); // <-- TODO: const?
