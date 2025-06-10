@@ -1,3 +1,5 @@
+#include "createRDeltaT.H"
+
 Info<< "Reading field p_rgh\n" << endl;
 volScalarField p_rgh
 (
@@ -28,23 +30,67 @@ volVectorField U
 
 #include "createPhi.H"
 
+
+// ADM reactions
+Info<< "Reading field operational temperature" << endl;
+volScalarField Top
+(
+    IOobject
+    (
+        "Top",
+        runTime.timeName(),
+        mesh,
+        IOobject::READ_IF_PRESENT,
+        IOobject::AUTO_WRITE
+    ),
+    mesh,
+    dimensionedScalar
+    (
+        "TopDefault", 
+        dimTemperature,
+        308.15
+    )
+);
+
+autoPtr<ADMno1> reaction
+(
+    ADMno1::New(Top, mesh)
+);
+
+
+// TODO: cleanup 
 // Creating e based thermo
 autoPtr<twoPhaseMixtureEThermo> thermo
 (
     new twoPhaseMixtureEThermo(U, phi)
 );
 
-// Create mixture and
-Info<< "Creating temperaturePhaseChangeTwoPhaseMixture\n" << endl;
-autoPtr<temperaturePhaseChangeTwoPhaseMixture> mixture =
-    temperaturePhaseChangeTwoPhaseMixture::New(thermo(), mesh);
-
-
 volScalarField& alpha1(thermo->alpha1());
 volScalarField& alpha2(thermo->alpha2());
 
 const dimensionedScalar& rho1 = thermo->rho1();
 const dimensionedScalar& rho2 = thermo->rho2();
+
+
+// // Create mixture and
+// Info<< "Creating temperaturePhaseChangeTwoPhaseMixture\n" << endl;
+// autoPtr<temperaturePhaseChangeTwoPhaseMixture> mixture =
+//     temperaturePhaseChangeTwoPhaseMixture::New(thermo(), mesh);
+// testing
+Info<< "Creating admMixture\n" << endl;
+autoPtr<admMixture> mixture
+(
+    admMixture::New
+    (
+        mesh,
+        alpha1,
+        reaction->Y(),
+        reaction->G(),
+        thermo->transportPropertiesDict(),
+        phi
+    )
+);
+
 
 // Need to store rho for ddt(rho, U)
 volScalarField rho
@@ -82,6 +128,7 @@ surfaceScalarField rhoPhi
 //     U,
 //     thermo->transportPropertiesDict()
 // );
+// testing
 admInterfaceProperties interface
 (
     alpha1,
@@ -90,6 +137,7 @@ admInterfaceProperties interface
 );
 const volScalarField& pc = interface.pc();
 mesh.setFluxRequired(pc.name());
+
 
 // Construct incompressible turbulence model
 autoPtr<incompressible::turbulenceModel> turbulence
@@ -164,32 +212,6 @@ volScalarField rhoCp
 
 rhoCp.oldTime();
 
-
-// ADM reactions
-Info<< "Reading field operational temperature" << endl;
-volScalarField Top
-(
-    IOobject
-    (
-        "Top",
-        runTime.timeName(),
-        mesh,
-        IOobject::READ_IF_PRESENT,
-        IOobject::AUTO_WRITE
-    ),
-    mesh,
-    dimensionedScalar
-    (
-        "TopDefault", 
-        dimTemperature,
-        308.15
-    )
-);
-
-autoPtr<ADMno1> reaction
-(
-    ADMno1::New(Top, mesh)
-);
 
 // testing
 surfaceScalarField phiD_
@@ -272,16 +294,4 @@ const scalar HY = 1e-6;
 PtrList<volScalarField>& Si = reaction->Y(); // <-- TODO: const?
 PtrList<volScalarField>& Gi = reaction->G(); // <-- TODO: const?
 
-Info<< "Creating admMixture\n" << endl;
-autoPtr<admMixture> testMixture
-(
-    admMixture::New
-    (
-        reaction->Y(),
-        reaction->G(),
-        alpha1,
-        U,
-        thermo->transportPropertiesDict(),
-        phi
-    )
-);
+

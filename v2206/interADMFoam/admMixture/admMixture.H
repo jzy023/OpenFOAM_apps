@@ -74,10 +74,11 @@ protected:
         //- Reference to ADMno1 gaseous species
         PtrList<volScalarField>& Gi_;
         
-        //- Interface properties
-        admInterfaceProperties interface_;
+        // //- Interface properties
+        // admInterfaceProperties interface_;
 
         //- Reference to VoF of liquid phase
+        // TODO: maybe not const
         const volScalarField& alpha1_;
 
         //- VoF of gas phase
@@ -121,10 +122,12 @@ protected:
         (
             const admMixture&
         ) = delete;
-        
 
         //- No copy assignment
         void operator=(const admMixture&) = delete;
+
+        //- Normalizing for MULES
+        void normalizeYi();
 
         //- Species transport equations
         void massTransferCoeffs();
@@ -132,13 +135,14 @@ protected:
         //- Interface compression coefficient 
         surfaceScalarField compressionCoeff
         (
-            // label i,
-            // const PtrList<volScalarField>& Ci
             const volScalarField& Yi
         );
 
         //- MULES solver for species
-        void speciesMules();
+        void speciesMules
+        (
+            const admInterfaceProperties& interface
+        );
 
 
 public:
@@ -155,24 +159,21 @@ public:
             admMixture,
             components,
             (
-                // const thermoIncompressibleTwoPhaseMixture& mixture,
-                // const fvMesh& mesh
+                const fvMesh& mesh,
+                const volScalarField& alpha1,
                 PtrList<volScalarField>& Si,
                 PtrList<volScalarField>& Gi,
-                const volScalarField& alpha1,
-                const volVectorField& U,
                 const IOdictionary& dict,
                 const surfaceScalarField& phi
             ),
             (
+                mesh,
+                alpha1,
                 Si,
                 Gi,
-                alpha1,
-                U,
                 dict,
                 phi
             )
-            // (mixture, mesh)
         );
 
 
@@ -181,12 +182,10 @@ public:
         //- Return a reference to the selected phaseChange model
         static autoPtr<admMixture> New
         (
-            // const thermoIncompressibleTwoPhaseMixture& mixture,
-            // const fvMesh& mesh
+            const fvMesh& mesh,
+            const volScalarField& alpha1,
             PtrList<volScalarField>& Si,
             PtrList<volScalarField>& Gi,
-            const volScalarField& alpha1,
-            const volVectorField& U,
             const IOdictionary& dict,
             const surfaceScalarField& phi
         );
@@ -197,12 +196,10 @@ public:
         //- Construct from components
         admMixture
         (
-            // const thermoIncompressibleTwoPhaseMixture& mixture,
-            // const fvMesh& mesh
+            const fvMesh& mesh,
+            const volScalarField& alpha1,
             PtrList<volScalarField>& Si,
             PtrList<volScalarField>& Gi,
-            const volScalarField& alpha1,
-            const volVectorField& U,
             const IOdictionary& dict,
             const surfaceScalarField& phi
         );
@@ -249,21 +246,15 @@ public:
         void func();
 
         //- Solve mixture 
-        void solve();
+        void solve (const admInterfaceProperties& interface);
 
-        //- Inlines for mixture
+        inline const volScalarField& alpha() const;
+
         inline const surfaceScalarField& DalphaS() const;
 
         inline const surfaceScalarField& DalphaG() const;
 
         inline const surfaceScalarField& phiHS() const;
-
-        //- Inlines for interface
-        inline const volScalarField& alpha();
-
-        inline const volScalarField& pc();
-
-        inline const surfaceScalarField& phic();
 };
 
 

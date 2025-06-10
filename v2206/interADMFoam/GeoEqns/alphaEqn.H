@@ -56,13 +56,16 @@
     scalar cnCoeff = 1.0/(1.0 + ocCoeff);
 
     // Standard face-flux compression coefficient
-    surfaceScalarField phic(mixture.cAlpha()*mag(phi/mesh.magSf()));
+    // surfaceScalarField phic(mixture.cAlpha()*mag(phi/mesh.magSf()));
+    surfaceScalarField phic(interface.cAlpha()*mag(phi/mesh.magSf()));
 
     // Add the optional isotropic compression contribution
     if (icAlpha > 0)
     {
         phic *= (1.0 - icAlpha);
-        phic += (mixture.cAlpha()*icAlpha)*fvc::interpolate(mag(U));
+        // phic += (mixture.cAlpha()*icAlpha)*fvc::interpolate(mag(U));
+        phic += (interface.cAlpha()*icAlpha)*fvc::interpolate(mag(U));
+        
     }
 
     // Add the optional shear compression contribution
@@ -151,7 +154,8 @@
 
         alpha2 = 1.0 - alpha1;
 
-        mixture.correct();
+        // mixture.correct();
+        interface.correct();
     }
 
 
@@ -159,13 +163,15 @@
     {
         #include "alphaSuSp.H"
 
-        surfaceScalarField phir(phic*mixture.nHatf());
+        // surfaceScalarField phir(phic*mixture.nHatf());
+        surfaceScalarField phir(phic*interface.nHatf());
 
-        alphaPhiUn =
+        tmp<surfaceScalarField> talphaPhi1Un
+        (
             fvc::flux
             (
-                phi,
-                alpha1,
+                phiCN(),
+                cnCoeff*alpha1 + (1.0 - cnCoeff)*alpha1.oldTime(),
                 alphaScheme
             )
           + fvc::flux
@@ -173,18 +179,19 @@
                -fvc::flux(-phir, alpha2, alpharScheme),
                 alpha1,
                 alpharScheme
-            );
+            )
+        );
 
         if (MULESCorr)
         {
-            tmp<surfaceScalarField> talphaPhi1Corr(alphaPhiUn - alphaPhi10);
+            tmp<surfaceScalarField> talphaPhi1Corr(talphaPhi1Un() - alphaPhi10);
             volScalarField alpha10("alpha10", alpha1);
 
             MULES::correct
             (
                 geometricOneField(),
                 alpha1,
-                alphaPhiUn,
+                talphaPhi1Un(),
                 talphaPhi1Corr.ref(),
                 Sp,
                 (-Sp*alpha1)(),
@@ -205,7 +212,7 @@
         }
         else
         {
-            alphaPhi10 = alphaPhiUn;
+            alphaPhi10 = talphaPhi1Un;
 
             MULES::explicitSolve
             (
@@ -222,7 +229,8 @@
 
         alpha2 = 1.0 - alpha1;
 
-        mixture.correct();
+        // mixture.correct();
+        interface.correct();
     }
 
     if (alphaApplyPrevCorr && MULESCorr)
@@ -262,7 +270,7 @@
 
     Info<< "Phase-1 volume fraction = "
         << alpha1.weightedAverage(mesh.Vsc()).value()
-        << "  Min(" << alpha1.name() << ") = " << min(alpha1).value()
-        << "  Max(" << alpha1.name() << ") = " << max(alpha1).value()
+        << "  Min(" << alpha1.name() << ") = " << gMin(alpha1.internalField())
+        << "  Max(" << alpha1.name() << ") = " << gMax(alpha1.internalField())
         << endl;
 }

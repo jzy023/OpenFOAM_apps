@@ -57,7 +57,15 @@ class admInterfaceProperties
 
         void calculatePhic();
 
-        void solve();
+        void correct();
+
+        //
+        Foam::tmp<surfaceScalarField> 
+        surfaceTensionForce() const 
+        {
+            Foam::tmp<surfaceScalarField> stf = this->interfaceProperties::surfaceTensionForce(); 
+            return stf;
+        }
 
         // TODO: make them inline
         inline const volScalarField& alpha();

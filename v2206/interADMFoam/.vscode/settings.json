@@ -102,6 +102,9 @@
         "cinttypes": "cpp",
         "variant": "cpp",
         "__nullptr": "cpp",
-        "__locale": "cpp"
+        "__locale": "cpp",
+        "__bit_reference": "cpp",
+        "ADMno1Templates.C": "cpp",
+        "alphaContactAngleTwoPhaseFvPatchScalarField.C": "cpp"
     }
 }

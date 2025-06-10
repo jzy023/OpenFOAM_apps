@@ -45,12 +45,12 @@ namespace Foam
 //- Species transport equations
 void Foam::admMixture::massTransferCoeffs()
 {
-    alpha2_ = 1 - interface_.alpha();
+    alpha2_ = 1.0 - alpha1_;
             
     // calculate and return mean diffusion coefficient
     // TODO: multispecies? add turbulent diffusivity too?
-    DalphaS_ = fvc::interpolate(DG_ * alpha2_);
-    DalphaG_ = 
+    DalphaG_ = fvc::interpolate(DG_ * alpha2_);
+    DalphaS_ = 
     (
         fvc::interpolate(DS_ * alpha1_)
         // fvc::interpolate(DS_ * alpha1_ + H_ * DS2_ * alpha2_) / fvc::interpolate(alpha1_ + H_ * alpha2_)
@@ -80,11 +80,11 @@ surfaceScalarField Foam::admMixture::compressionCoeff
     // const volScalarField& Yi = Ci[i];
 
     // Direction of interfacial flux
-    surfaceScalarField fluxDir = fvc::snGrad(interface_.alpha())*mesh_.magSf();
+    surfaceScalarField fluxDir = fvc::snGrad(alpha1_) * mesh_.magSf();
 
     // Upwind and downwind alpha1
-    surfaceScalarField alphaUp = upwind<scalar>(mesh_,fluxDir).interpolate(interface_.alpha());
-    surfaceScalarField alphaDown = downwind<scalar>(mesh_,fluxDir).interpolate(interface_.alpha());
+    surfaceScalarField alphaUp = upwind<scalar>(mesh_,fluxDir).interpolate(alpha1_);
+    surfaceScalarField alphaDown = downwind<scalar>(mesh_,fluxDir).interpolate(alpha1_);
 
     // Upwind and downwnd Yi
     surfaceScalarField YiUp = upwind<scalar>(mesh_,fluxDir).interpolate(Yi);
@@ -130,7 +130,10 @@ surfaceScalarField Foam::admMixture::compressionCoeff
 }
 
 
-void Foam::admMixture::speciesMules()
+void Foam::admMixture::speciesMules
+(
+    const admInterfaceProperties& interface
+)
 {
     word alpharScheme("div(phirb,alpha)");
 	word YiScheme("div(phi,Yi)");
@@ -138,26 +141,28 @@ void Foam::admMixture::speciesMules()
     // Standard face-flux compression coefficient
     surfaceScalarField phic(mag(phi_ / mesh_.magSf()));
 
-    surfaceScalarField phir(phic * interface_.nHatf());
+    surfaceScalarField phir(phic * interface.nHatf());
 
     // // TODO: move this to general solve() function
-    // alpha2_ = 1 - interface_.alpha();
+    // alpha2_ = 1 - alpha1_;
 
-    // TODO: optimization to use 1 bounded solver for all species from the same phase
     // Soluables
-    forAll(Si_, i)
-	{
+    // forAll(Si_, i)
+	// {
+        label i = 6;
+
         volScalarField& Yi = Si_[i];
 
         scalar maxYi = max(gMax(Yi), gMax(Yi.boundaryField())) + 1e-30;
 
+        // normalizing
         Yi.oldTime() == Yi.oldTime() / maxYi;
         Yi == Yi / maxYi;
 
 		surfaceScalarField phiComp = fvc::flux
         (
             -fvc::flux(-phir, alpha2_, alpharScheme),
-            interface_.alpha(),
+            alpha1_,
             alpharScheme
         );
 
@@ -169,7 +174,7 @@ void Foam::admMixture::speciesMules()
                 Yi,
                 YiScheme
             )
-		 +  phiComp * compressionCoeff(Yi)
+		  + phiComp * compressionCoeff(Yi)
         );
 
         {
@@ -189,8 +194,8 @@ void Foam::admMixture::speciesMules()
         }
 
         Yi.oldTime() == Yi.oldTime() * maxYi;
-        Yi == Yi*maxYi;
-    }
+        Yi == Yi * maxYi;
+    // }
 }
 
 
@@ -198,12 +203,10 @@ void Foam::admMixture::speciesMules()
 
 Foam::admMixture::admMixture
 (
-    // const thermoIncompressibleTwoPhaseMixture& mixture,
-    // const fvMesh& mesh
+    const fvMesh& mesh,
+    const volScalarField& alpha1,
     PtrList<volScalarField>& Si,
     PtrList<volScalarField>& Gi,
-    const volScalarField& alpha1,
-    const volVectorField& U,
     const IOdictionary& dict,
     const surfaceScalarField& phi
 )
@@ -213,23 +216,17 @@ Foam::admMixture::admMixture
         IOobject
         (
             "phaseChangeProperties",
-            U.mesh().time().constant(),
-            U.mesh(),
+            mesh.time().constant(),
+            mesh,
             IOobject::MUST_READ_IF_MODIFIED,
             IOobject::NO_WRITE
         )
     ),
     Si_(Si),
     Gi_(Gi),
-    interface_
-    (
-        alpha1,
-        U,
-        dict
-    ),
-    alpha1_(interface_.alpha()),
+    alpha1_(alpha1),
     alpha2_(1.0 - alpha1_),
-    mesh_(U.mesh()),
+    mesh_(mesh),
     phi_(phi),
     H_
     (
@@ -307,7 +304,7 @@ Foam::admMixture::admMixture
     // mesh_(mesh)
 {
     // alpha2_ = 1 - alpha1_;
-    // alpha2_ = 1 - interface_.alpha();
+    // alpha2_ = 1 - alpha1_;
 }
 
 
@@ -395,16 +392,17 @@ void Foam::admMixture::func()
 };
 
 
-void Foam::admMixture::solve()
+void Foam::admMixture::solve
+(
+    const admInterfaceProperties& interface
+)
 {
     // DEBUG
     Info<< ">>> testing admMixture::solve()" << endl;
 
     massTransferCoeffs();
 
-    speciesMules();
-
-    interface_.solve();
+    speciesMules(interface);
 }
 
 

@@ -1,6 +1,10 @@
-VoF = ../multiphaseOFSolvers/VoF
+interPhaseChangeFoam = $(FOAM_SOLVERS)/multiphase/interPhaseChangeFoam
+interFoam = $(FOAM_SOLVERS)/multiphase/interFoam
+VoF = $(FOAM_SOLVERS)/multiphase/VoF
 
 EXE_INC = \
+    -I$(interPhaseChangeFoam) \
+    -I$(interFoam) \
     -I$(VoF) \
     -I./ADMno1/lnInclude \
 	-I./admInterfaceProperties/lnInclude \

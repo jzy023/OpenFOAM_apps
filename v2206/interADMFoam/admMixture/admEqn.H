@@ -2,8 +2,10 @@
     Info<< "ADM convection-diffusion calculation" << endl;
     
     // Soluables
-    forAll(Si, i)
-    {
+    // forAll(Si, i)
+    // {
+        label i = 6;
+
         volScalarField& Yi = Si[i];
         volScalarField SpY = (Yi - Yi.oldTime()) / runTime.deltaT();
 
@@ -13,8 +15,8 @@
             fvScalarMatrix YiEqn
             (
                 fvm::ddt(Yi)
-              + fvm::div(testMixture->phiHS(),Yi,"div(phiH,Yi)")
-              - fvm::laplacian(testMixture->DalphaS(),Yi)
+              + fvm::div(mixture->phiHS(),Yi,"div(phiH,Yi)")
+              - fvm::laplacian(mixture->DalphaS(),Yi)
               ==
                 SpY
             );
@@ -50,5 +52,5 @@
         << "  Min(" << Yi.name() << ") = " << gMin(Yi.internalField())
         << "  Max(" << Yi.name() << ") = " << gMax(Yi.internalField())
         << endl;
-    }
+    // }
 }

@@ -57,6 +57,7 @@ Description
 #include "pimpleControl.H"
 #include "fvOptions.H"
 #include "CorrectPhi.H"
+#include "fvcSmooth.H"
 
 #include "upwind.H"
 #include "downwind.H"
@@ -86,6 +87,7 @@ int main(int argc, char *argv[])
     #include "createDynamicFvMesh.H"
     #include "initContinuityErrs.H"
     #include "createDyMControls.H"
+
     #include "createFields.H"
     #include "createAlphaFluxes.H"
     #include "initCorrectPhi.H"
@@ -97,6 +99,12 @@ int main(int argc, char *argv[])
     volScalarField& T = thermo->T();
 
     turbulence->validate();
+
+    if (!LTS)
+    {
+        #include "CourantNo.H"
+        #include "setInitialDeltaT.H"
+    }
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -110,8 +118,18 @@ int main(int argc, char *argv[])
         // and used in correctPhi to ensure the corrected phi has the
         // same divergence
 
-        volScalarField divU("divU", fvc::div(fvc::absolute(phi, U)));
+        // volScalarField divU("divU", fvc::div(fvc::absolute(phi, U)));
 
+        // {
+        //     #include "CourantNo.H"
+        //     #include "alphaCourantNo.H"
+        //     #include "setDeltaT.H"
+        // }
+        if (LTS)
+        {
+            #include "setRDeltaT.H"
+        }
+        else
         {
             #include "CourantNo.H"
             #include "alphaCourantNo.H"
@@ -164,6 +182,8 @@ int main(int argc, char *argv[])
 
                         // Make the flux relative to the mesh motion
                         fvc::makeRelative(phi, U);
+
+                        interface.correct();
                     }
 
                     if (checkMeshCourantNo)
@@ -174,23 +194,29 @@ int main(int argc, char *argv[])
             }
 
             #include "alphaControls.H"
-            #include "admMulesEqn.H"
-            interface.solve();
-            #include "alphaEqnSubCycle.H"
+            // #include "GeoEqns/admMulesEqn.H"
+            // interface.solve();
+
+            // solve interface and YiMules
+            mixture->solve(interface);
             
-            testMixture->solve();
-            #include "admMixture/admEqn.H"   
+            #include "GeoEqns/alphaEqnSubCycle.H"
+            // #include "admMixture/alphaEqnSubCycle.H"
 
-
+            interface.correct();
+            
             // #include "UEqn.H"
-            #include "GeoEqns/UEqn.H"
+            // #include "GeoEqns/UEqn.H"
+            #include "admMixture/UEqn.H"
+
             // #include "TEqn.H"
 
             // --- Pressure corrector loop
             while (pimple.correct())
             {
                 // #include "pEqn.H"
-                #include "GeoEqns/pEqn.H"
+                // #include "GeoEqns/pEqn.H"
+                #include "admMixture/pEqn.H"
             }
 
             if (pimple.turbCorr())
@@ -201,7 +227,8 @@ int main(int argc, char *argv[])
 
         rho = alpha1*rho1 + alpha2*rho2;
 
-        #include "admEqn.H"
+        // #include "GeoEqns/admEqn.H"
+        #include "admMixture/admEqn.H"  
 
         runTime.write();
 

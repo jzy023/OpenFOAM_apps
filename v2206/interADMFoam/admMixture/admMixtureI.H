@@ -25,7 +25,13 @@ License
  
 \*---------------------------------------------------------------------------*/
 
-//- Inlines for mixture
+inline const Foam::volScalarField&
+Foam::admMixture::alpha() const
+{
+    return alpha1_;
+}
+
+
 inline const Foam::surfaceScalarField&
 Foam::admMixture::DalphaS() const
 {
@@ -47,25 +53,7 @@ Foam::admMixture::phiHS() const
 }
 
 
-//- Inlines for interface
-const Foam::volScalarField&
-Foam::admMixture::alpha()
-{
-    return interface_.alpha();
-}
 
 
-const Foam::volScalarField&
-Foam::admMixture::pc()
-{
-    return interface_.pc();
-}
-
-
-const Foam::surfaceScalarField&
-Foam::admMixture::phic()
-{
-    return interface_.phic();
-}
 
 // ************************************************************************* //

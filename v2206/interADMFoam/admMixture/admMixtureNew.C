@@ -35,10 +35,10 @@ namespace Foam
 autoPtr<admMixture>
 admMixture::New
 (
+    const fvMesh& mesh,
+    const volScalarField& alpha1,
     PtrList<volScalarField>& Si,
     PtrList<volScalarField>& Gi,
-    const volScalarField& alpha1,
-    const volVectorField& U,
     const IOdictionary& dict,
     const surfaceScalarField& phi
 )
@@ -77,10 +77,10 @@ admMixture::New
     // (
     //     ctorPtr
     //     (
+    //         mesh,
+    //         alpha1,
     //         Si,
     //         Gi,
-    //         alpha1,
-    //         U,
     //         dict,
     //         phi
     //     )
@@ -88,10 +88,10 @@ admMixture::New
 
     admMixture* mixturePtr = new admMixture
     (
+        mesh,
+        alpha1,
         Si,
         Gi,
-        alpha1,
-        U,
         dict,
         phi
     );

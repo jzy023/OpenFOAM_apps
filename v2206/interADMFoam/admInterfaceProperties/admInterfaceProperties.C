@@ -1,3 +1,30 @@
+/*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
+     \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2016-2020 OpenCFD Ltd.
+-------------------------------------------------------------------------------
+License
+    This file is part of OpenFOAM.
+
+    OpenFOAM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+
+\*---------------------------------------------------------------------------*/
+
 #include "admInterfaceProperties.H"
 #include "alphaContactAngleTwoPhaseFvPatchScalarField.H"
 #include "mathematicalConstants.H"
@@ -9,6 +36,8 @@
 #include "fvCFD.H"
 #include "unitConversion.H"
 
+
+// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
 Foam::admInterfaceProperties::
 admInterfaceProperties
@@ -80,6 +109,7 @@ admInterfaceProperties
         dimensionedScalar("phic", dimPressure / dimLength*dimArea, 0.0)
     )
 {
+
     setRefCell
     (
         pc_,
@@ -88,8 +118,11 @@ admInterfaceProperties
         pcRefValue_
     );
 
-    this->correct();
+    interfaceProperties::correct();
 };
+
+
+// * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
 void Foam::admInterfaceProperties::calculatePhic()
 {
@@ -110,25 +143,28 @@ void Foam::admInterfaceProperties::calculatePhic()
 
     // Sharpen interface function
     // Raeini's thesis, equation (2.22) and (2.23)
-    alpha_pc = 1.0/(1.0-cPc_)*(min( max(alpha1_,cPc_/2.0), (1.0-cPc_/2.0) ) - cPc_/2.0);
+    alpha_pc =
+    (
+        1.0 / (1.0 - cPc_) * (min(max(alpha1_, cPc_ / 2.0), (1.0 - cPc_ / 2.0)) - cPc_ / 2.0)
+    );
 
     alpha_pc.correctBoundaryConditions();
 
     surfaceScalarField deltasf = fvc::snGrad(alpha_pc);
 
     //surface tension force
-    surfaceScalarField stf = fvc::interpolate(sigmaK())*deltasf;
+    surfaceScalarField stf = fvc::interpolate(sigmaK()) * deltasf;
 
 
     //surface tension force flux
     phic_ = stf*magSf;
 
-    for(int nonOrth=0; nonOrth<=nNonOrthogonalCorrectors_; nonOrth++)
+    for(int nonOrth = 0; nonOrth <= nNonOrthogonalCorrectors_; nonOrth++)
     {
 		//solve for pc
         fvScalarMatrix pcEqn
         (
-            fvm::laplacian( pc_) == fvc::div(phic_)
+            fvm::laplacian(pc_) == fvc::div(phic_)
         );
 
         pcEqn.setReference(pcRefCell_, pcRefValue_);
@@ -141,16 +177,21 @@ void Foam::admInterfaceProperties::calculatePhic()
 		//add flux of pc to capillary flux
         if (nonOrth == nNonOrthogonalCorrectors_)
         { 
-            phic_-=pcEqn.flux();
+            phic_ -= pcEqn.flux();
         }
     }
 }
 
 
-void Foam::admInterfaceProperties::solve()
+// * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //
+
+void Foam::admInterfaceProperties::correct()
 {
-    this->correct();
-    
+    interfaceProperties::correct();
+
     calculatePhic();
 }
+
+
+// ************************************************************************* //
 
