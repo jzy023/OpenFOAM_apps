@@ -31,7 +31,6 @@
             interface.surfaceTensionForce()
           - ghf*fvc::snGrad(rho)
         )*rAUf*mesh.magSf()
-        // +rAUf*interface.phic()
     );
 
     phiHbyA += phig;
@@ -71,7 +70,6 @@
     fvc::makeRelative(phi, U);
 
     p == p_rgh + rho*gh;
-    // p == p_rgh + interface.pc() + rho*gh;
 
     if (p_rgh.needReference())
     {
@@ -82,7 +80,6 @@
             pRefValue - getRefCellValue(p, pRefCell)
         );
         p_rgh = p - rho*gh;
-        // p_rgh = p - interface.pc() - rho*gh;
     }
 
     if (!correctPhi)

@@ -39,22 +39,22 @@ admMixture::New
     const volScalarField& alpha1,
     PtrList<volScalarField>& Si,
     PtrList<volScalarField>& Gi,
-    const IOdictionary& dict,
     const surfaceScalarField& phi
 )
 {
-    // const IOdictionary dict
-    // (
-    //     IOobject
-    //     (
-    //         "phaseChangeProperties",
-    //         mesh.time().constant(),
-    //         mesh,
-    //         IOobject::MUST_READ,
-    //         IOobject::NO_WRITE,
-    //         false // Do not register
-    //     )
-    // );
+    const IOdictionary dict
+    (
+        IOobject
+        (
+            "transportProperties",
+            mesh.time().constant(),
+            mesh,
+            IOobject::MUST_READ,
+            IOobject::NO_WRITE
+            // ,
+            // false // Do not register
+        )
+    );
 
     // const word modelType(dict.get<word>("phaseChangeTwoPhaseModel"));
 

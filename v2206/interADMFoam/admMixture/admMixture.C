@@ -211,17 +211,7 @@ Foam::admMixture::admMixture
     const surfaceScalarField& phi
 )
 :
-    IOdictionary
-    (
-        IOobject
-        (
-            "phaseChangeProperties",
-            mesh.time().constant(),
-            mesh,
-            IOobject::MUST_READ_IF_MODIFIED,
-            IOobject::NO_WRITE
-        )
-    ),
+    IOdictionary(dict),
     Si_(Si),
     Gi_(Gi),
     alpha1_(alpha1),
@@ -232,19 +222,34 @@ Foam::admMixture::admMixture
     (
         "test",
         dimless,
-        1e-8
+        // dict.subDict("liquid").lookupOrDefault
+        dict.subDict(get<wordList>("phases")[0]).lookupOrDefault
+        (
+            "H",
+            1e-12
+        )
     ),
     DS_
     (
         "test1",
         dimArea/dimTime,
-        1e-8
+        // dict.subDict("liquid").lookupOrDefault
+        dict.subDict(get<wordList>("phases")[0]).lookupOrDefault
+        (
+            "D",
+            1e-8
+        )
     ),
     DG_
     (
         "test2",
         dimArea/dimTime,
-        1e-8
+        // dict.subDict("gas").lookupOrDefault
+        dict.subDict(get<wordList>("phases")[1]).lookupOrDefault
+        (
+            "D",
+            1e-8
+        )
     ),
     DalphaS_
     (

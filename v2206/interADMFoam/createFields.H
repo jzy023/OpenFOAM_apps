@@ -58,7 +58,7 @@ autoPtr<ADMno1> reaction
 );
 
 
-// TODO: cleanup 
+// TODO: integrate and cleanup 
 // Creating e based thermo
 autoPtr<twoPhaseMixtureEThermo> thermo
 (
@@ -72,11 +72,7 @@ const dimensionedScalar& rho1 = thermo->rho1();
 const dimensionedScalar& rho2 = thermo->rho2();
 
 
-// // Create mixture and
-// Info<< "Creating temperaturePhaseChangeTwoPhaseMixture\n" << endl;
-// autoPtr<temperaturePhaseChangeTwoPhaseMixture> mixture =
-//     temperaturePhaseChangeTwoPhaseMixture::New(thermo(), mesh);
-// testing
+// Create mixture
 Info<< "Creating admMixture\n" << endl;
 autoPtr<admMixture> mixture
 (
@@ -86,7 +82,6 @@ autoPtr<admMixture> mixture
         alpha1,
         reaction->Y(),
         reaction->G(),
-        thermo->transportPropertiesDict(),
         phi
     )
 );
@@ -126,17 +121,9 @@ interfaceProperties interface
 (
     alpha1,
     U,
+    // TODO: fix this dict too
     thermo->transportPropertiesDict()
 );
-// // testing
-// admInterfaceProperties interface
-// (
-//     alpha1,
-//     U,
-//     thermo->transportPropertiesDict()
-// );
-// const volScalarField& pc = interface.pc();
-// mesh.setFluxRequired(pc.name());
 
 
 // Construct incompressible turbulence model
@@ -171,7 +158,6 @@ if (p_rgh.needReference())
         pRefValue - getRefCellValue(p, pRefCell)
     );
     p_rgh = p - rho*gh;
-    // p_rgh = p - pc - rho*gh;
 }
 
 mesh.setFluxRequired(p_rgh.name());

@@ -50,8 +50,6 @@ Description
 #include "CrankNicolsonDdtScheme.H"
 #include "subCycle.H"
 
-#include "twoPhaseMixtureEThermo.H"
-#include "temperaturePhaseChangeTwoPhaseMixture.H"
 #include "turbulentTransportModel.H"
 #include "turbulenceModel.H"
 #include "pimpleControl.H"
@@ -59,11 +57,12 @@ Description
 #include "CorrectPhi.H"
 #include "fvcSmooth.H"
 
+// multiphase ADMno1 implementation
 #include "upwind.H"
 #include "downwind.H"
 #include "ADMno1.H"
 #include "interfaceProperties.H"
-// #include "admInterfaceProperties.H"
+#include "twoPhaseMixtureEThermo.H"
 #include "admMixture.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -100,6 +99,7 @@ int main(int argc, char *argv[])
 
     turbulence->validate();
 
+    // TODO: try revert back to interCondensateEvaporateFoam schemes
     if (!LTS)
     {
         #include "CourantNo.H"

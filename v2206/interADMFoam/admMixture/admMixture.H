@@ -49,7 +49,6 @@ SourceFiles
 #include "downwind.H"
 #include "CMULES.H"
 #include "interfaceProperties.H"
-#include "admInterfaceProperties.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -74,9 +73,6 @@ protected:
 
         //- Reference to ADMno1 gaseous species
         PtrList<volScalarField>& Gi_;
-        
-        // //- Interface properties
-        // admInterfaceProperties interface_;
 
         //- Reference to VoF of liquid phase
         // TODO: maybe not const
@@ -187,7 +183,6 @@ public:
             const volScalarField& alpha1,
             PtrList<volScalarField>& Si,
             PtrList<volScalarField>& Gi,
-            const IOdictionary& dict,
             const surfaceScalarField& phi
         );
 
