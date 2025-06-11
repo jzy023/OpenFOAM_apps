@@ -58,18 +58,15 @@ autoPtr<ADMno1> reaction
 );
 
 
-// TODO: integrate and cleanup 
-// Creating e based thermo
-autoPtr<twoPhaseMixtureEThermo> thermo
-(
-    new twoPhaseMixtureEThermo(U, phi)
-);
+// testing
+// TODO: put in admMixture
+incompressibleTwoPhaseMixture test(U, phi);
 
-volScalarField& alpha1(thermo->alpha1());
-volScalarField& alpha2(thermo->alpha2());
+volScalarField& alpha1(test.alpha1());
+volScalarField& alpha2(test.alpha2());
 
-const dimensionedScalar& rho1 = thermo->rho1();
-const dimensionedScalar& rho2 = thermo->rho2();
+const dimensionedScalar& rho1 = test.rho1();
+const dimensionedScalar& rho2 = test.rho2();
 
 
 // Create mixture
@@ -84,6 +81,15 @@ autoPtr<admMixture> mixture
         reaction->G(),
         phi
     )
+);
+
+
+// Construct interface from alpha1 distribution
+interfaceProperties interface
+(
+    alpha1,
+    U,
+    test
 );
 
 
@@ -102,6 +108,7 @@ volScalarField rho
 );
 rho.oldTime();
 
+
 // Mass flux
 surfaceScalarField rhoPhi
 (
@@ -116,27 +123,35 @@ surfaceScalarField rhoPhi
     fvc::interpolate(rho)*phi
 );
 
-// Construct interface from alpha1 distribution
-interfaceProperties interface
-(
-    alpha1,
-    U,
-    // TODO: fix this dict too
-    thermo->transportPropertiesDict()
-);
-
 
 // Construct incompressible turbulence model
 autoPtr<incompressible::turbulenceModel> turbulence
 (
-    incompressible::turbulenceModel::New(U, phi, thermo())
+    incompressible::turbulenceModel::New
+    (
+        U, 
+        phi,
+        test
+    )
 );
 
 #include "readGravitationalAcceleration.H"
 #include "readhRef.H"
 #include "gh.H"
 
-volScalarField& p = thermo->p();
+Info<< "Reading field p\n" << endl;
+volScalarField p
+(
+    IOobject
+    (
+        "p",
+        runTime.timeName(),
+        mesh,
+        IOobject::MUST_READ,
+        IOobject::AUTO_WRITE
+    ),
+    mesh
+);
 
 label pRefCell = 0;
 scalar pRefValue = 0.0;
@@ -166,37 +181,43 @@ mesh.setFluxRequired(alpha1.name());
 #include "createMRF.H"
 #include "createFvOptions.H"
 
-// Turbulent Prandtl number
-dimensionedScalar Prt("Prt", dimless, thermo->transportPropertiesDict());
 
-volScalarField kappaEff
-(
-    IOobject
-    (
-        "kappaEff",
-        runTime.timeName(),
-        mesh,
-        IOobject::NO_READ,
-        IOobject::NO_WRITE
-    ),
-    thermo->kappa()
-);
+// ---------------------------------------------------------------------------------
+// TODO: implement when T is included
+// Turbulent Prandtl number
+// dimensionedScalar Prt("Prt", dimless, thermo->transportPropertiesDict());
+
+// volScalarField kappaEff
+// (
+//     IOobject
+//     (
+//         "kappaEff",
+//         runTime.timeName(),
+//         mesh,
+//         IOobject::NO_READ,
+//         IOobject::NO_WRITE
+//     ),
+//     thermo->kappa()
+// );
 
 // Need to store rho for ddt(rhoCp, U)
-volScalarField rhoCp
-(
-    IOobject
-    (
-        "rhoCp",
-        runTime.timeName(),
-        mesh,
-        IOobject::NO_READ,
-        IOobject::NO_WRITE
-    ),
-    rho*thermo->Cp()
-);
+// volScalarField rhoCp
+// (
+//     IOobject
+//     (
+//         "rhoCp",
+//         runTime.timeName(),
+//         mesh,
+//         IOobject::NO_READ,
+//         IOobject::NO_WRITE
+//     ),
+//     rho*thermo->Cp()
+// );
 
-rhoCp.oldTime();
+// rhoCp.oldTime();
+
+// volScalarField& T = thermo->T();
+// ---------------------------------------------------------------------------------
 
 
 // testing

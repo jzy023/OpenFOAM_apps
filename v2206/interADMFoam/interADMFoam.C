@@ -62,7 +62,7 @@ Description
 #include "downwind.H"
 #include "ADMno1.H"
 #include "interfaceProperties.H"
-#include "twoPhaseMixtureEThermo.H"
+#include "incompressibleTwoPhaseMixture.H"
 #include "admMixture.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -95,16 +95,9 @@ int main(int argc, char *argv[])
     #include "CourantNo.H"
     #include "setInitialDeltaT.H"
 
-    volScalarField& T = thermo->T();
-
     turbulence->validate();
 
     // TODO: try revert back to interCondensateEvaporateFoam schemes
-    if (!LTS)
-    {
-        #include "CourantNo.H"
-        #include "setInitialDeltaT.H"
-    }
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -118,18 +111,8 @@ int main(int argc, char *argv[])
         // and used in correctPhi to ensure the corrected phi has the
         // same divergence
 
-        // volScalarField divU("divU", fvc::div(fvc::absolute(phi, U)));
+        volScalarField divU("divU", fvc::div(fvc::absolute(phi, U)));
 
-        // {
-        //     #include "CourantNo.H"
-        //     #include "alphaCourantNo.H"
-        //     #include "setDeltaT.H"
-        // }
-        if (LTS)
-        {
-            #include "setRDeltaT.H"
-        }
-        else
         {
             #include "CourantNo.H"
             #include "alphaCourantNo.H"
@@ -194,28 +177,26 @@ int main(int argc, char *argv[])
             }
 
             #include "alphaControls.H"
-            // #include "GeoEqns/admMulesEqn.H"
-            // interface.solve();
 
             // solve interface and YiMules
             mixture->solve(interface);
             
-            #include "GeoEqns/alphaEqnSubCycle.H"
-            // #include "admMixture/alphaEqnSubCycle.H"
+            // #include "GeoChems/alphaEqnSubCycle.H"
+            #include "admMixture/alphaEqnSubCycle.H"
 
             interface.correct();
             
-            // #include "UEqn.H"
-            // #include "GeoEqns/UEqn.H"
+            // #include "GeoChems/UEqn.H"
             #include "admMixture/UEqn.H"
 
+            // TODO: 
             // #include "TEqn.H"
 
             // --- Pressure corrector loop
             while (pimple.correct())
             {
-                // #include "pEqn.H"
-                // #include "GeoEqns/pEqn.H"
+
+                // #include "GeoChems/pEqn.H"
                 #include "admMixture/pEqn.H"
             }
 
@@ -227,7 +208,7 @@ int main(int argc, char *argv[])
 
         rho = alpha1*rho1 + alpha2*rho2;
 
-        // #include "GeoEqns/admEqn.H"
+        // #include "GeoChems/admEqn.H"
         #include "admMixture/admEqn.H"  
 
         runTime.write();

@@ -37,7 +37,6 @@ SourceFiles
 #ifndef admMixture_H
 #define admMixture_H
 
-// #include "thermoIncompressibleTwoPhaseMixture.H"
 #include "typeInfo.H"
 #include "runTimeSelectionTables.H"
 #include "volFields.H"
@@ -49,6 +48,7 @@ SourceFiles
 #include "downwind.H"
 #include "CMULES.H"
 #include "interfaceProperties.H"
+// #include "incompressibleTwoPhaseMixture.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -80,9 +80,6 @@ protected:
 
         //- VoF of gas phase
         volScalarField alpha2_;
-
-        //- Reference to the thermoIncompressibleTwoPhaseMixture
-        // const thermoIncompressibleTwoPhaseMixture& mixture_;
 
         //- Reference to fvMesh
         const fvMesh& mesh_;

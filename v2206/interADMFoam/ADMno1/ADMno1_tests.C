@@ -311,7 +311,7 @@ Foam::ADMno1::ADMno1
 
     //- Read particulates
 
-    Info<< "Reading ADMno1 initial concentrations for particulates" << endl;
+    Info<< "Reading ADM no1 initial concentrations for particulates" << endl;
 
     forAll(namesParticulate, i)
     {
