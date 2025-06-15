@@ -123,17 +123,6 @@ int main(int argc, char *argv[])
 
         Info<< "Time = " << runTime.timeName() << nl << endl;
 
-        // ADM1 reaction source terms
-        // reaction->clear();
-        // reaction->correct
-        // (
-        //     phi, 
-        //     alpha1, // alphaLiq,
-        //     alpha2, // alphaGas,
-        //     Top,
-        //     p
-        // ); 
-
         // --- Pressure-velocity PIMPLE corrector loop
         while (pimple.loop())
         {

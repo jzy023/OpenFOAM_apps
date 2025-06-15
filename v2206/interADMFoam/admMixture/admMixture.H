@@ -70,22 +70,6 @@ protected:
 
     // Protected data
 
-        // //- Reference to ADMno1 soluable species
-        // PtrList<volScalarField>& Si_;
-
-        // //- Reference to ADMno1 gaseous species
-        // PtrList<volScalarField>& Gi_;
-
-        // //- Reference to VoF of liquid phase
-        // // TODO: maybe not const
-        // const volScalarField& alpha1_;
-
-        // //- VoF of gas phase
-        // volScalarField alpha2_;
-
-        // //- Reference to fvMesh
-        // const fvMesh& mesh_;
-
         //- Henry's coefficient
         // TODO: more to come
         dimensionedScalar H_;
@@ -117,8 +101,6 @@ protected:
         volScalarField vDot_;
         volScalarField vDotAlphal_;
 
-        //- incompressibleTwoPhaseMixture
-        // incompressibleTwoPhaseMixture mixture_;
 
     // Private Member Functions
 
@@ -236,10 +218,13 @@ public:
         // virtual bool read();
 
         //- Correct interface
-        void func();
+        void limit();
 
         //- Solve mixture 
-        void solve(const interfaceProperties& interface);
+        void solve
+        (
+            const interfaceProperties& interface
+        );
 
         //- Solve ADM reactions
         void reaction

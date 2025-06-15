@@ -355,7 +355,7 @@ Foam::admMixture::admMixture
 
 // * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //
 
-void Foam::admMixture::func()
+void Foam::admMixture::limit()
 {
     // // Calculate mass transfer flux ----------------------------------------------
     // Info<< "correcting Yi" << endl;
@@ -457,6 +457,8 @@ void Foam::admMixture::reaction
     const volScalarField& p
 )
 {
+    reaction_->clear();
+
     reaction_->correct
     (
         this->phi_,

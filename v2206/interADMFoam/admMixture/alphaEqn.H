@@ -4,12 +4,6 @@
 
     surfaceScalarField phir("phir", phic*interface.nHatf());
 
-    // Pair<tmp<volScalarField>> vDotAlphal =
-    //     mixture->vDotAlphal();
-    // const volScalarField& vDotcAlphal = vDotAlphal[0]();
-    // const volScalarField& vDotvAlphal = vDotAlphal[1]();
-    // const volScalarField vDotvmcAlphal(vDotvAlphal - vDotcAlphal);
-
     tmp<surfaceScalarField> talphaPhi;
 
     if (MULESCorr)
@@ -26,8 +20,6 @@
           - fvm::Sp(divU, alpha1)
           ==
             fvm::Sp(mixture->vDotAlphal(), alpha1)
-        //     fvm::Sp(vDotvmcAlphal, alpha1)
-        //   + vDotcAlphal
         );
 
         alpha1Eqn.solve();
@@ -83,11 +75,6 @@
                     divU*(alpha10 - alpha100)
                   - mixture->vDotAlphal()*alpha10
                 )(),
-                // vDotvmcAlphal,
-                // (
-                //     divU*(alpha10 - alpha100)
-                //   - vDotvmcAlphal*alpha10
-                // )(),
                 oneField(),
                 zeroField()
             );
@@ -113,8 +100,6 @@
                 talphaPhiCorr.ref(),
                 mixture->vDotAlphal(),
                 (divU*alpha1)(),
-                // vDotvmcAlphal,
-                // (divU*alpha1 + vDotcAlphal)(),
                 oneField(),
                 zeroField()
             );

@@ -21,19 +21,6 @@
                 SpY
             );
 
-            // if (phiHScheme == "Gauss linear") YiEqn += fvm::div(phiHS,Yi,"div(phiHS,Yi)");
-            // else if (phiHScheme == "Gauss upwind")
-            // {
-            //     YiEqn += fvm::div(phiHUp,Yi,"div(phiHS,Yi)")
-            //     + fvm::div(phiHDown,Yi,"div(phiHS,Yi)");
-            // }
-            // else
-            // {
-            //     Info<< "div(phiHS,Yi) should be equal to Gauss linear or Gauss upwind"
-            // 	<< endl
-            // 	<< abort(FatalError);
-            // }
-
             //solve equations
             if (pimple.finalNonOrthogonalIter())
             {
