@@ -4,7 +4,7 @@
 
 Foam::ADMno1::ADMno1
 (
-    volScalarField& T,
+    const volScalarField& T,
     const fvMesh& mesh,
     const IOdictionary& ADMno1Dict
 )
@@ -1293,7 +1293,7 @@ void Foam::ADMno1::dYUpdate
 
 void Foam::ADMno1::correct
 (
-    const surfaceScalarField &flux,
+    const surfaceScalarField& flux,
     const volScalarField& alphaLiq, 
     const volScalarField& alphaGas, 
     const volScalarField& T,

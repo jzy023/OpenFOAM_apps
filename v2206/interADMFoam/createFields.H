@@ -52,36 +52,24 @@ volScalarField Top
     )
 );
 
-autoPtr<ADMno1> reaction
-(
-    ADMno1::New(Top, mesh)
-);
 
-
-// testing
-// TODO: put in admMixture
-incompressibleTwoPhaseMixture test(U, phi);
-
-volScalarField& alpha1(test.alpha1());
-volScalarField& alpha2(test.alpha2());
-
-const dimensionedScalar& rho1 = test.rho1();
-const dimensionedScalar& rho2 = test.rho2();
-
-
-// Create mixture
+// Create mixture and reaction
 Info<< "Creating admMixture\n" << endl;
 autoPtr<admMixture> mixture
 (
     admMixture::New
     (
-        mesh,
-        alpha1,
-        reaction->Y(),
-        reaction->G(),
+        Top, // <-- for ADMno1 reaction
+        U,
         phi
     )
 );
+
+volScalarField& alpha1(mixture->alpha1());
+volScalarField& alpha2(mixture->alpha2());
+
+const dimensionedScalar& rho1 = mixture->rho1();
+const dimensionedScalar& rho2 = mixture->rho2();
 
 
 // Construct interface from alpha1 distribution
@@ -89,7 +77,7 @@ interfaceProperties interface
 (
     alpha1,
     U,
-    test
+    mixture()
 );
 
 
@@ -131,7 +119,7 @@ autoPtr<incompressible::turbulenceModel> turbulence
     (
         U, 
         phi,
-        test
+        mixture()
     )
 );
 
@@ -251,7 +239,7 @@ volScalarField Mflux_
 );
 
 // 
-PtrList<volScalarField>& Si = reaction->Y(); // <-- TODO: const?
-PtrList<volScalarField>& Gi = reaction->G(); // <-- TODO: const?
+PtrList<volScalarField>& Si = mixture->Si(); // <-- TODO: const?
+PtrList<volScalarField>& Gi = mixture->Gi(); // <-- TODO: const?
 
 

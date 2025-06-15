@@ -1,6 +1,5 @@
 {
     // Standard face-flux compression coefficient
-    // TODO: interface
     surfaceScalarField phic(interface.cAlpha()*mag(phi/mesh.magSf()));
 
     // Add the optional isotropic compression contribution

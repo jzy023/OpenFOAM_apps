@@ -14,8 +14,6 @@
 
     if (MULESCorr)
     {
-        #include "alphaSuSp.H"
-
         fvScalarMatrix alpha1Eqn
         (
             fv::EulerDdtScheme<scalar>(mesh).fvmDdt(alpha1)
@@ -26,10 +24,10 @@
                 upwind<scalar>(mesh, phi)
             ).fvmDiv(phi, alpha1)
           - fvm::Sp(divU, alpha1)
-         ==
+          ==
+            fvm::Sp(mixture->vDotAlphal(), alpha1)
         //     fvm::Sp(vDotvmcAlphal, alpha1)
         //   + vDotcAlphal
-            Su + fvm::Sp(Sp + divU, alpha1)
         );
 
         alpha1Eqn.solve();
@@ -51,8 +49,6 @@
 
     for (int aCorr=0; aCorr<nAlphaCorr; aCorr++)
     {
-        #include "alphaSuSp.H"
-
         tmp<surfaceScalarField> talphaPhiCorr
         (
             fvc::flux
@@ -82,13 +78,16 @@
                 alpha1,
                 talphaPhi(),
                 talphaPhiCorr.ref(),
+                mixture->vDotAlphal(),
+                (
+                    divU*(alpha10 - alpha100)
+                  - mixture->vDotAlphal()*alpha10
+                )(),
                 // vDotvmcAlphal,
                 // (
                 //     divU*(alpha10 - alpha100)
                 //   - vDotvmcAlphal*alpha10
                 // )(),
-                Sp,
-                (-Sp*alpha1)(),
                 oneField(),
                 zeroField()
             );
@@ -112,10 +111,10 @@
                 alpha1,
                 phi,
                 talphaPhiCorr.ref(),
+                mixture->vDotAlphal(),
+                (divU*alpha1)(),
                 // vDotvmcAlphal,
                 // (divU*alpha1 + vDotcAlphal)(),
-                Sp,
-                (Su + divU*min(alpha1(), scalar(1)))(),
                 oneField(),
                 zeroField()
             );

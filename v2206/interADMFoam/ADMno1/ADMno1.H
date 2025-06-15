@@ -281,7 +281,7 @@ public:
 
     ADMno1
     ( 
-        volScalarField& T,
+        const volScalarField& T,
         const fvMesh& mesh,
         const IOdictionary& ADMno1Dict
     );
@@ -294,7 +294,7 @@ public:
 
     static autoPtr<ADMno1> New
     (
-        volScalarField& T,
+        const volScalarField& T,
         const fvMesh&
     );
 

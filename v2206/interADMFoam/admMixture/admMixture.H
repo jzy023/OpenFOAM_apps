@@ -47,8 +47,9 @@ SourceFiles
 #include "upwind.H"
 #include "downwind.H"
 #include "CMULES.H"
+#include "ADMno1.H"
 #include "interfaceProperties.H"
-// #include "incompressibleTwoPhaseMixture.H"
+#include "incompressibleTwoPhaseMixture.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -61,31 +62,29 @@ namespace Foam
 
 class admMixture
 :
-    public IOdictionary
+    // public IOdictionary
+    public incompressibleTwoPhaseMixture
 {
 
 protected:
 
     // Protected data
 
-        //- Reference to ADMno1 soluable species
-        PtrList<volScalarField>& Si_;
+        // //- Reference to ADMno1 soluable species
+        // PtrList<volScalarField>& Si_;
 
-        //- Reference to ADMno1 gaseous species
-        PtrList<volScalarField>& Gi_;
+        // //- Reference to ADMno1 gaseous species
+        // PtrList<volScalarField>& Gi_;
 
-        //- Reference to VoF of liquid phase
-        // TODO: maybe not const
-        const volScalarField& alpha1_;
+        // //- Reference to VoF of liquid phase
+        // // TODO: maybe not const
+        // const volScalarField& alpha1_;
 
-        //- VoF of gas phase
-        volScalarField alpha2_;
+        // //- VoF of gas phase
+        // volScalarField alpha2_;
 
-        //- Reference to fvMesh
-        const fvMesh& mesh_;
-
-        //- Referemce to flux
-        const surfaceScalarField& phi_;
+        // //- Reference to fvMesh
+        // const fvMesh& mesh_;
 
         //- Henry's coefficient
         // TODO: more to come
@@ -108,6 +107,18 @@ protected:
         //- Interface mass transfer flux by Henry's Law
         surfaceScalarField phiHS_;
 
+        // testing ------------------------------------------------------------
+
+        //- ADMno1 reaction
+        autoPtr<ADMno1> reaction_;
+
+        //- Phase change ADMno1 
+        volScalarField mDot_;
+        volScalarField vDot_;
+        volScalarField vDotAlphal_;
+
+        //- incompressibleTwoPhaseMixture
+        // incompressibleTwoPhaseMixture mixture_;
 
     // Private Member Functions
 
@@ -153,19 +164,13 @@ public:
             admMixture,
             components,
             (
-                const fvMesh& mesh,
-                const volScalarField& alpha1,
-                PtrList<volScalarField>& Si,
-                PtrList<volScalarField>& Gi,
-                const IOdictionary& dict,
+                const volScalarField& Top,
+                const volVectorField& U,
                 const surfaceScalarField& phi
             ),
             (
-                mesh,
-                alpha1,
-                Si,
-                Gi,
-                dict,
+                Top,
+                U,
                 phi
             )
         );
@@ -176,10 +181,8 @@ public:
         //- Return a reference to the selected phaseChange model
         static autoPtr<admMixture> New
         (
-            const fvMesh& mesh,
-            const volScalarField& alpha1,
-            PtrList<volScalarField>& Si,
-            PtrList<volScalarField>& Gi,
+            const volScalarField& Top,
+            const volVectorField& U,
             const surfaceScalarField& phi
         );
 
@@ -189,11 +192,8 @@ public:
         //- Construct from components
         admMixture
         (
-            const fvMesh& mesh,
-            const volScalarField& alpha1,
-            PtrList<volScalarField>& Si,
-            PtrList<volScalarField>& Gi,
-            const IOdictionary& dict,
+            const volScalarField& Top,
+            const volVectorField& U,
             const surfaceScalarField& phi
         );
 
@@ -239,8 +239,16 @@ public:
         void func();
 
         //- Solve mixture 
-        void solve (const interfaceProperties& interface);
+        void solve(const interfaceProperties& interface);
 
+        //- Solve ADM reactions
+        void reaction
+        (
+            const volScalarField& Top,
+            const volScalarField& p
+        );
+
+        //- Inline funcs
         inline const volScalarField& alpha() const;
 
         inline const surfaceScalarField& DalphaS() const;
@@ -248,6 +256,16 @@ public:
         inline const surfaceScalarField& DalphaG() const;
 
         inline const surfaceScalarField& phiHS() const;
+
+        inline const volScalarField& vDot() const;
+
+        inline const volScalarField& mDot() const;
+
+        inline const volScalarField& vDotAlphal() const;
+
+        inline PtrList<volScalarField>& Si();
+
+        inline PtrList<volScalarField>& Gi();
 };
 
 

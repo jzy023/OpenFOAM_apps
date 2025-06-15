@@ -35,28 +35,12 @@ namespace Foam
 autoPtr<admMixture>
 admMixture::New
 (
-    const fvMesh& mesh,
-    const volScalarField& alpha1,
-    PtrList<volScalarField>& Si,
-    PtrList<volScalarField>& Gi,
+    const volScalarField& Top,
+    const volVectorField& U,
     const surfaceScalarField& phi
 )
 {
-    const IOdictionary dict
-    (
-        IOobject
-        (
-            "transportProperties",
-            mesh.time().constant(),
-            mesh,
-            IOobject::MUST_READ,
-            IOobject::NO_WRITE
-            // ,
-            // false // Do not register
-        )
-    );
-
-    // const word modelType(dict.get<word>("phaseChangeTwoPhaseModel"));
+    // const word modelType(this->get<word>("phaseChangeTwoPhaseModel"));
 
     // Info<< "Selecting phaseChange model " << modelType << endl;
 
@@ -66,7 +50,7 @@ admMixture::New
     // {
     //     FatalIOErrorInLookup
     //     (
-    //         dict,
+    //         this(),
     //         "admMixture",
     //         modelType,
     //         *componentsConstructorTablePtr_
@@ -77,22 +61,17 @@ admMixture::New
     // (
     //     ctorPtr
     //     (
-    //         mesh,
-    //         alpha1,
     //         Si,
     //         Gi,
-    //         dict,
+    //         U,
     //         phi
     //     )
     // );
 
     admMixture* mixturePtr = new admMixture
     (
-        mesh,
-        alpha1,
-        Si,
-        Gi,
-        dict,
+        Top,
+        U,
         phi
     );
 

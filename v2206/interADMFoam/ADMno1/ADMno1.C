@@ -641,7 +641,7 @@ const Foam::word Foam::ADMno1::propertiesName("admno1Properties");
  
 Foam::autoPtr<Foam::ADMno1> Foam::ADMno1::New
 (
-    volScalarField& T,
+    const volScalarField& T,
     const fvMesh& mesh
 )
 {

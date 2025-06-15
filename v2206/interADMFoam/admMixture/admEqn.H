@@ -5,7 +5,7 @@
     // forAll(Si, i)
     // {
         label i = 6;
-
+        
         volScalarField& Yi = Si[i];
         volScalarField SpY = (Yi - Yi.oldTime()) / runTime.deltaT();
 

@@ -63,7 +63,7 @@ void Foam::admMixture::massTransferCoeffs()
     phiHS_ = 
     (
         DalphaS_ * (1 - H_) / fvc::interpolate((alpha1_ + H_ * (1 - alpha1_)))
-      * fvc::snGrad(alpha1_) * mesh_.magSf()
+      * fvc::snGrad(alpha1_) * U_.mesh().magSf()
     );
 }
 
@@ -71,24 +71,19 @@ void Foam::admMixture::massTransferCoeffs()
 //- interface compreassion coefficient
 surfaceScalarField Foam::admMixture::compressionCoeff
 (
-    // label i,
-    // const PtrList<volScalarField>& Ci
     const volScalarField& Yi
 )
 {
-    // Reference of species
-    // const volScalarField& Yi = Ci[i];
-
     // Direction of interfacial flux
-    surfaceScalarField fluxDir = fvc::snGrad(alpha1_) * mesh_.magSf();
+    surfaceScalarField fluxDir = fvc::snGrad(alpha1_) * U_.mesh().magSf();
 
     // Upwind and downwind alpha1
-    surfaceScalarField alphaUp = upwind<scalar>(mesh_,fluxDir).interpolate(alpha1_);
-    surfaceScalarField alphaDown = downwind<scalar>(mesh_,fluxDir).interpolate(alpha1_);
+    surfaceScalarField alphaUp = upwind<scalar>(U_.mesh(),fluxDir).interpolate(alpha1_);
+    surfaceScalarField alphaDown = downwind<scalar>(U_.mesh(),fluxDir).interpolate(alpha1_);
 
     // Upwind and downwnd Yi
-    surfaceScalarField YiUp = upwind<scalar>(mesh_,fluxDir).interpolate(Yi);
-    surfaceScalarField YiDown = downwind<scalar>(mesh_,fluxDir).interpolate(Yi);
+    surfaceScalarField YiUp = upwind<scalar>(U_.mesh(),fluxDir).interpolate(Yi);
+    surfaceScalarField YiDown = downwind<scalar>(U_.mesh(),fluxDir).interpolate(Yi);
         
     dimensionedScalar sgn = 
     (
@@ -139,19 +134,20 @@ void Foam::admMixture::speciesMules
 	word YiScheme("div(phi,Yi)");
 
     // Standard face-flux compression coefficient
-    surfaceScalarField phic(mag(phi_ / mesh_.magSf()));
+    surfaceScalarField phic(mag(phi_ / U_.mesh().magSf()));
 
     surfaceScalarField phir(phic * interface.nHatf());
 
-    // // TODO: move this to general solve() function
-    // alpha2_ = 1 - alpha1_;
+    // TODO: move this to general solve() function
+    alpha2_ = 1 - alpha1_;
 
     // Soluables
-    // forAll(Si_, i)
+    PtrList<volScalarField>& Si = reaction_->Y();
+    // forAll(Si, i)
 	// {
         label i = 6;
 
-        volScalarField& Yi = Si_[i];
+        volScalarField& Yi = Si[i];
 
         scalar maxYi = max(gMax(Yi), gMax(Yi.boundaryField())) + 1e-30;
 
@@ -203,27 +199,17 @@ void Foam::admMixture::speciesMules
 
 Foam::admMixture::admMixture
 (
-    const fvMesh& mesh,
-    const volScalarField& alpha1,
-    PtrList<volScalarField>& Si,
-    PtrList<volScalarField>& Gi,
-    const IOdictionary& dict,
+    const volScalarField& Top,
+    const volVectorField& U,
     const surfaceScalarField& phi
 )
 :
-    IOdictionary(dict),
-    Si_(Si),
-    Gi_(Gi),
-    alpha1_(alpha1),
-    alpha2_(1.0 - alpha1_),
-    mesh_(mesh),
-    phi_(phi),
+    incompressibleTwoPhaseMixture(U, phi),
     H_
     (
         "test",
         dimless,
-        // dict.subDict("liquid").lookupOrDefault
-        dict.subDict(get<wordList>("phases")[0]).lookupOrDefault
+        this->subDict(get<wordList>("phases")[0]).lookupOrDefault
         (
             "H",
             1e-12
@@ -233,8 +219,7 @@ Foam::admMixture::admMixture
     (
         "test1",
         dimArea/dimTime,
-        // dict.subDict("liquid").lookupOrDefault
-        dict.subDict(get<wordList>("phases")[0]).lookupOrDefault
+        this->subDict(get<wordList>("phases")[0]).lookupOrDefault
         (
             "D",
             1e-8
@@ -244,8 +229,7 @@ Foam::admMixture::admMixture
     (
         "test2",
         dimArea/dimTime,
-        // dict.subDict("gas").lookupOrDefault
-        dict.subDict(get<wordList>("phases")[1]).lookupOrDefault
+        this->subDict(get<wordList>("phases")[1]).lookupOrDefault
         (
             "D",
             1e-8
@@ -257,11 +241,11 @@ Foam::admMixture::admMixture
 		(
 			"DalphaS",
             alpha1_.time().timeName(),
-			mesh_,
+			U_.mesh(),
 			IOobject::NO_READ,
 			IOobject::NO_WRITE
 		),
-		mesh_,
+		U_.mesh(),
 		dimensionedScalar
         (
             "DalphaSdefault",
@@ -275,11 +259,11 @@ Foam::admMixture::admMixture
 		(
 			"DalphaG",
             alpha1_.time().timeName(),
-			mesh_,
+			U_.mesh(),
 			IOobject::NO_READ,
 			IOobject::NO_WRITE
 		),
-		mesh_,
+		U_.mesh(),
 		dimensionedScalar
         (
             "DalphaGdefault",
@@ -293,20 +277,76 @@ Foam::admMixture::admMixture
 		(
 			"phiH",
             alpha1_.time().timeName(),
-			mesh_,
+			U_.mesh(),
 			IOobject::NO_READ,
 			IOobject::NO_WRITE
 		),
-		mesh_,
+		U_.mesh(),
 		dimensionedScalar
         (
             "phiHdefault",
             dimVolume/dimTime,
             SMALL
         )
+    ),
+    reaction_
+    (
+        ADMno1::New(Top, U_.mesh())
+    ),
+    mDot_
+    (
+        IOobject
+		(
+			"mDot",
+            alpha1_.time().timeName(),
+			U_.mesh(),
+			IOobject::NO_READ,
+			IOobject::NO_WRITE
+		),
+		U_.mesh(),
+		dimensionedScalar
+        (
+            "mDotdefault",
+            dimDensity/dimTime,
+            SMALL
+        )
+    ),
+    vDot_
+    (
+        IOobject
+		(
+			"vDot",
+            alpha1_.time().timeName(),
+			U_.mesh(),
+			IOobject::NO_READ,
+			IOobject::NO_WRITE
+		),
+		U_.mesh(),
+		dimensionedScalar
+        (
+            "vDotdefault",
+            dimless/dimTime,
+            SMALL
+        )
+    ),
+    vDotAlphal_
+    (
+        IOobject
+		(
+			"vDotAlphal",
+            alpha1_.time().timeName(),
+			U_.mesh(),
+			IOobject::NO_READ,
+			IOobject::NO_WRITE
+		),
+		U_.mesh(),
+		dimensionedScalar
+        (
+            "vDotAlphaldefault",
+            dimless/dimTime,
+            SMALL
+        )
     )
-    // mixture_(mixture),
-    // mesh_(mesh)
 {
     // alpha2_ = 1 - alpha1_;
     // alpha2_ = 1 - alpha1_;
@@ -345,7 +385,7 @@ void Foam::admMixture::func()
     // 	{
     //         phiD_ += // Mw_*
     //             (
-    //                 DmY * fvc::snGrad(Yi) * mesh_.magSf()
+    //                 DmY * fvc::snGrad(Yi) * U_.mesh().magSf()
     //               -fvc::flux(phiHS,Yi,"div(phiHS,Yi)")
     //             );
     // 	}
@@ -402,12 +442,29 @@ void Foam::admMixture::solve
     const interfaceProperties& interface
 )
 {
-    // DEBUG
-    Info<< ">>> testing admMixture::solve()" << endl;
+    // // DEBUG
+    // Info<< ">>> testing admMixture::solve()" << endl;
 
     massTransferCoeffs();
 
     speciesMules(interface);
+}
+
+
+void Foam::admMixture::reaction
+(
+    const volScalarField& Top,
+    const volScalarField& p
+)
+{
+    reaction_->correct
+    (
+        this->phi_,
+        this->alpha1_,
+        this->alpha2_,
+        Top,
+        p
+    );
 }
 
 
