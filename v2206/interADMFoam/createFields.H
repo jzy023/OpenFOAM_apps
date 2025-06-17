@@ -207,37 +207,6 @@ mesh.setFluxRequired(alpha1.name());
 // volScalarField& T = thermo->T();
 // ---------------------------------------------------------------------------------
 
-
-// testing
-surfaceScalarField phiD_
-(
-	IOobject
-	(
-		"phiD",
-        runTime.timeName(),
-		mesh,
-		IOobject::NO_READ,
-		IOobject::NO_WRITE
-	),
-	mesh,
-	dimensionedScalar("phiD", dimMass/dimTime, 0.0)
-);
-
-volScalarField Mflux_
-(
-	IOobject
-	(
-		"Mflux",
-        runTime.timeName(),
-		mesh,
-		IOobject::NO_READ,
-        IOobject::NO_WRITE
-		// IOobject::AUTO_WRITE
-	),
-	mesh,
-	dimensionedScalar("MFlux", dimMass/dimVolume/dimTime, 0.0)
-);
-
 // 
 PtrList<volScalarField>& Si = mixture->Si(); // <-- TODO: const?
 PtrList<volScalarField>& Gi = mixture->Gi(); // <-- TODO: const?

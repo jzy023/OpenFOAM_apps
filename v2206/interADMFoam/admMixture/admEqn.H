@@ -17,7 +17,7 @@
                 fvm::ddt(Yi)
               + fvm::div(mixture->phiHS(),Yi,"div(phiH,Yi)")
               - fvm::laplacian(mixture->DalphaS(),Yi)
-              ==
+             ==
                 SpY
             );
 
@@ -34,10 +34,13 @@
 
         // Info<< "Species concentration = "
         // << Yi.weightedAverage(mesh.V()).value()
-        Info<< "Species concentration (sum) = "
-        << gSum(Yi.internalField())
-        << "  Min(" << Yi.name() << ") = " << gMin(Yi.internalField())
-        << "  Max(" << Yi.name() << ") = " << gMax(Yi.internalField())
-        << endl;
+        // Info<< "Species concentration (sum) = "
+        // << gSum(Yi.internalField())
+        // << "  Min(" << Yi.name() << ") = " << gMin(Yi.internalField())
+        // << "  Max(" << Yi.name() << ") = " << gMax(Yi.internalField())
+        // << endl;
     // }
+
+    //calculate mass transfer flux
+    mixture->limit();
 }

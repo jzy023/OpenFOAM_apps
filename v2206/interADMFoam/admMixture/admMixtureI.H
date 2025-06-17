@@ -53,25 +53,32 @@ Foam::admMixture::phiHS() const
 }
 
 
-inline const Foam::volScalarField&
-Foam::admMixture::vDot() const
-{
-    return vDot_;
-}
+// inline const Foam::volScalarField&
+// Foam::admMixture::mDot() const
+// {
+//     return mDot_;
+// }
 
 
-inline const Foam::volScalarField&
-Foam::admMixture::mDot() const
-{
-    return mDot_;
-}
+// inline const Foam::volScalarField&
+// Foam::admMixture::mDotAlphal() const
+// {
+//     return mDotAlphal_;
+// }
 
 
-inline const Foam::volScalarField&
-Foam::admMixture::vDotAlphal() const
-{
-    return vDotAlphal_;
-}
+// inline const Foam::volScalarField&
+// Foam::admMixture::vDot() const
+// {
+//     return vDot_;
+// }
+
+
+// inline const Foam::volScalarField&
+// Foam::admMixture::vDotAlphal() const
+// {
+//     return vDotAlphal_;
+// }
 
 
 inline Foam::PtrList<Foam::volScalarField>&

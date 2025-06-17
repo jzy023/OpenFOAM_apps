@@ -311,6 +311,24 @@ Foam::admMixture::admMixture
             SMALL
         )
     ),
+    mDotAlphal_
+    (
+        IOobject
+		(
+			"mDotAlphal",
+            alpha1_.time().timeName(),
+			U_.mesh(),
+			IOobject::NO_READ,
+			IOobject::NO_WRITE
+		),
+		U_.mesh(),
+		dimensionedScalar
+        (
+            "mDotAlphaldefault",
+            dimDensity/dimTime,
+            SMALL
+        )
+    ),
     vDot_
     (
         IOobject
@@ -347,6 +365,54 @@ Foam::admMixture::admMixture
             SMALL
         )
     )
+    // testing
+    ,mDotTest_
+    (
+        "mDotTest",
+        dimDensity/dimTime,
+        -this->lookupOrDefault
+        (
+            "mDotTest",
+            5e-3
+        )
+    ),
+    phiD_
+    (
+        IOobject
+        (
+            "phiD",
+            alpha1_.time().timeName(),
+            U_.mesh(),
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        U_.mesh(),
+        dimensionedScalar
+        (
+            "phiD",
+            dimMass/dimTime,
+            SMALL
+        )
+    ),
+    Mflux_
+    (
+        IOobject
+        (
+            "Mflux",
+            alpha1_.time().timeName(),
+            U_.mesh(),
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+            // IOobject::AUTO_WRITE
+        ),
+        U_.mesh(),
+        dimensionedScalar
+        (
+            "MFlux",
+            dimMass/dimVolume/dimTime,
+            SMALL
+        )
+    )
 {
     // alpha2_ = 1 - alpha1_;
     // alpha2_ = 1 - alpha1_;
@@ -357,15 +423,18 @@ Foam::admMixture::admMixture
 
 void Foam::admMixture::limit()
 {
-    // // Calculate mass transfer flux ----------------------------------------------
+    // Calculate mass transfer flux ----------------------------------------------
     // Info<< "correcting Yi" << endl;
+    
+    label i = 6;
+    volScalarField& Yi = reaction_->Y()[i];
 
-    // //calculate alpha downwind
-    // surfaceScalarField fluxDir = fvc::snGrad(alpha1_)*mesh.magSf();
-    // surfaceScalarField alphaDown = downwind<scalar>(mesh,fluxDir).interpolate(alpha1_);
+    //calculate alpha downwind
+    surfaceScalarField fluxDir = fvc::snGrad(alpha1_)* U_.mesh().magSf();
+    surfaceScalarField alphaDown = downwind<scalar>(U_.mesh(),fluxDir).interpolate(alpha1_);
 
-    // // Re-initialize transfer flux
-    // phiD_ = 0 * phiD_;
+    // Re-initialize transfer flux
+    phiD_ = 0 * phiD_;
 
     // if (phiHScheme_ == "Gauss upwind")
     // {
@@ -381,14 +450,14 @@ void Foam::admMixture::limit()
     // }
     // else if (phiHScheme_ == "Gauss linear")
     // {
-    // 	forAll(species_, i)
-    // 	{
-    //         phiD_ += // Mw_*
-    //             (
-    //                 DmY * fvc::snGrad(Yi) * U_.mesh().magSf()
-    //               -fvc::flux(phiHS,Yi,"div(phiHS,Yi)")
-    //             );
-    // 	}
+    	// forAll(species_, i)
+    	// {
+            phiD_ += // Mw_*
+            (
+                DalphaS_ * fvc::snGrad(Yi) * U_.mesh().magSf()
+              - fvc::flux(phiHS_, Yi, "div(phiH,Yi)")
+            );
+    	// }
     // }
     // else
     // {
@@ -397,20 +466,20 @@ void Foam::admMixture::limit()
     // 	<< abort(FatalError);
     // }
 
-    // // Compute flux
-    // Mflux_ = fvc::div(phiD_ * alphaDown) - alpha1_ * fvc::div(phiD_);
+    // Compute flux
+    Mflux_ = fvc::div(phiD_ * alphaDown) - alpha1_ * fvc::div(phiD_);
 
-    // // alpha2_ = 1 - alpha1_;
+    // alpha2_ = 1 - alpha1_;
 
-    // // compute Yi1 and Yi2
+    // compute Yi1 and Yi2
     // forAll(species_, i)
     // {
     //     volScalarField& Yi = Yi;
-    //     volScalarField& Y1i = phase1SpeciesMixture_.Y(i);
-    //     volScalarField& Y2i = phase2SpeciesMixture_.Y(i);
-    //     dimensionedScalar HYi = HY_[i];
-    //     Y1i = Yi/(alpha1+H_*(1-alpha1));
-    //     Y2i = H_*Yi/(alpha1+H_*(1-alpha1));
+        // volScalarField& Y1i = phase1SpeciesMixture_.Y(i);
+        // volScalarField& Y2i = phase2SpeciesMixture_.Y(i);
+        // dimensionedScalar HYi = HY_[i];
+        volScalarField Y1i = Yi / (alpha1_ + H_*(1 - alpha1_));
+        volScalarField Y2i = H_ * Yi / (alpha1_ + H_*(1 - alpha1_));
     // }
 
     // // set saturation
@@ -424,17 +493,69 @@ void Foam::admMixture::limit()
     // compute Yi from Y1i and Y2i
     // forAll(species_, i)
     // {
-    //     volScalarField& Yi = Yi;
-    //     volScalarField& Y1i = phase1SpeciesMixture_.Y(i);
-    //     volScalarField& Y2i = phase2SpeciesMixture_.Y(i);
-    //     Yi = Y1i*alpha1 + Y2i*(1-alpha1);
+        // volScalarField& Yi = Yi;
+        // volScalarField& Y1i = phase1SpeciesMixture_.Y(i);
+        // volScalarField& Y2i = phase2SpeciesMixture_.Y(i);
+        Yi = Y1i*alpha1_ + Y2i*(1 - alpha1_);
     // }
 
-    // // DEBUG
-    // Info<< "max(Mflux) = "
-    //     << gMax(Mflux_.internalField())
-    //     << endl;
+    // DEBUG
+    Info<< "Yi correction: max(Mflux) = "
+        << gMax(Mflux_.internalField())
+        << "  Min(" << Yi.name() << ") = " << gMin(Yi.internalField())
+        << "  Max(" << Yi.name() << ") = " << gMax(Yi.internalField())
+        << "  Species concentration (sum) = "<< gSum(Yi.internalField())
+        << endl;
 };
+
+
+const Foam::volScalarField&
+Foam::admMixture::mDot()
+{
+    volScalarField limitedAlpha1
+    (
+        min(max(alpha1_, scalar(0)), scalar(1))
+    );
+
+    mDot_ = limitedAlpha1*mDotTest_; 
+
+    return mDot_;
+}
+
+
+const Foam::volScalarField&
+Foam::admMixture::mDotAlphal()
+{
+    mDotAlphal_ = mDotTest_;
+     
+    return mDotAlphal_;
+}
+
+
+const Foam::volScalarField&
+Foam::admMixture::vDot()
+{
+    dimensionedScalar pCoeff(1.0/this->rho1() - 1.0/this->rho2());
+
+    vDot_ = pCoeff*this->mDot();
+
+    return vDot_;
+}
+
+
+const Foam::volScalarField&
+Foam::admMixture::vDotAlphal()
+{
+    volScalarField alphalCoeff
+    (
+        1.0/this->rho1() - this->alpha1()
+       *(1.0/this->rho1() - 1.0/this->rho2())
+    );
+
+    vDotAlphal_ = alphalCoeff*this->mDotAlphal();
+
+    return vDotAlphal_;
+}
 
 
 void Foam::admMixture::solve

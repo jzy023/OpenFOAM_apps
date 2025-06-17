@@ -98,8 +98,13 @@ protected:
 
         //- Phase change ADMno1 
         volScalarField mDot_;
+        volScalarField mDotAlphal_;
         volScalarField vDot_;
         volScalarField vDotAlphal_;
+        // DEBUG scalar
+        dimensionedScalar mDotTest_;
+        surfaceScalarField phiD_;
+        volScalarField Mflux_;
 
 
     // Private Member Functions
@@ -220,6 +225,14 @@ public:
         //- Correct interface
         void limit();
 
+        const volScalarField& mDot();
+
+        const volScalarField& mDotAlphal();
+
+        const volScalarField& vDot();
+
+        const volScalarField& vDotAlphal();
+
         //- Solve mixture 
         void solve
         (
@@ -242,11 +255,13 @@ public:
 
         inline const surfaceScalarField& phiHS() const;
 
-        inline const volScalarField& vDot() const;
+        // inline const volScalarField& mDot() const;
 
-        inline const volScalarField& mDot() const;
+        // inline const volScalarField& mDotAlphal() const;
 
-        inline const volScalarField& vDotAlphal() const;
+        // inline const volScalarField& vDot() const;
+
+        // inline const volScalarField& vDotAlphal() const;
 
         inline PtrList<volScalarField>& Si();
 
