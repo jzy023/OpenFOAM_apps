@@ -126,10 +126,6 @@ admPara::admPara
         kTOK_*0.035,      // [mol * m-3 * Pa-1] co2
         kTOK_*0.0313      // [mol * m-3 * Pa-1] h2o  // TODO: not in use
     ),
-    kLa_
-    (
-        dimless/dimTime, 200.0
-    ),
     pHL_
     (
     //  ULaa,LLaa,ULac,LLac,ULh2,LLh2

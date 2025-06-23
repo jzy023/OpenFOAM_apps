@@ -71,6 +71,9 @@ private:
     //- Gas constant
     scalar R_;
 
+    // Gas transfer rate coefficients [d-1]
+    dimensionedScalar kLa_;
+
     //- Pipe resistance coefficient [m³d⁻¹Bar⁻¹]
     // TODO: "pipe" DOES NOT EXIST in this case!!!
     scalar KP_;
@@ -327,6 +330,9 @@ public:
     //- Return dGPtrs_
     inline PtrList<volScalarField::Internal>& dG();
 
+    //- Return MPtrs_
+    inline PtrList<volScalarField>& M();
+
     //- Return IOPtrs_
     inline PtrList<volScalarField>& IO();
 
@@ -373,9 +379,6 @@ public:
     volScalarField Vfrac_test;
 
     volScalarField Vgas_test;
-
-    PtrList<volScalarField> YiAlpha_test;
-    PtrList<volScalarField> GiAlpha_test;
 
     PtrList<volScalarField> GPtrs_test;
 

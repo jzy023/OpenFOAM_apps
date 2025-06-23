@@ -117,6 +117,11 @@
     // Cache alphaPhi
     alphaPhi10 = talphaPhi();
 
+    // testing
+    // limit alphas
+    mixture->limitAlpha();
+
+
     Info<< "Liquid phase volume fraction = "
         << alpha1.weightedAverage(mesh.V()).value()
         << "  Min(" << alpha1.name() << ") = " << min(alpha1).value()

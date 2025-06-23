@@ -83,11 +83,31 @@ Foam::ADMno1::ADMno1
     ),
     R_
     (
-        ADMno1Dict.lookupOrDefault("R", 0.083145 / para_.kTOK())
+        ADMno1Dict.lookupOrDefault
+        (
+            "R", 
+            0.083145 / para_.kTOK()
+            // default digit number from Rosen paper with their dimensions
+        ) 
+    ),
+    kLa_
+    (
+        "kLa",
+        dimless/dimTime,
+        ADMno1Dict.lookupOrDefault
+        (
+            "kLa",
+            200
+        ) 
     ),
     KP_
     (
-        ADMno1Dict.lookupOrDefault("Kpip", 5e4 / para_.BTOP())
+        ADMno1Dict.lookupOrDefault
+        (
+            "Kpip", 
+            5e4 / para_.BTOP()
+            // default digit number from Rosen paper with their dimensions
+        ) 
     ),
     Vfrac_
     (
@@ -98,13 +118,23 @@ Foam::ADMno1::ADMno1
     (
         "Pvap", 
         dimPressure,
-        ADMno1Dict.lookupOrDefault("Pvap", para_.BTOP() * 0.0313)
+        ADMno1Dict.lookupOrDefault
+        (
+            "Pvap", 
+            para_.BTOP() * 0.0313
+            // default digit number from Rosen paper with their dimensions
+        ) 
     ),
     Pext_
     (
         "Pext", 
         dimPressure,
-        ADMno1Dict.lookupOrDefault("Pext", para_.BTOP() * 1.013)
+        ADMno1Dict.lookupOrDefault
+        (
+            "Pext", 
+            para_.BTOP() * 1.013
+            // default digit number from Rosen paper with their dimensions
+        ) 
     ),
     Pgas_
     (
@@ -713,19 +743,19 @@ void Foam::ADMno1::gasPhaseRate()
 {
     GRPtrs_[0] = 
     (
-        para_.DTOS() * para_.kLa() 
+        para_.DTOS() * kLa_
       * (YPtrs_[7].internalField() - R_ * TopDummy_.internalField() * GPtrs_[0].internalField() * KHh2_)
     );
 
     GRPtrs_[1] = 
     (
-        para_.DTOS() * para_.kLa() 
+        para_.DTOS() * kLa_
       * (YPtrs_[8].internalField() - R_ * TopDummy_.internalField() * GPtrs_[1].internalField() * KHch4_)
     );
 
     GRPtrs_[2] = 
     (
-        para_.DTOS() * para_.kLa() // Sco2 instead of SIC
+        para_.DTOS() * kLa_// Sco2 instead of SIC
       * (MPtrs_[0].internalField() - R_ * TopDummy_.internalField() * GPtrs_[2].internalField() * KHco2_)
     );
 }
@@ -841,7 +871,7 @@ volScalarField::Internal Foam::ADMno1::fSh2
     volScalarField conv = para_.DTOS() * (Qin_/Vliq_) * (para_.INFLOW(7) - Sh2Temp);
     volScalarField::Internal GRSh2Temp = 
     (
-        para_.DTOS() * para_.kLa() 
+        para_.DTOS() * kLa_ 
       * (Sh2Temp.internalField() - R_ * TopDummy_.internalField() * GPtrs_[0].internalField() * KHh2_)
     );
 
@@ -893,7 +923,7 @@ volScalarField::Internal Foam::ADMno1::dfSh2
 
     // volScalarField dConv(fvc::div(flux));
     dimensionedScalar dConv = - para_.DTOS() * (Qin_/Vliq_);
-    dimensionedScalar dGRSh2Temp = para_.DTOS() * para_.kLa();
+    dimensionedScalar dGRSh2Temp = para_.DTOS() * kLa_;
 
     //     dReaction + dConvection - dfGasRhoH2(paraPtr, Sh2);
     return concPerComponent(7, dKRPtrs_temp) + dConv - dGRSh2Temp;

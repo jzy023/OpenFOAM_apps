@@ -60,6 +60,11 @@ inline Foam::PtrList<Foam::volScalarField::Internal>& Foam::ADMno1::dG()
     return dGPtrs_;
 }
 
+inline Foam::PtrList<Foam::volScalarField>& Foam::ADMno1::M()
+{
+    return MPtrs_;
+}
+
 inline Foam::PtrList<Foam::volScalarField>& Foam::ADMno1::IO()
 {
     return IOPtrs_;

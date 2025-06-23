@@ -96,6 +96,10 @@ protected:
         //- ADMno1 reaction
         autoPtr<ADMno1> reaction_;
 
+        //- Phase corrected concentration
+        PtrList<volScalarField> YiAlpha_;
+        PtrList<volScalarField> GiAlpha_;
+
         //- Phase change ADMno1 
         volScalarField mDot_;
         volScalarField mDotAlphal_;
@@ -232,6 +236,9 @@ public:
         const volScalarField& vDot();
 
         const volScalarField& vDotAlphal();
+
+        //- Volume fractions limitater
+        void limitAlpha();
 
         //- Solve mixture 
         void solve

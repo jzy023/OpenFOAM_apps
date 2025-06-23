@@ -412,7 +412,9 @@ Foam::admMixture::admMixture
             dimMass/dimVolume/dimTime,
             SMALL
         )
-    )
+    ),
+    YiAlpha_(reaction_->Y()),
+    GiAlpha_(reaction_->G())
 {
     // alpha2_ = 1 - alpha1_;
     // alpha2_ = 1 - alpha1_;
@@ -555,6 +557,25 @@ Foam::admMixture::vDotAlphal()
     vDotAlphal_ = alphalCoeff*this->mDotAlphal();
 
     return vDotAlphal_;
+}
+
+
+// testing
+void Foam::admMixture::limitAlpha()
+{
+    forAll(this->alpha1(), celli)
+    {
+        if (this->alpha1()[celli] <= 0.0)
+        {
+            this->alpha1()[celli] = 1e-16;
+        }
+        else if (this->alpha1()[celli] >= 1.0)
+        {
+            this->alpha1()[celli] = 1 - 1e-16;
+        }
+    }
+
+    this->alpha2() = 1 - this->alpha1();
 }
 
 

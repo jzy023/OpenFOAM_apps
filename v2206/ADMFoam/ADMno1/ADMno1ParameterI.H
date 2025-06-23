@@ -98,11 +98,6 @@ License
         return KH_;
     }
 
-    inline const dimensionedScalar admPara::kLa() const 
-    {
-        return kLa_;
-    }
-
     inline const limPH admPara::pHL() const 
     {
         return pHL_;

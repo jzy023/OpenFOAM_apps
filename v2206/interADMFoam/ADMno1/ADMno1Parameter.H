@@ -93,9 +93,6 @@ private:
     //- Henry's Law coeffecients
     gasHenryCoe KH_;
 
-    // Gas transfer rate coefficients [d-1]
-    dimensionedScalar kLa_;  
-
     // pH Limits
     limPH pHL_;
 
@@ -230,10 +227,6 @@ public:
             kTOK_*0.035,      // [mol * m-3 * Pa-1] co2
             kTOK_*0.0313      // [mol * m-3 * Pa-1] h2o
         ),
-        kLa_
-        (
-            dimless/dimTime, 200.0
-        ),
         pHL_
         (
             5.5, 4.0, 7.0, 6.0, 6.0, 5.0
@@ -289,8 +282,6 @@ public:
     inline const admAcidBaseEq Ka() const;
 
     inline const gasHenryCoe KH() const;
-
-    inline const dimensionedScalar kLa() const;
 
     inline const limPH pHL() const;
 

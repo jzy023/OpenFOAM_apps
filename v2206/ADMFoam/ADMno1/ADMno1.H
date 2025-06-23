@@ -70,7 +70,10 @@ private:
     //- Gas constant
     scalar R_;
 
-    //- Pipe resistance coefficient [m³d⁻¹Bar⁻¹]
+    // Gas transfer rate coefficients [d-1]
+    dimensionedScalar kLa_;
+
+    //- Pipe resistance coefficient [m³d⁻¹Pa⁻¹] -> Rosen original [m³d⁻¹Bar⁻¹]
     // TODO: "pipe" DOES NOT EXIST in this case!!!
     scalar KP_;
 

@@ -141,6 +141,16 @@ Foam::ADMno1::ADMno1
     (
         ADMno1Dict.lookupOrDefault("R", 0.083145 / para_.kTOK())
     ),
+    kLa_
+    (
+        "kLa",
+        dimless/dimTime,
+        ADMno1Dict.lookupOrDefault
+        (
+            "kLa",
+            200
+        ) 
+    ),
     KP_
     (
         ADMno1Dict.lookupOrDefault("Kpip", 5e4 / para_.BTOP())
@@ -299,8 +309,8 @@ Foam::ADMno1::ADMno1
                     mesh.time().timeName(),
                     mesh,
                     IOobject::MUST_READ,
-                    // IOobject::NO_WRITE
-                    IOobject::AUTO_WRITE
+                    IOobject::NO_WRITE
+                    // IOobject::AUTO_WRITE
                 ),
                 mesh
             )
@@ -326,8 +336,8 @@ Foam::ADMno1::ADMno1
                     mesh.time().timeName(),
                     mesh,
                     IOobject::MUST_READ,
-                    // IOobject::NO_WRITE
-                    IOobject::AUTO_WRITE
+                    IOobject::NO_WRITE
+                    // IOobject::AUTO_WRITE
                 ),
                 mesh
             )
@@ -384,8 +394,8 @@ Foam::ADMno1::ADMno1
                     mesh.time().timeName(),
                     mesh,
                     IOobject::READ_IF_PRESENT,
-                    // IOobject::NO_WRITE
-                    IOobject::AUTO_WRITE
+                    IOobject::NO_WRITE
+                    // IOobject::AUTO_WRITE
                 ),
                 mesh,
                 dimensionedScalar
@@ -449,7 +459,8 @@ Foam::ADMno1::ADMno1
                     mesh.time().timeName(),
                     mesh,
                     IOobject::READ_IF_PRESENT,
-                    IOobject::AUTO_WRITE
+                    IOobject::NO_WRITE
+                    // IOobject::AUTO_WRITE
                 ),
                 mesh,
                 dimensionedScalar
@@ -673,86 +684,6 @@ Foam::ADMno1::ADMno1
     // testing ------------------------------------------------------------------------
 
     iNames = namesSoluable.size();
-    YiAlpha_test.resize(nSpecies);
-
-    forAll(namesSoluable, i)
-    {
-        YiAlpha_test.set
-        (
-            i,
-            new volScalarField
-            (
-                IOobject
-                (
-                    // namesSoluable[i] + ".Alpha_test",
-                    "multi.test." + namesSoluable[i],
-                    mesh.time().timeName(),
-                    mesh,
-                    IOobject::NO_READ,
-                    IOobject::AUTO_WRITE
-                ),
-                mesh,
-                dimensionedScalar
-                (
-                    YPtrs_[0].dimensions(),
-                    Zero
-                )
-            )
-        );
-    }
-    forAll(namesParticulate, i)
-    {
-        YiAlpha_test.set
-        (
-            i + iNames,
-            new volScalarField
-            (
-                IOobject
-                (
-                    // namesParticulate[i] + ".Alpha_test",
-                    "multi.test." + namesParticulate[i],
-                    mesh.time().timeName(),
-                    mesh,
-                    IOobject::NO_READ,
-                    IOobject::AUTO_WRITE
-                ),
-                mesh,
-                dimensionedScalar
-                (
-                    YPtrs_[0].dimensions(),
-                    Zero
-                )
-            )
-        );
-    }
-
-    GiAlpha_test.resize(namesGaseous.size());
-
-    forAll(namesGaseous, i)
-    {
-        GiAlpha_test.set
-        (
-            i,
-            new volScalarField
-            (
-                IOobject
-                (
-                    // namesGaseous[i] + ".Alpha_test",
-                    "multi.test." + namesGaseous[i],
-                    mesh.time().timeName(),
-                    mesh,
-                    IOobject::NO_READ,
-                    IOobject::AUTO_WRITE
-                ),
-                mesh,
-                dimensionedScalar
-                (
-                    YPtrs_[0].dimensions(),
-                    Zero
-                )
-            )
-        );
-    }
 
     GPtrs_test.resize(namesGaseous.size());
 
@@ -982,37 +913,37 @@ void Foam::ADMno1::gasTest
     //          
     GRPtrs_test[0] = // <- in dimension of [kg * m-3 * s-1]
     (                // TODO: may need correction from saturation pressure
-        para_.DTOS() * para_.kLa()                                 // GPtrs is gas fraction based concentration for now !!
+        para_.DTOS() * kLa_                                 // GPtrs is gas fraction based concentration for now !!
       * (YPtrs_[7].internalField() - R_ * TopDummy_.internalField() * GPtrs_test[0].internalField() * KHh2_)
     );
 
     GRPtrs_test[1] = // <- in dimension of [kg * m-3 * s-1]
     (                // TODO: may need correction from saturation pressure
-        para_.DTOS() * para_.kLa()                                 // GPtrs is gas fraction based concentration for now !!
+        para_.DTOS() * kLa_                                 // GPtrs is gas fraction based concentration for now !!
       * (YPtrs_[8].internalField() - R_ * TopDummy_.internalField() * GPtrs_test[1].internalField() * KHch4_)
     );
 
     GRPtrs_test[2] = // <- in dimension of [mol * m-3 * s-1]
     (                // TODO: may need correction from saturation pressure
-        para_.DTOS() * para_.kLa()                                 // GPtrs is gas fraction based concentration for now !!
+        para_.DTOS() * kLa_                                 // GPtrs is gas fraction based concentration for now !!
       * (MPtrs_[0].internalField() - R_ * TopDummy_.internalField() * GPtrs_test[2].internalField() * KHco2_)
     );// ^ Sco2 instead of SIC
 
     // GRPtrs_test[0] = // <- in dimension of [kg * m-3 * s-1]
     // (                // TODO: may need correction from saturation pressure
-    //     para_.DTOS() * para_.kLa()
+    //     para_.DTOS() * kLa_
     //   * (YPtrs_[7].internalField() - Ph2 * KHh2_)
     // );
 
     // GRPtrs_test[1] = // <- in dimension of [kg * m-3 * s-1]
     // (                // TODO: may need correction from saturation pressure
-    //     para_.DTOS() * para_.kLa()
+    //     para_.DTOS() * kLa_
     //   * (YPtrs_[8].internalField() - Pch4 * KHch4_)
     // );
 
     // GRPtrs_test[2] = // <- in dimension of [mol * m-3 * s-1]
     // (                // TODO: may need correction from saturation pressure
-    //     para_.DTOS() * para_.kLa()                                    
+    //     para_.DTOS() * kLa_                                    
     //   * (MPtrs_[0].internalField() - Pco2 * KHco2_) 
     // );// ^ Sco2 instead of SIC
 
@@ -1145,7 +1076,7 @@ volScalarField::Internal Foam::ADMno1::fSh2
     volScalarField conv = para_.DTOS() * (Qin_/Vliq_) * (para_.INFLOW(7) - Sh2Temp);
     volScalarField::Internal GRSh2Temp = 
     (
-        para_.DTOS() * para_.kLa() 
+        para_.DTOS() * kLa_ 
       * (Sh2Temp.internalField() - R_ * TopDummy_.internalField() * GPtrs_[0].internalField() * KHh2_)
     );
 
@@ -1199,7 +1130,7 @@ volScalarField::Internal Foam::ADMno1::dfSh2
     // volScalarField dConv(fvc::div(flux));
     // volScalarField dConv(fvc::div(flux)) / Vcell;
     dimensionedScalar dConv = - para_.DTOS() * (Qin_/Vliq_);
-    dimensionedScalar dGRSh2Temp = para_.DTOS() * para_.kLa();
+    dimensionedScalar dGRSh2Temp = para_.DTOS() * kLa_;
 
     //     dReaction + dConvection - dfGasRhoH2(paraPtr, Sh2);
     return concPerComponent(7, dKRPtrs_temp) + dConv - dGRSh2Temp;
@@ -1337,17 +1268,6 @@ void Foam::ADMno1::correct
 
     //- Sh2 calculations
     calcSh2(flux);
-
-    //- calculate cell-vol-based concentration
-    forAll(YPtrs_, i)
-    {
-        YiAlpha_test[i] = alphaLiq * YPtrs_[i];
-    }
-
-    forAll(GPtrs_, i)
-    {
-        GiAlpha_test[i] = (1 - alphaLiq) * GPtrs_[i];
-    }
 }
 
 
