@@ -309,8 +309,8 @@ Foam::ADMno1::ADMno1
                     mesh.time().timeName(),
                     mesh,
                     IOobject::MUST_READ,
-                    IOobject::NO_WRITE
-                    // IOobject::AUTO_WRITE
+                    // IOobject::NO_WRITE
+                    IOobject::AUTO_WRITE
                 ),
                 mesh
             )

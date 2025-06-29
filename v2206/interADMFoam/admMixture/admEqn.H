@@ -7,6 +7,8 @@
         label i = 6;
         
         volScalarField& Yi = Si[i];
+        // volScalarField& Yi = mixture->SiAlpha()[i];
+
         volScalarField SpY = (Yi - Yi.oldTime()) / runTime.deltaT();
 
         while (pimple.correctNonOrthogonal())
@@ -32,6 +34,8 @@
             }
         }
 
+        // mixture->speciesADMCorrect();
+
         // Info<< "Species concentration = "
         // << Yi.weightedAverage(mesh.V()).value()
         // Info<< "Species concentration (sum) = "
@@ -41,6 +45,8 @@
         // << endl;
     // }
 
-    //calculate mass transfer flux
-    mixture->limit();
+    // YiChem = Yi/alpha1;
+
+    // //calculate mass transfer flux
+    // mixture->limit();
 }

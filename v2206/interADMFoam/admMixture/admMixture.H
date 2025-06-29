@@ -100,6 +100,8 @@ protected:
         PtrList<volScalarField> YiAlpha_;
         PtrList<volScalarField> GiAlpha_;
 
+        volScalarField Sac_;
+
         //- Phase change ADMno1 
         volScalarField mDot_;
         volScalarField mDotAlphal_;
@@ -237,7 +239,7 @@ public:
 
         const volScalarField& vDotAlphal();
 
-        //- Volume fractions limitater
+        //- Volume fractions limiter
         void limitAlpha();
 
         //- Solve mixture 
@@ -273,6 +275,40 @@ public:
         inline PtrList<volScalarField>& Si();
 
         inline PtrList<volScalarField>& Gi();
+
+        inline PtrList<volScalarField>& SiAlpha();
+
+        inline PtrList<volScalarField>& GiAlpha();
+
+        // testing ------------------------------------------------------------
+        void speciesAlphaCorrect()
+        {
+            forAll(YiAlpha_, i)
+            {
+                YiAlpha_[i] = reaction_->Y()[i]*alpha1_;
+            }
+
+            forAll(GiAlpha_, i)
+            {
+                GiAlpha_[i] = reaction_->G()[i]*alpha2_;
+            }
+        }
+
+        void speciesADMCorrect()
+        {
+            // forAll(YiAlpha_, i)
+            // {
+            //     reaction_->Y()[i] = abs(YiAlpha_[i])/alpha1_ + ;
+            // }
+
+            // forAll(GiAlpha_, i)
+            // {
+            //     reaction_->G()[i] = abs(GiAlpha_[i])/alpha2_ + ;
+            // }
+
+            Sac_.field() = mag(YiAlpha_[6].field())/alpha1_.field();
+            // Sac_ /= alpha1_; 
+        }
 };
 
 

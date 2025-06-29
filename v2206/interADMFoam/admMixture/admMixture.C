@@ -143,12 +143,14 @@ void Foam::admMixture::speciesMules
 
     // Soluables
     PtrList<volScalarField>& Si = reaction_->Y();
+    // PtrList<volScalarField>& Si = YiAlpha_;
+
     // forAll(Si, i)
 	// {
         label i = 6;
 
         volScalarField& Yi = Si[i];
-
+        
         scalar maxYi = max(gMax(Yi), gMax(Yi.boundaryField())) + 1e-30;
 
         // normalizing
@@ -412,12 +414,89 @@ Foam::admMixture::admMixture
             dimMass/dimVolume/dimTime,
             SMALL
         )
-    ),
-    YiAlpha_(reaction_->Y()),
-    GiAlpha_(reaction_->G())
+    )
+    ,
+    Sac_
+    (
+        IOobject
+        (
+            "Sac_test",
+            alpha1_.time().timeName(),
+            U_.mesh(),
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        U_.mesh(),
+        dimensionedScalar
+        (
+            "Sac_test",
+            dimMass/dimVolume,
+            SMALL
+        )
+    )
+    // YiAlpha_(reaction_->Y()),
+    // GiAlpha_(reaction_->G())
 {
     // alpha2_ = 1 - alpha1_;
     // alpha2_ = 1 - alpha1_;
+
+    YiAlpha_.resize(reaction_->Y().size());
+    forAll(reaction_->Y(), i)
+    {
+        YiAlpha_.set
+        (
+            i,
+            new volScalarField
+            (
+                IOobject
+                (
+                    reaction_->Y()[i].name() + ".alpha",
+                    alpha1_.time().timeName(),
+                    U_.mesh(),
+                    IOobject::NO_READ,
+                    IOobject::NO_WRITE
+                    // IOobject::AUTO_WRITE
+                ),
+                U_.mesh(),
+                dimensionedScalar
+                (
+                    reaction_->Y()[i].dimensions(),
+                    Zero
+                )
+            )
+        );
+
+        YiAlpha_[i] = reaction_->Y()[i]*alpha1_;
+    }
+
+    GiAlpha_.resize(reaction_->G().size());
+    forAll(reaction_->G(), i)
+    {
+        GiAlpha_.set
+        (
+            i,
+            new volScalarField
+            (
+                IOobject
+                (
+                    reaction_->G()[i].name() + ".alpha",
+                    alpha1_.time().timeName(),
+                    U_.mesh(),
+                    IOobject::NO_READ,
+                    IOobject::NO_WRITE
+                    // IOobject::AUTO_WRITE
+                ),
+                U_.mesh(),
+                dimensionedScalar
+                (
+                    reaction_->G()[i].dimensions(),
+                    Zero
+                )
+            )
+        );
+
+        GiAlpha_[i] = reaction_->G()[i]*alpha2_;
+    }
 }
 
 
@@ -586,6 +665,8 @@ void Foam::admMixture::solve
 {
     // // DEBUG
     // Info<< ">>> testing admMixture::solve()" << endl;
+    
+    // speciesAlphaCorrect();
 
     massTransferCoeffs();
 
