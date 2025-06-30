@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
             {
 
                 // #include "GeoChems/pEqn.H"
-                #include "admMixture/pEqn.H"
+                // #include "admMixture/pEqn.H"
             }
 
             if (pimple.turbCorr())

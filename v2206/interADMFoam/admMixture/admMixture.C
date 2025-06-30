@@ -143,7 +143,7 @@ void Foam::admMixture::speciesMules
 
     // Soluables
     PtrList<volScalarField>& Si = reaction_->Y();
-    // PtrList<volScalarField>& Si = YiAlpha_;
+    // PtrList<volScalarField>& Si = SiAlpha_;
 
     // forAll(Si, i)
 	// {
@@ -434,16 +434,16 @@ Foam::admMixture::admMixture
             SMALL
         )
     )
-    // YiAlpha_(reaction_->Y()),
+    // SiAlpha_(reaction_->Y()),
     // GiAlpha_(reaction_->G())
 {
     // alpha2_ = 1 - alpha1_;
     // alpha2_ = 1 - alpha1_;
 
-    YiAlpha_.resize(reaction_->Y().size());
+    SiAlpha_.resize(reaction_->Y().size());
     forAll(reaction_->Y(), i)
     {
-        YiAlpha_.set
+        SiAlpha_.set
         (
             i,
             new volScalarField
@@ -454,8 +454,8 @@ Foam::admMixture::admMixture
                     alpha1_.time().timeName(),
                     U_.mesh(),
                     IOobject::NO_READ,
-                    IOobject::NO_WRITE
-                    // IOobject::AUTO_WRITE
+                    // IOobject::NO_WRITE
+                    IOobject::AUTO_WRITE
                 ),
                 U_.mesh(),
                 dimensionedScalar
@@ -466,7 +466,7 @@ Foam::admMixture::admMixture
             )
         );
 
-        YiAlpha_[i] = reaction_->Y()[i]*alpha1_;
+        SiAlpha_[i] = reaction_->Y()[i]*alpha1_;
     }
 
     GiAlpha_.resize(reaction_->G().size());
@@ -483,8 +483,8 @@ Foam::admMixture::admMixture
                     alpha1_.time().timeName(),
                     U_.mesh(),
                     IOobject::NO_READ,
-                    IOobject::NO_WRITE
-                    // IOobject::AUTO_WRITE
+                    // IOobject::NO_WRITE
+                    IOobject::AUTO_WRITE
                 ),
                 U_.mesh(),
                 dimensionedScalar
@@ -666,11 +666,11 @@ void Foam::admMixture::solve
     // // DEBUG
     // Info<< ">>> testing admMixture::solve()" << endl;
     
-    // speciesAlphaCorrect();
+    speciesAlphaCorrect();
 
-    massTransferCoeffs();
+    // massTransferCoeffs();
 
-    speciesMules(interface);
+    // speciesMules(interface);
 }
 
 

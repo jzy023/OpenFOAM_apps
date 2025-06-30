@@ -98,7 +98,7 @@ Foam::admMixture::Gi()
 inline Foam::PtrList<Foam::volScalarField>&
 Foam::admMixture::SiAlpha()
 {
-    return YiAlpha_;
+    return SiAlpha_;
 }
 
 

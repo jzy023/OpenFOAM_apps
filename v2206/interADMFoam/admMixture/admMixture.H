@@ -97,7 +97,7 @@ protected:
         autoPtr<ADMno1> reaction_;
 
         //- Phase corrected concentration
-        PtrList<volScalarField> YiAlpha_;
+        PtrList<volScalarField> SiAlpha_;
         PtrList<volScalarField> GiAlpha_;
 
         volScalarField Sac_;
@@ -281,11 +281,21 @@ public:
         inline PtrList<volScalarField>& GiAlpha();
 
         // testing ------------------------------------------------------------
+        dimensionedScalar speciesAlphaAverage
+        (
+            const volScalarField& YiAlpha,
+            const volScalarField& alpha
+        )
+        {
+            volScalarField magAlpha = mag(alpha);
+            return gSum(YiAlpha)/gSum(magAlpha); 
+        }
+
         void speciesAlphaCorrect()
         {
-            forAll(YiAlpha_, i)
+            forAll(SiAlpha_, i)
             {
-                YiAlpha_[i] = reaction_->Y()[i]*alpha1_;
+                SiAlpha_[i] = reaction_->Y()[i]*alpha1_;
             }
 
             forAll(GiAlpha_, i)
@@ -296,18 +306,55 @@ public:
 
         void speciesADMCorrect()
         {
-            // forAll(YiAlpha_, i)
-            // {
-            //     reaction_->Y()[i] = abs(YiAlpha_[i])/alpha1_ + ;
-            // }
+            //- threashold volume fraction alpha0, to avoid error introduced by interface correction
+            // alpha0 = 0.10  -->  high error
+            // alpha0 = 0.90  -->  low error
+            // limitAlpha();
+            scalar alpha0 = 0.9;
+            // volScalarField corr = max(zeroField(), alpha2_ - alpha0);
+            // dimensionedScalar YiAlphaAverage = speciesAlphaAverage(GiAlpha_[0], alpha2_);
+            // YiAlphaAverage.dimensions().reset(GiAlpha_[0].dimensions());
+            // Sac_ = GiAlpha_[0]/alpha2_*corr + YiAlphaAverage*(1 - corr);
 
-            // forAll(GiAlpha_, i)
-            // {
-            //     reaction_->G()[i] = abs(GiAlpha_[i])/alpha2_ + ;
-            // }
+            volScalarField corr
+            (
+                IOobject
+                (
+                    "corr",
+                    alpha1_.time().timeName(),
+                    U_.mesh(),
+                    IOobject::NO_READ,
+                    IOobject::NO_WRITE
+                ),
+                U_.mesh(),
+                dimensionedScalar
+                (
+                    dimless,
+                    Zero
+                )
+            );
 
-            Sac_.field() = mag(YiAlpha_[6].field())/alpha1_.field();
-            // Sac_ /= alpha1_; 
+            dimensionedScalar YiAlphaAverage
+            (
+                dimMass/dimVolume,
+                Zero
+            );
+
+            forAll(SiAlpha_, i)
+            {
+                corr = max(zeroField(), alpha1_ - alpha0);
+                YiAlphaAverage = speciesAlphaAverage(SiAlpha_[i], alpha1_);
+
+                reaction_->Y()[i] = SiAlpha_[i]/alpha1_*corr + YiAlphaAverage*(1 - corr);
+            }
+
+            forAll(GiAlpha_, i)
+            {
+                corr = max(zeroField(), alpha2_ - alpha0);
+                YiAlphaAverage = speciesAlphaAverage(GiAlpha_[i], alpha2_);
+
+                reaction_->G()[i] = GiAlpha_[i]/alpha2_*corr + YiAlphaAverage*(1 - corr);
+            }
         }
 };
 
