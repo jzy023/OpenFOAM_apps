@@ -288,7 +288,15 @@ public:
         )
         {
             volScalarField magAlpha = mag(alpha);
-            return gSum(YiAlpha)/gSum(magAlpha); 
+
+            return
+            (
+                dimensionedScalar
+                (
+                    YiAlpha.dimensions()/alpha.dimensions(),
+                    gSum(YiAlpha)/gSum(magAlpha)
+                )
+            );
         }
 
         void speciesAlphaCorrect()
@@ -311,10 +319,11 @@ public:
             // alpha0 = 0.90  -->  low error
             // limitAlpha();
             scalar alpha0 = 0.9;
-            // volScalarField corr = max(zeroField(), alpha2_ - alpha0);
-            // dimensionedScalar YiAlphaAverage = speciesAlphaAverage(GiAlpha_[0], alpha2_);
-            // YiAlphaAverage.dimensions().reset(GiAlpha_[0].dimensions());
-            // Sac_ = GiAlpha_[0]/alpha2_*corr + YiAlphaAverage*(1 - corr);
+            // volScalarField corr = max(zeroField(), alpha1_ - alpha0);
+            // corr = corr / (alpha1_ - alpha0);
+            // dimensionedScalar YiAlphaAverage = speciesAlphaAverage(SiAlpha_[6], alpha1_);
+            // reaction_->Y()[6] = SiAlpha_[6]/alpha1_*corr + YiAlphaAverage*(1 - corr);
+            // Sac_ = SiAlpha_[6]/alpha1_*corr + YiAlphaAverage*(1 - corr);
 
             volScalarField corr
             (

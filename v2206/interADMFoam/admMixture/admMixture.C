@@ -141,14 +141,12 @@ void Foam::admMixture::speciesMules
     // TODO: move this to general solve() function
     alpha2_ = 1 - alpha1_;
 
+    PtrList<volScalarField>& Si = SiAlpha_;
+    PtrList<volScalarField>& Gi = GiAlpha_;
+    
     // Soluables
-    PtrList<volScalarField>& Si = reaction_->Y();
-    // PtrList<volScalarField>& Si = SiAlpha_;
-
-    // forAll(Si, i)
-	// {
-        label i = 6;
-
+    forAll(Si, i)
+	{
         volScalarField& Yi = Si[i];
         
         scalar maxYi = max(gMax(Yi), gMax(Yi.boundaryField())) + 1e-30;
@@ -193,7 +191,56 @@ void Foam::admMixture::speciesMules
 
         Yi.oldTime() == Yi.oldTime() * maxYi;
         Yi == Yi * maxYi;
-    // }
+    }
+
+    // Gaseous
+    forAll(Gi, i)
+	{
+        volScalarField& Yi = Gi[i];
+        
+        scalar maxYi = max(gMax(Yi), gMax(Yi.boundaryField())) + 1e-30;
+
+        // normalizing
+        Yi.oldTime() == Yi.oldTime() / maxYi;
+        Yi == Yi / maxYi;
+
+		surfaceScalarField phiComp = fvc::flux
+        (
+            -fvc::flux(-phir, alpha2_, alpharScheme),
+            alpha1_,
+            alpharScheme
+        );
+
+        tmp<surfaceScalarField> tYiPhi1Un
+        (
+            fvc::flux
+            (
+                phi_,
+                Yi,
+                YiScheme
+            )
+		  + phiComp * compressionCoeff(Yi)
+        );
+
+        {
+            surfaceScalarField YiPhi10 = tYiPhi1Un;
+
+            MULES::explicitSolve
+            (
+                geometricOneField(),
+                Yi,
+                phi_,
+                YiPhi10,
+                zeroField(),
+                zeroField(),
+                oneField(),
+                zeroField()
+            );
+        }
+
+        Yi.oldTime() == Yi.oldTime() * maxYi;
+        Yi == Yi * maxYi;
+    }
 }
 
 
@@ -434,14 +481,16 @@ Foam::admMixture::admMixture
             SMALL
         )
     )
-    // SiAlpha_(reaction_->Y()),
-    // GiAlpha_(reaction_->G())
 {
-    // alpha2_ = 1 - alpha1_;
-    // alpha2_ = 1 - alpha1_;
+    //- Main substances concentration initialization
+
+    // Info<< "Reading ADM no1 initial concentrations for soluables" << endl;
+    
+    label iNames = 0;
 
     SiAlpha_.resize(reaction_->Y().size());
-    forAll(reaction_->Y(), i)
+
+    forAll(reaction_->namesSoluable, i)
     {
         SiAlpha_.set
         (
@@ -450,27 +499,46 @@ Foam::admMixture::admMixture
             (
                 IOobject
                 (
-                    reaction_->Y()[i].name() + ".alpha",
+                    reaction_->namesSoluable[i],
                     alpha1_.time().timeName(),
                     U_.mesh(),
-                    IOobject::NO_READ,
-                    // IOobject::NO_WRITE
+                    IOobject::MUST_READ,
                     IOobject::AUTO_WRITE
                 ),
-                U_.mesh(),
-                dimensionedScalar
-                (
-                    reaction_->Y()[i].dimensions(),
-                    Zero
-                )
+                U_.mesh()
             )
         );
-
-        SiAlpha_[i] = reaction_->Y()[i]*alpha1_;
     }
 
+    iNames += reaction_->namesSoluable.size();
+
+    forAll(reaction_->namesParticulate, i)
+    {
+        SiAlpha_.set
+        (
+            i + iNames,
+            new volScalarField
+            (
+                IOobject
+                (
+                    reaction_->namesParticulate[i],
+                    alpha1_.time().timeName(),
+                    U_.mesh(),
+                    IOobject::MUST_READ,
+                    IOobject::AUTO_WRITE
+                ),
+                U_.mesh()
+            )
+        );
+    }
+
+    //- Gaseuoses initialization
+
+    // Info<< "Reading ADM no1 initial concentrations for gaseuoses" << endl;
+
     GiAlpha_.resize(reaction_->G().size());
-    forAll(reaction_->G(), i)
+
+    forAll(reaction_->namesGaseous, i)
     {
         GiAlpha_.set
         (
@@ -479,24 +547,22 @@ Foam::admMixture::admMixture
             (
                 IOobject
                 (
-                    reaction_->G()[i].name() + ".alpha",
+                    reaction_->namesGaseous[i],
                     alpha1_.time().timeName(),
                     U_.mesh(),
-                    IOobject::NO_READ,
-                    // IOobject::NO_WRITE
+                    IOobject::MUST_READ,
                     IOobject::AUTO_WRITE
                 ),
-                U_.mesh(),
-                dimensionedScalar
-                (
-                    reaction_->G()[i].dimensions(),
-                    Zero
-                )
+                U_.mesh()
             )
         );
-
-        GiAlpha_[i] = reaction_->G()[i]*alpha2_;
     }
+
+    // testing
+    limitAlpha();
+
+    // initializing Si and Gi for ADMno1
+    speciesADMCorrect();
 }
 
 
@@ -653,8 +719,11 @@ void Foam::admMixture::limitAlpha()
             this->alpha1()[celli] = 1 - 1e-16;
         }
     }
+    this->alpha1().correctBoundaryConditions();
 
     this->alpha2() = 1 - this->alpha1();
+    this->alpha2().correctBoundaryConditions();
+
 }
 
 
@@ -666,11 +735,13 @@ void Foam::admMixture::solve
     // // DEBUG
     // Info<< ">>> testing admMixture::solve()" << endl;
     
-    speciesAlphaCorrect();
+    // speciesAlphaCorrect();
 
-    // massTransferCoeffs();
+    massTransferCoeffs();
 
-    // speciesMules(interface);
+    speciesMules(interface);
+
+    // speciesADMCorrect();
 }
 
 

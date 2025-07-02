@@ -305,14 +305,19 @@ Foam::ADMno1::ADMno1
             (
                 IOobject
                 (
-                    namesSoluable[i],
+                    namesSoluable[i] + ".ADM",
                     mesh.time().timeName(),
                     mesh,
-                    IOobject::MUST_READ,
+                    IOobject::NO_READ,
                     // IOobject::NO_WRITE
                     IOobject::AUTO_WRITE
                 ),
-                mesh
+                mesh,
+                dimensionedScalar
+                (
+                    dimMass/dimVolume, 
+                    Zero
+                )
             )
         );
     }
@@ -332,14 +337,19 @@ Foam::ADMno1::ADMno1
             (
                 IOobject
                 (
-                    namesParticulate[i],
+                    namesParticulate[i] + ".ADM",
                     mesh.time().timeName(),
                     mesh,
-                    IOobject::MUST_READ,
-                    IOobject::NO_WRITE
-                    // IOobject::AUTO_WRITE
+                    IOobject::NO_READ,
+                    // IOobject::NO_WRITE
+                    IOobject::AUTO_WRITE
                 ),
-                mesh
+                mesh,
+                dimensionedScalar
+                (
+                    dimMass/dimVolume, 
+                    Zero
+                )
             )
         );
     }
@@ -357,7 +367,7 @@ Foam::ADMno1::ADMno1
             (
                 IOobject
                 (
-                    "d" + YPtrs_[i].name(),
+                    "d" + YPtrs_[i].name() + ".ADM",
                     mesh.time().timeName(),
                     mesh,
                     IOobject::NO_READ,
@@ -390,19 +400,18 @@ Foam::ADMno1::ADMno1
             (
                 IOobject
                 (
-                    namesGaseous[i],
+                    namesGaseous[i] + ".ADM",
                     mesh.time().timeName(),
                     mesh,
-                    IOobject::READ_IF_PRESENT,
+                    IOobject::NO_READ,
                     // IOobject::NO_WRITE
                     IOobject::AUTO_WRITE
                 ),
                 mesh,
                 dimensionedScalar
                 (
-                    namesGaseous[i] + "Default", 
                     YPtrs_[0].dimensions(),
-                    para_.Gini(i)
+                    Zero
                 )
             )
         );
@@ -421,7 +430,7 @@ Foam::ADMno1::ADMno1
             (
                 IOobject
                 (
-                    "d" + GPtrs_[i].name(),
+                    "d" + GPtrs_[i].name() + ".ADM",
                     mesh.time().timeName(),
                     mesh,
                     IOobject::NO_READ,
@@ -455,7 +464,7 @@ Foam::ADMno1::ADMno1
             (
                 IOobject
                 (
-                    namesMedians[i],
+                    namesMedians[i] + ".ADM",
                     mesh.time().timeName(),
                     mesh,
                     IOobject::READ_IF_PRESENT,
