@@ -111,6 +111,7 @@ protected:
         dimensionedScalar mDotTest_;
         surfaceScalarField phiD_;
         volScalarField Mflux_;
+        volScalarField alpha1Full;
 
 
     // Private Member Functions
@@ -281,6 +282,7 @@ public:
         inline PtrList<volScalarField>& GiAlpha();
 
         // testing ------------------------------------------------------------
+        // TODO: corrected by mesh().V()
         dimensionedScalar speciesAlphaAverage
         (
             const volScalarField& YiAlpha,
@@ -319,29 +321,30 @@ public:
             // alpha0 = 0.90  -->  low error
             // limitAlpha();
             scalar alpha0 = 0.9;
-            // volScalarField corr = max(zeroField(), alpha1_ - alpha0);
-            // corr = corr / (alpha1_ - alpha0);
+            // volScalarField alpha1Full = max(zeroField(), alpha1_ - alpha0);
+            // alpha1Full = alpha1Full / (alpha1_ - alpha0);
             // dimensionedScalar YiAlphaAverage = speciesAlphaAverage(SiAlpha_[6], alpha1_);
-            // reaction_->Y()[6] = SiAlpha_[6]/alpha1_*corr + YiAlphaAverage*(1 - corr);
-            // Sac_ = SiAlpha_[6]/alpha1_*corr + YiAlphaAverage*(1 - corr);
+            // reaction_->Y()[6] = SiAlpha_[6]/alpha1_*alpha1Full + YiAlphaAverage*(1 - alpha1Full);
+            // Sac_ = SiAlpha_[6]/alpha1_*alpha1Full + YiAlphaAverage*(1 - alpha1Full);
 
-            volScalarField corr
-            (
-                IOobject
-                (
-                    "corr",
-                    alpha1_.time().timeName(),
-                    U_.mesh(),
-                    IOobject::NO_READ,
-                    IOobject::NO_WRITE
-                ),
-                U_.mesh(),
-                dimensionedScalar
-                (
-                    dimless,
-                    Zero
-                )
-            );
+            // volScalarField alpha1Full
+            // (
+            //     IOobject
+            //     (
+            //         "alpha1Full",
+            //         alpha1_.time().timeName(),
+            //         U_.mesh(),
+            //         IOobject::NO_READ,
+            //         // IOobject::NO_WRITE
+            //         IOobject::AUTO_WRITE
+            //     ),
+            //     U_.mesh(),
+            //     dimensionedScalar
+            //     (
+            //         dimless,
+            //         Zero
+            //     )
+            // );
 
             dimensionedScalar YiAlphaAverage
             (
@@ -349,21 +352,44 @@ public:
                 Zero
             );
 
-            forAll(SiAlpha_, i)
-            {
-                corr = max(zeroField(), alpha1_ - alpha0);
-                YiAlphaAverage = speciesAlphaAverage(SiAlpha_[i], alpha1_);
+            // forAll(SiAlpha_, i)
+            // {
+                label i = 6;
 
-                reaction_->Y()[i] = SiAlpha_[i]/alpha1_*corr + YiAlphaAverage*(1 - corr);
-            }
+                alpha1Full = max(zeroField(), alpha1_ - alpha0)/(alpha1_ - alpha0);
+                volScalarField alpha1Empty = 1 - alpha1Full;
 
-            forAll(GiAlpha_, i)
-            {
-                corr = max(zeroField(), alpha2_ - alpha0);
-                YiAlphaAverage = speciesAlphaAverage(GiAlpha_[i], alpha2_);
+                // total mass of species in non-full cells
+                volScalarField::Internal YiMassEmpty = SiAlpha_[i].internalField()*alpha1Empty*alpha1_.mesh().V();
+                dimensionedScalar residualYiMassEmpty = gSum(YiMassEmpty);
 
-                reaction_->G()[i] = GiAlpha_[i]/alpha2_*corr + YiAlphaAverage*(1 - corr);
-            }
+                // total volume of non-full cells
+                volScalarField::Internal alpha1EmptyV = alpha1Empty*alpha1_.mesh().V();
+                dimensionedScalar residualV = gSum(alpha1EmptyV);
+
+                // average volume fraction of alpha1 in non-full cells
+                volScalarField::Internal alpha1Alpha1Empty = alpha1Empty*alpha1_;
+                dimensionedScalar residualAlpha = gSum(alpha1Alpha1Empty)/gSum(alpha1Empty);
+
+                YiAlphaAverage.value() = (residualYiMassEmpty/residualAlpha/residualV).value();
+                reaction_->Y()[i] = SiAlpha_[i]/alpha1_*alpha1Full + YiAlphaAverage*alpha1Empty;
+
+                volScalarField::Internal sum = reaction_->Y()[i].internalField()*alpha1_.internalField()*alpha1_.mesh().V();
+                Info<< "Species concentration (ADM corrected sum) = "
+                << gSum(sum) << endl;
+
+
+                // YiAlphaAverage = speciesAlphaAverage(SiAlpha_[i], alpha1_);
+                // reaction_->Y()[i] = SiAlpha_[i]/alpha1_*alpha1Full + YiAlphaAverage*(1 - alpha1Full);
+            // }
+
+            // forAll(GiAlpha_, i)
+            // {
+            //     alpha1Full = max(zeroField(), alpha2_ - alpha0)/(alpha2_ - alpha0);
+            //     YiAlphaAverage = speciesAlphaAverage(GiAlpha_[i], alpha2_);
+
+            //     reaction_->G()[i] = GiAlpha_[i]/alpha2_*alpha1Full + YiAlphaAverage*(1 - alpha1Full);
+            // }
         }
 };
 

@@ -144,9 +144,10 @@ void Foam::admMixture::speciesMules
     PtrList<volScalarField>& Si = SiAlpha_;
     PtrList<volScalarField>& Gi = GiAlpha_;
     
-    // Soluables
-    forAll(Si, i)
-	{
+    // // Soluables
+    // forAll(Si, i)
+	// {
+        label i = 6;
         volScalarField& Yi = Si[i];
         
         scalar maxYi = max(gMax(Yi), gMax(Yi.boundaryField())) + 1e-30;
@@ -191,56 +192,56 @@ void Foam::admMixture::speciesMules
 
         Yi.oldTime() == Yi.oldTime() * maxYi;
         Yi == Yi * maxYi;
-    }
+    // }
 
-    // Gaseous
-    forAll(Gi, i)
-	{
-        volScalarField& Yi = Gi[i];
+    // // Gaseous
+    // forAll(Gi, i)
+	// {
+    //     volScalarField& Yi = Gi[i];
         
-        scalar maxYi = max(gMax(Yi), gMax(Yi.boundaryField())) + 1e-30;
+    //     scalar maxYi = max(gMax(Yi), gMax(Yi.boundaryField())) + 1e-30;
 
-        // normalizing
-        Yi.oldTime() == Yi.oldTime() / maxYi;
-        Yi == Yi / maxYi;
+    //     // normalizing
+    //     Yi.oldTime() == Yi.oldTime() / maxYi;
+    //     Yi == Yi / maxYi;
 
-		surfaceScalarField phiComp = fvc::flux
-        (
-            -fvc::flux(-phir, alpha2_, alpharScheme),
-            alpha1_,
-            alpharScheme
-        );
+	// 	surfaceScalarField phiComp = fvc::flux
+    //     (
+    //         -fvc::flux(-phir, alpha2_, alpharScheme),
+    //         alpha1_,
+    //         alpharScheme
+    //     );
 
-        tmp<surfaceScalarField> tYiPhi1Un
-        (
-            fvc::flux
-            (
-                phi_,
-                Yi,
-                YiScheme
-            )
-		  + phiComp * compressionCoeff(Yi)
-        );
+    //     tmp<surfaceScalarField> tYiPhi1Un
+    //     (
+    //         fvc::flux
+    //         (
+    //             phi_,
+    //             Yi,
+    //             YiScheme
+    //         )
+	// 	  + phiComp * compressionCoeff(Yi)
+    //     );
 
-        {
-            surfaceScalarField YiPhi10 = tYiPhi1Un;
+    //     {
+    //         surfaceScalarField YiPhi10 = tYiPhi1Un;
 
-            MULES::explicitSolve
-            (
-                geometricOneField(),
-                Yi,
-                phi_,
-                YiPhi10,
-                zeroField(),
-                zeroField(),
-                oneField(),
-                zeroField()
-            );
-        }
+    //         MULES::explicitSolve
+    //         (
+    //             geometricOneField(),
+    //             Yi,
+    //             phi_,
+    //             YiPhi10,
+    //             zeroField(),
+    //             zeroField(),
+    //             oneField(),
+    //             zeroField()
+    //         );
+    //     }
 
-        Yi.oldTime() == Yi.oldTime() * maxYi;
-        Yi == Yi * maxYi;
-    }
+    //     Yi.oldTime() == Yi.oldTime() * maxYi;
+    //     Yi == Yi * maxYi;
+    // }
 }
 
 
@@ -480,6 +481,24 @@ Foam::admMixture::admMixture
             dimMass/dimVolume,
             SMALL
         )
+    ),
+    alpha1Full
+    (
+        IOobject
+        (
+            "alpha1Full",
+            alpha1_.time().timeName(),
+            U_.mesh(),
+            IOobject::NO_READ,
+            // IOobject::NO_WRITE
+            IOobject::AUTO_WRITE
+        ),
+        U_.mesh(),
+        dimensionedScalar
+        (
+            dimless,
+            Zero
+        )
     )
 {
     //- Main substances concentration initialization
@@ -572,7 +591,7 @@ void Foam::admMixture::limit()
 {
     // Calculate mass transfer flux ----------------------------------------------
     // Info<< "correcting Yi" << endl;
-    
+    // TODO:
     label i = 6;
     volScalarField& Yi = reaction_->Y()[i];
 
@@ -646,13 +665,13 @@ void Foam::admMixture::limit()
         Yi = Y1i*alpha1_ + Y2i*(1 - alpha1_);
     // }
 
-    // DEBUG
-    Info<< "Yi correction: max(Mflux) = "
-        << gMax(Mflux_.internalField())
-        << "  Min(" << Yi.name() << ") = " << gMin(Yi.internalField())
-        << "  Max(" << Yi.name() << ") = " << gMax(Yi.internalField())
-        << "  Species concentration (sum) = "<< gSum(Yi.internalField())
-        << endl;
+    // // DEBUG
+    // Info<< "Yi correction: max(Mflux) = "
+    //     << gMax(Mflux_.internalField())
+    //     << "  Min(" << Yi.name() << ") = " << gMin(Yi.internalField())
+    //     << "  Max(" << Yi.name() << ") = " << gMax(Yi.internalField())
+    //     << "  Species concentration (sum) = "<< gSum(Yi.internalField())
+    //     << endl;
 };
 
 
