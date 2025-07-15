@@ -70,6 +70,9 @@ protected:
 
     // Protected data
 
+        // //- Keep a reference to the transportProperties dictionary
+        // const dictionary& transportPropertiesDict_;
+
         //- Henry's coefficient
         // TODO: more to come
         dimensionedScalar H_;
@@ -100,19 +103,32 @@ protected:
         PtrList<volScalarField> SiAlpha_;
         PtrList<volScalarField> GiAlpha_;
 
-        volScalarField Sac_;
+        //- Cells marked as mainly fluid
+        volScalarField alpha1Full_;
+
+        //- Volume fraction threshold to activate inter-phase mass transfer
+        dimensionedScalar actAlpha_;
+
+        //- Name of patches to activate inter-phase mass transfer
+        wordList actPatch_;
+
+        //- Cells marked as activated for inter-phase mass transfer due to interface
+        volScalarField actAlphaCells_;
+
+        //- Cells marked as activated for inter-phase mass transfer due to solid surface
+        volScalarField actPatchCells_;
 
         //- Phase change ADMno1 
         volScalarField mDot_;
         volScalarField mDotAlphal_;
         volScalarField vDot_;
         volScalarField vDotAlphal_;
+
         // DEBUG scalar
         dimensionedScalar mDotTest_;
         surfaceScalarField phiD_;
         volScalarField Mflux_;
-        volScalarField alpha1Full;
-
+        
 
     // Private Member Functions
 
@@ -124,6 +140,12 @@ protected:
 
         //- No copy assignment
         void operator=(const admMixture&) = delete;
+
+        //- Find actAlphaCells_
+        void actAlphaCells();
+        
+        //- Find actPatchCells_
+        void actPatchCells();
 
         //- Normalizing for MULES
         void normalizeYi();
@@ -316,35 +338,16 @@ public:
 
         void speciesADMCorrect()
         {
-            //- threashold volume fraction alpha0, to avoid error introduced by interface correction
+            //- threshold volume fraction alpha0, to avoid error introduced by interface correction
             // alpha0 = 0.10  -->  high error
             // alpha0 = 0.90  -->  low error
             // limitAlpha();
             scalar alpha0 = 0.9;
-            // volScalarField alpha1Full = max(zeroField(), alpha1_ - alpha0);
-            // alpha1Full = alpha1Full / (alpha1_ - alpha0);
+            // volScalarField alpha1Full_ = max(zeroField(), alpha1_ - alpha0);
+            // alpha1Full_ = alpha1Full_ / (alpha1_ - alpha0);
             // dimensionedScalar YiAlphaAverage = speciesAlphaAverage(SiAlpha_[6], alpha1_);
-            // reaction_->Y()[6] = SiAlpha_[6]/alpha1_*alpha1Full + YiAlphaAverage*(1 - alpha1Full);
-            // Sac_ = SiAlpha_[6]/alpha1_*alpha1Full + YiAlphaAverage*(1 - alpha1Full);
-
-            // volScalarField alpha1Full
-            // (
-            //     IOobject
-            //     (
-            //         "alpha1Full",
-            //         alpha1_.time().timeName(),
-            //         U_.mesh(),
-            //         IOobject::NO_READ,
-            //         // IOobject::NO_WRITE
-            //         IOobject::AUTO_WRITE
-            //     ),
-            //     U_.mesh(),
-            //     dimensionedScalar
-            //     (
-            //         dimless,
-            //         Zero
-            //     )
-            // );
+            // reaction_->Y()[6] = SiAlpha_[6]/alpha1_*alpha1Full_ + YiAlphaAverage*(1 - alpha1Full_);
+            // Sac_ = SiAlpha_[6]/alpha1_*alpha1Full_ + YiAlphaAverage*(1 - alpha1Full_);
 
             dimensionedScalar YiAlphaAverage
             (
@@ -356,8 +359,8 @@ public:
             // {
                 label i = 6;
 
-                alpha1Full = max(zeroField(), alpha1_ - alpha0)/(alpha1_ - alpha0);
-                volScalarField alpha1Empty = 1 - alpha1Full;
+                alpha1Full_ = max(zeroField(), alpha1_ - alpha0)/(alpha1_ - alpha0);
+                volScalarField alpha1Empty = 1 - alpha1Full_;
 
                 // total mass of species in non-full cells
                 volScalarField::Internal YiMassEmpty = SiAlpha_[i].internalField()*alpha1Empty*alpha1_.mesh().V();
@@ -372,23 +375,23 @@ public:
                 dimensionedScalar residualAlpha = gSum(alpha1Alpha1Empty)/gSum(alpha1Empty);
 
                 YiAlphaAverage.value() = (residualYiMassEmpty/residualAlpha/residualV).value();
-                reaction_->Y()[i] = SiAlpha_[i]/alpha1_*alpha1Full + YiAlphaAverage*alpha1Empty;
+                reaction_->Y()[i] = SiAlpha_[i]/alpha1_*alpha1Full_ + YiAlphaAverage*alpha1Empty;
 
                 volScalarField::Internal sum = reaction_->Y()[i].internalField()*alpha1_.internalField()*alpha1_.mesh().V();
                 Info<< "Species concentration (ADM corrected sum) = "
-                << gSum(sum) << endl;
+                    << gSum(sum) << endl;
 
 
                 // YiAlphaAverage = speciesAlphaAverage(SiAlpha_[i], alpha1_);
-                // reaction_->Y()[i] = SiAlpha_[i]/alpha1_*alpha1Full + YiAlphaAverage*(1 - alpha1Full);
+                // reaction_->Y()[i] = SiAlpha_[i]/alpha1_*alpha1Full_ + YiAlphaAverage*(1 - alpha1Full_);
             // }
 
             // forAll(GiAlpha_, i)
             // {
-            //     alpha1Full = max(zeroField(), alpha2_ - alpha0)/(alpha2_ - alpha0);
+            //     alpha1Full_ = max(zeroField(), alpha2_ - alpha0)/(alpha2_ - alpha0);
             //     YiAlphaAverage = speciesAlphaAverage(GiAlpha_[i], alpha2_);
 
-            //     reaction_->G()[i] = GiAlpha_[i]/alpha2_*alpha1Full + YiAlphaAverage*(1 - alpha1Full);
+            //     reaction_->G()[i] = GiAlpha_[i]/alpha2_*alpha1Full_ + YiAlphaAverage*(1 - alpha1Full_);
             // }
         }
 };

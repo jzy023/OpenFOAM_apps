@@ -42,6 +42,48 @@ namespace Foam
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
+//- Find actAlphaCells_
+void Foam::admMixture::actAlphaCells()
+{
+    actAlphaCells_ = 
+    (
+        max(zeroField(), alpha1_ - (1.0 - actAlpha_))/(alpha1_ - (1.0 - actAlpha_))
+      + max(zeroField(), actAlpha_ - alpha1_)/(actAlpha_ - alpha1_)
+    );
+
+    actAlphaCells_ = 1.0 - actAlphaCells_;
+}
+
+        
+//- Find actPatchCells_
+void Foam::admMixture::actPatchCells()
+{
+    forAll(actPatch_, wallI)
+    {
+        // To access the boundary patches information
+        const fvPatch& cPatch = U_.mesh().boundary()[actPatch_[wallI]];
+
+        // Starting index of the face in a patch
+        label faceId_start = cPatch.start() ;
+
+        // List of cells close to a boundary
+        const labelUList& faceCells = cPatch.faceCells();
+
+        forAll(cPatch, faceI) 
+        { 
+            // index of each face
+            label faceID = faceId_start + faceI;
+
+            // id of the owner cell having the face
+            label faceOwner = faceCells[faceI];
+
+            // mark the cells
+            actPatchCells_[faceOwner] = 1;
+        }
+    }
+}
+
+
 //- Species transport equations
 void Foam::admMixture::massTransferCoeffs()
 {
@@ -255,11 +297,12 @@ Foam::admMixture::admMixture
 )
 :
     incompressibleTwoPhaseMixture(U, phi),
+    // TODO: fix these
     H_
     (
         "test",
         dimless,
-        this->subDict(get<wordList>("phases")[0]).lookupOrDefault
+        this->subDict("degassing").lookupOrDefault
         (
             "H",
             1e-12
@@ -269,9 +312,9 @@ Foam::admMixture::admMixture
     (
         "test1",
         dimArea/dimTime,
-        this->subDict(get<wordList>("phases")[0]).lookupOrDefault
+        this->subDict("degassing").lookupOrDefault
         (
-            "D",
+            "DS",
             1e-8
         )
     ),
@@ -279,9 +322,9 @@ Foam::admMixture::admMixture
     (
         "test2",
         dimArea/dimTime,
-        this->subDict(get<wordList>("phases")[1]).lookupOrDefault
+        this->subDict("degassing").lookupOrDefault
         (
-            "D",
+            "DG",
             1e-8
         )
     ),
@@ -342,6 +385,72 @@ Foam::admMixture::admMixture
     reaction_
     (
         ADMno1::New(Top, U_.mesh())
+    ),
+    alpha1Full_
+    (
+        IOobject
+        (
+            "alpha1Full_",
+            alpha1_.time().timeName(),
+            U_.mesh(),
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+            // IOobject::AUTO_WRITE
+        ),
+        U_.mesh(),
+        dimensionedScalar
+        (
+            dimless,
+            Zero
+        )
+    ),
+    actAlpha_
+    (
+        "interfaceThreshold",
+        dimless,
+        this->subDict("degassing").lookupOrDefault
+        (
+            "alphaInterface",
+            0.1
+        )
+    ),
+    actPatch_
+    (
+        this->subDict("degassing").subDict("walls").toc()
+    ),
+    actAlphaCells_
+    (
+        IOobject
+        (
+            "actAlphaCells_",
+            alpha1_.time().timeName(),
+            U_.mesh(),
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        U_.mesh(),
+        dimensionedScalar
+        (
+            dimless,
+            Zero
+        )
+    ),
+    actPatchCells_
+    (
+        IOobject
+        (
+            "actPatchCells_",
+            alpha1_.time().timeName(),
+            U_.mesh(),
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        U_.mesh(),
+        dimensionedScalar
+        (
+            dimless,
+            Zero
+        )
     ),
     mDot_
     (
@@ -420,10 +529,11 @@ Foam::admMixture::admMixture
     (
         "mDotTest",
         dimDensity/dimTime,
-        -this->lookupOrDefault
+        -this->subDict("degassing").lookupOrDefault
         (
             "mDotTest",
-            5e-3
+            1e-5
+            // 5e-3
         )
     ),
     phiD_
@@ -461,43 +571,6 @@ Foam::admMixture::admMixture
             "MFlux",
             dimMass/dimVolume/dimTime,
             SMALL
-        )
-    )
-    ,
-    Sac_
-    (
-        IOobject
-        (
-            "Sac_test",
-            alpha1_.time().timeName(),
-            U_.mesh(),
-            IOobject::NO_READ,
-            IOobject::AUTO_WRITE
-        ),
-        U_.mesh(),
-        dimensionedScalar
-        (
-            "Sac_test",
-            dimMass/dimVolume,
-            SMALL
-        )
-    ),
-    alpha1Full
-    (
-        IOobject
-        (
-            "alpha1Full",
-            alpha1_.time().timeName(),
-            U_.mesh(),
-            IOobject::NO_READ,
-            // IOobject::NO_WRITE
-            IOobject::AUTO_WRITE
-        ),
-        U_.mesh(),
-        dimensionedScalar
-        (
-            dimless,
-            Zero
         )
     )
 {
@@ -582,6 +655,15 @@ Foam::admMixture::admMixture
 
     // initializing Si and Gi for ADMno1
     speciesADMCorrect();
+
+    // marking inter-phase mass transfer surfaces
+    actPatchCells();
+
+    // DEBUG
+    Info<< "H: "    << H_ 
+        << "\nDS: " << DS_
+        << "\nDG: " << DG_ 
+        << "\nmDotTest: " << mDotTest_ << endl;
 }
 
 
@@ -683,7 +765,8 @@ Foam::admMixture::mDot()
         min(max(alpha1_, scalar(0)), scalar(1))
     );
 
-    mDot_ = limitedAlpha1*mDotTest_; 
+    mDot_ = limitedAlpha1*mDotTest_*(actAlphaCells_ + actPatchCells_);
+    // mDot_ = limitedAlpha1*mDotTest_;
 
     return mDot_;
 }
@@ -692,7 +775,8 @@ Foam::admMixture::mDot()
 const Foam::volScalarField&
 Foam::admMixture::mDotAlphal()
 {
-    mDotAlphal_ = mDotTest_;
+    mDotAlphal_ = mDotTest_*(actAlphaCells_ + actPatchCells_);
+    // mDotAlphal_ = mDotTest_;
      
     return mDotAlphal_;
 }
@@ -753,6 +837,9 @@ void Foam::admMixture::solve
 {
     // // DEBUG
     // Info<< ">>> testing admMixture::solve()" << endl;
+
+    // DEBUG
+    actAlphaCells();
     
     // speciesAlphaCorrect();
 
@@ -761,6 +848,7 @@ void Foam::admMixture::solve
     speciesMules(interface);
 
     // speciesADMCorrect();
+
 }
 
 
