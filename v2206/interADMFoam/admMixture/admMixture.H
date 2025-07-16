@@ -86,10 +86,10 @@ protected:
         dimensionedScalar DG_;
 
         //- Mean phase diffusion coefficient for soluables in liquid
-        surfaceScalarField DalphaS_;
+        surfaceScalarField DSEff_;
 
         //- Mean phase diffusion coefficient for gaseous in gas
-        surfaceScalarField DalphaG_;
+        surfaceScalarField DGEff_;
 
         //- Interface mass transfer flux by Henry's Law
         surfaceScalarField phiHS_;

@@ -35,14 +35,14 @@ Foam::admMixture::alpha() const
 inline const Foam::surfaceScalarField&
 Foam::admMixture::DalphaS() const
 {
-    return DalphaS_;
+    return DSEff_;
 }
 
 
 inline const Foam::surfaceScalarField&
 Foam::admMixture::DalphaG() const
 {
-    return DalphaG_;
+    return DGEff_;
 }
 
 

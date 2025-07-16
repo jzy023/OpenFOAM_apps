@@ -91,8 +91,8 @@ void Foam::admMixture::massTransferCoeffs()
             
     // calculate and return mean diffusion coefficient
     // TODO: multispecies? add turbulent diffusivity too?
-    DalphaG_ = fvc::interpolate(DG_ * alpha2_);
-    DalphaS_ = 
+    DGEff_ = fvc::interpolate(DG_ * alpha2_);
+    DSEff_ = 
     (
         fvc::interpolate(DS_ * alpha1_)
         // fvc::interpolate(DS_ * alpha1_ + H_ * DS2_ * alpha2_) / fvc::interpolate(alpha1_ + H_ * alpha2_)
@@ -104,7 +104,7 @@ void Foam::admMixture::massTransferCoeffs()
     // surfaceScalarField phiHDown = speciesMixture.phiHDown(i);
     phiHS_ = 
     (
-        DalphaS_ * (1 - H_) / fvc::interpolate((alpha1_ + H_ * (1 - alpha1_)))
+        DSEff_ * (1 - H_) / fvc::interpolate((alpha1_ + H_ * (1 - alpha1_)))
       * fvc::snGrad(alpha1_) * U_.mesh().magSf()
     );
 }
@@ -297,10 +297,19 @@ Foam::admMixture::admMixture
 )
 :
     incompressibleTwoPhaseMixture(U, phi),
-    // TODO: fix these
+    W_
+    (
+        "wettability",
+        dimless,
+        this->subDict("degassing").lookupOrDefault
+        (
+            "W",
+            1e-12
+        )
+    ),
     H_
     (
-        "test",
+        "H",
         dimless,
         this->subDict("degassing").lookupOrDefault
         (
@@ -310,7 +319,7 @@ Foam::admMixture::admMixture
     ),
     DS_
     (
-        "test1",
+        "DS",
         dimArea/dimTime,
         this->subDict("degassing").lookupOrDefault
         (
@@ -320,7 +329,7 @@ Foam::admMixture::admMixture
     ),
     DG_
     (
-        "test2",
+        "DG",
         dimArea/dimTime,
         this->subDict("degassing").lookupOrDefault
         (
@@ -328,11 +337,11 @@ Foam::admMixture::admMixture
             1e-8
         )
     ),
-    DalphaS_
+    DSEff_
     (
         IOobject
 		(
-			"DalphaS",
+			"DSEff",
             alpha1_.time().timeName(),
 			U_.mesh(),
 			IOobject::NO_READ,
@@ -341,16 +350,15 @@ Foam::admMixture::admMixture
 		U_.mesh(),
 		dimensionedScalar
         (
-            "DalphaSdefault",
             dimArea/dimTime,
             SMALL
         )
     ),
-    DalphaG_
+    DGEff_
     (
         IOobject
 		(
-			"DalphaG",
+			"DGEff",
             alpha1_.time().timeName(),
 			U_.mesh(),
 			IOobject::NO_READ,
@@ -359,7 +367,6 @@ Foam::admMixture::admMixture
 		U_.mesh(),
 		dimensionedScalar
         (
-            "DalphaGdefault",
             dimArea/dimTime,
             SMALL
         )
@@ -377,7 +384,6 @@ Foam::admMixture::admMixture
 		U_.mesh(),
 		dimensionedScalar
         (
-            "phiHdefault",
             dimVolume/dimTime,
             SMALL
         )
@@ -395,7 +401,6 @@ Foam::admMixture::admMixture
             U_.mesh(),
             IOobject::NO_READ,
             IOobject::NO_WRITE
-            // IOobject::AUTO_WRITE
         ),
         U_.mesh(),
         dimensionedScalar
@@ -422,7 +427,7 @@ Foam::admMixture::admMixture
     (
         IOobject
         (
-            "actAlphaCells_",
+            "actAlphaCells",
             alpha1_.time().timeName(),
             U_.mesh(),
             IOobject::NO_READ,
@@ -439,7 +444,7 @@ Foam::admMixture::admMixture
     (
         IOobject
         (
-            "actPatchCells_",
+            "actPatchCells",
             alpha1_.time().timeName(),
             U_.mesh(),
             IOobject::NO_READ,
@@ -702,7 +707,7 @@ void Foam::admMixture::limit()
     	// {
             phiD_ += // Mw_*
             (
-                DalphaS_ * fvc::snGrad(Yi) * U_.mesh().magSf()
+                DSEff_ * fvc::snGrad(Yi) * U_.mesh().magSf()
               - fvc::flux(phiHS_, Yi, "div(phiH,Yi)")
             );
     	// }
