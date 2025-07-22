@@ -37,7 +37,7 @@
             !(++alphaSubCycle).end();
         )
         {
-            #include "admMixture/alphaEqn.H"
+            #include "admMixture/alphaEqn_.H"
             rhoPhiSum += (runTime.deltaT()/totalDeltaT)*rhoPhi;
         }
 
@@ -45,7 +45,7 @@
     }
     else
     {
-        #include "admMixture/alphaEqn.H"
+        #include "admMixture/alphaEqn_.H"
     }
 
     rho == alpha1*rho1 + alpha2*rho2;

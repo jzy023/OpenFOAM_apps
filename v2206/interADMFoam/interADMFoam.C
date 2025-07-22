@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
         rho = alpha1*rho1 + alpha2*rho2;
 
         // #include "GeoChems/admEqn.H"
-        #include "admMixture/admEqn.H"  
+        // #include "admMixture/admEqn.H"  
 
         runTime.write();
 

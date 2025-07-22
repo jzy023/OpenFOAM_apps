@@ -73,23 +73,25 @@ protected:
         // //- Keep a reference to the transportProperties dictionary
         // const dictionary& transportPropertiesDict_;
 
+        //- Surface wettability
+        // higher alphaW means smaller contact angle (more wetting)
+        dimensionedScalar alphaW_;
+
         //- Henry's coefficient
-        // TODO: more to come
+        // TODO: maybe remove this eventually?
         dimensionedScalar H_;
 
-        //- Diffusion coeficient of soluable species in liquid phase 
-        // TODO: more to come
-        dimensionedScalar DS_;
+        //- Diffusion coeficient of soluable species in liquid phase
+        dimensionedScalar D1_;
 
         //- Diffusion coeficient of gaseous species in gas phase
-        // TODO: more to come
-        dimensionedScalar DG_;
+        dimensionedScalar D2_;
 
         //- Mean phase diffusion coefficient for soluables in liquid
-        surfaceScalarField DSEff_;
+        surfaceScalarField D1Eff_;
 
         //- Mean phase diffusion coefficient for gaseous in gas
-        surfaceScalarField DGEff_;
+        surfaceScalarField D2Eff_;
 
         //- Interface mass transfer flux by Henry's Law
         surfaceScalarField phiHS_;
@@ -323,6 +325,7 @@ public:
             );
         }
 
+
         void speciesAlphaCorrect()
         {
             forAll(SiAlpha_, i)
@@ -335,6 +338,7 @@ public:
                 GiAlpha_[i] = reaction_->G()[i]*alpha2_;
             }
         }
+
 
         void speciesADMCorrect()
         {
@@ -381,7 +385,6 @@ public:
                 Info<< "Species concentration (ADM corrected sum) = "
                     << gSum(sum) << endl;
 
-
                 // YiAlphaAverage = speciesAlphaAverage(SiAlpha_[i], alpha1_);
                 // reaction_->Y()[i] = SiAlpha_[i]/alpha1_*alpha1Full_ + YiAlphaAverage*(1 - alpha1Full_);
             // }
@@ -393,6 +396,25 @@ public:
 
             //     reaction_->G()[i] = GiAlpha_[i]/alpha2_*alpha1Full_ + YiAlphaAverage*(1 - alpha1Full_);
             // }
+        }
+
+
+        void gasSpeciesConcentration()
+        {
+            volScalarField gasCells = 
+            (
+                max(zeroField(), actAlpha_ - alpha1_)/(actAlpha_ - alpha1_)
+            );
+
+            // volScalarField totalVolume =
+            volScalarField measuredPhase = alpha1_;
+            scalar totalVolume = 
+            (
+                // gSum(U_.mesh().V()) * gSum(alpha2_)
+                gSum(measuredPhase)
+            );
+
+            Info<< "total " << measuredPhase.name() << " volume: " << totalVolume << endl;
         }
 };
 

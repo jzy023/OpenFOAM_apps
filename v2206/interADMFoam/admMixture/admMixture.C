@@ -91,11 +91,11 @@ void Foam::admMixture::massTransferCoeffs()
             
     // calculate and return mean diffusion coefficient
     // TODO: multispecies? add turbulent diffusivity too?
-    DGEff_ = fvc::interpolate(DG_ * alpha2_);
-    DSEff_ = 
+    D2Eff_ = fvc::interpolate(D2_ * alpha2_);
+    D1Eff_ = 
     (
-        fvc::interpolate(DS_ * alpha1_)
-        // fvc::interpolate(DS_ * alpha1_ + H_ * DS2_ * alpha2_) / fvc::interpolate(alpha1_ + H_ * alpha2_)
+        fvc::interpolate(D1_ * alpha1_)
+        // fvc::interpolate(D1_ * alpha1_ + H_ * DS2_ * alpha2_) / fvc::interpolate(alpha1_ + H_ * alpha2_)
     );
             
     //- Calculate interface mass transfer flux by Henry's Law
@@ -104,7 +104,7 @@ void Foam::admMixture::massTransferCoeffs()
     // surfaceScalarField phiHDown = speciesMixture.phiHDown(i);
     phiHS_ = 
     (
-        DSEff_ * (1 - H_) / fvc::interpolate((alpha1_ + H_ * (1 - alpha1_)))
+        D1Eff_ * (1 - H_) / fvc::interpolate((alpha1_ + H_ * (1 - alpha1_)))
       * fvc::snGrad(alpha1_) * U_.mesh().magSf()
     );
 }
@@ -297,15 +297,11 @@ Foam::admMixture::admMixture
 )
 :
     incompressibleTwoPhaseMixture(U, phi),
-    W_
+    alphaW_
     (
-        "wettability",
+        "alphaW",
         dimless,
-        this->subDict("degassing").lookupOrDefault
-        (
-            "W",
-            1e-12
-        )
+        this->subDict("degassing").get<scalar>("alphaW")
     ),
     H_
     (
@@ -317,27 +313,27 @@ Foam::admMixture::admMixture
             1e-12
         )
     ),
-    DS_
+    D1_
     (
-        "DS",
+        "D1",
         dimArea/dimTime,
-        this->subDict("degassing").lookupOrDefault
+        this->subDict(get<wordList>("phases")[0]).lookupOrDefault
         (
-            "DS",
+            "D",
             1e-8
         )
     ),
-    DG_
+    D2_
     (
-        "DG",
+        "D2",
         dimArea/dimTime,
-        this->subDict("degassing").lookupOrDefault
+        this->subDict(get<wordList>("phases")[1]).lookupOrDefault
         (
-            "DG",
+            "D",
             1e-8
         )
     ),
-    DSEff_
+    D1Eff_
     (
         IOobject
 		(
@@ -354,7 +350,7 @@ Foam::admMixture::admMixture
             SMALL
         )
     ),
-    DGEff_
+    D2Eff_
     (
         IOobject
 		(
@@ -534,11 +530,10 @@ Foam::admMixture::admMixture
     (
         "mDotTest",
         dimDensity/dimTime,
-        -this->subDict("degassing").lookupOrDefault
+        this->subDict("degassing").lookupOrDefault
         (
             "mDotTest",
             1e-5
-            // 5e-3
         )
     ),
     phiD_
@@ -666,8 +661,8 @@ Foam::admMixture::admMixture
 
     // DEBUG
     Info<< "H: "    << H_ 
-        << "\nDS: " << DS_
-        << "\nDG: " << DG_ 
+        << "\nDS: " << D1_
+        << "\nDG: " << D2_ 
         << "\nmDotTest: " << mDotTest_ << endl;
 }
 
@@ -707,7 +702,7 @@ void Foam::admMixture::limit()
     	// {
             phiD_ += // Mw_*
             (
-                DSEff_ * fvc::snGrad(Yi) * U_.mesh().magSf()
+                D1Eff_ * fvc::snGrad(Yi) * U_.mesh().magSf()
               - fvc::flux(phiHS_, Yi, "div(phiH,Yi)")
             );
     	// }
@@ -770,8 +765,9 @@ Foam::admMixture::mDot()
         min(max(alpha1_, scalar(0)), scalar(1))
     );
 
-    mDot_ = limitedAlpha1*mDotTest_*(actAlphaCells_ + actPatchCells_);
-    // mDot_ = limitedAlpha1*mDotTest_;
+    mDot_ = limitedAlpha1*mDotTest_*((1/alphaW_)*actPatchCells_);
+    // mDot_ = -limitedAlpha1*mDotTest_*(actAlphaCells_ + (1/alphaW_)*actPatchCells_);
+    // mDot_ = -limitedAlpha1*mDotTest_;
 
     return mDot_;
 }
@@ -780,8 +776,9 @@ Foam::admMixture::mDot()
 const Foam::volScalarField&
 Foam::admMixture::mDotAlphal()
 {
-    mDotAlphal_ = mDotTest_*(actAlphaCells_ + actPatchCells_);
-    // mDotAlphal_ = mDotTest_;
+    mDotAlphal_ = mDotTest_*((1/alphaW_)*actPatchCells_);
+    // mDotAlphal_ = -mDotTest_*(actAlphaCells_ + (1/alphaW_)*actPatchCells_);
+    // mDotAlphal_ = -mDotTest_;
      
     return mDotAlphal_;
 }
@@ -845,6 +842,7 @@ void Foam::admMixture::solve
 
     // DEBUG
     actAlphaCells();
+    gasSpeciesConcentration();
     
     // speciesAlphaCorrect();
 
