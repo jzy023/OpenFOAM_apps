@@ -1,0 +1,3 @@
+multiInterADMFoam.C
+
+EXE = $(FOAM_APPBIN)/multiInterADMFoam

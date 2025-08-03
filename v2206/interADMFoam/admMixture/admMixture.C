@@ -87,15 +87,23 @@ void Foam::admMixture::actPatchCells()
 //- Species transport equations
 void Foam::admMixture::massTransferCoeffs()
 {
-    alpha2_ = 1.0 - alpha1_;
+    volScalarField limitedAlpha1
+    (
+        min(max(alpha1_, scalar(0)), scalar(1))
+    );
+
+    volScalarField limitedAlpha2
+    (
+        min(max(alpha2_, scalar(0)), scalar(1))
+    );
             
     // calculate and return mean diffusion coefficient
     // TODO: multispecies? add turbulent diffusivity too?
-    D2Eff_ = fvc::interpolate(D2_ * alpha2_);
+    D2Eff_ = fvc::interpolate(D2_ * limitedAlpha2);
     D1Eff_ = 
     (
-        fvc::interpolate(D1_ * alpha1_)
-        // fvc::interpolate(D1_ * alpha1_ + H_ * DS2_ * alpha2_) / fvc::interpolate(alpha1_ + H_ * alpha2_)
+        fvc::interpolate(D1_ * limitedAlpha1)
+        // fvc::interpolate(D1_ * limitedAlpha1 + H_ * DS2_ * limitedAlpha2) / fvc::interpolate(limitedAlpha1 + H_ * limitedAlpha2)
     );
             
     //- Calculate interface mass transfer flux by Henry's Law
@@ -104,8 +112,8 @@ void Foam::admMixture::massTransferCoeffs()
     // surfaceScalarField phiHDown = speciesMixture.phiHDown(i);
     phiHS_ = 
     (
-        D1Eff_ * (1 - H_) / fvc::interpolate((alpha1_ + H_ * (1 - alpha1_)))
-      * fvc::snGrad(alpha1_) * U_.mesh().magSf()
+        D1Eff_ * (1 - H_) / fvc::interpolate((limitedAlpha1 + H_ * (1 - limitedAlpha1)))
+      * fvc::snGrad(limitedAlpha1) * U_.mesh().magSf()
     );
 }
 
@@ -116,12 +124,17 @@ surfaceScalarField Foam::admMixture::compressionCoeff
     const volScalarField& Yi
 )
 {
+    volScalarField limitedAlpha1
+    (
+        min(max(alpha1_, scalar(0)), scalar(1))
+    );
+
     // Direction of interfacial flux
-    surfaceScalarField fluxDir = fvc::snGrad(alpha1_) * U_.mesh().magSf();
+    surfaceScalarField fluxDir = fvc::snGrad(limitedAlpha1) * U_.mesh().magSf();
 
     // Upwind and downwind alpha1
-    surfaceScalarField alphaUp = upwind<scalar>(U_.mesh(),fluxDir).interpolate(alpha1_);
-    surfaceScalarField alphaDown = downwind<scalar>(U_.mesh(),fluxDir).interpolate(alpha1_);
+    surfaceScalarField alphaUp = upwind<scalar>(U_.mesh(),fluxDir).interpolate(limitedAlpha1);
+    surfaceScalarField alphaDown = downwind<scalar>(U_.mesh(),fluxDir).interpolate(limitedAlpha1);
 
     // Upwind and downwnd Yi
     surfaceScalarField YiUp = upwind<scalar>(U_.mesh(),fluxDir).interpolate(Yi);
@@ -396,7 +409,7 @@ Foam::admMixture::admMixture
             alpha1_.time().timeName(),
             U_.mesh(),
             IOobject::NO_READ,
-            IOobject::NO_WRITE
+            IOobject::AUTO_WRITE
         ),
         U_.mesh(),
         dimensionedScalar
@@ -405,6 +418,42 @@ Foam::admMixture::admMixture
             Zero
         )
     ),
+    // testing -------------------------------------------------------
+    alpha1Empty_
+    (
+        IOobject
+        (
+            "alpha1Empty_",
+            alpha1_.time().timeName(),
+            U_.mesh(),
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        U_.mesh(),
+        dimensionedScalar
+        (
+            dimless,
+            Zero
+        )
+    ),
+    alpha1Interface_
+    (
+        IOobject
+        (
+            "alpha1Interface_",
+            alpha1_.time().timeName(),
+            U_.mesh(),
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        U_.mesh(),
+        dimensionedScalar
+        (
+            dimless,
+            Zero
+        )
+    ),
+    // ---------------------------------------------------------------
     actAlpha_
     (
         "interfaceThreshold",
@@ -461,7 +510,7 @@ Foam::admMixture::admMixture
             alpha1_.time().timeName(),
 			U_.mesh(),
 			IOobject::NO_READ,
-			IOobject::NO_WRITE
+			IOobject::AUTO_WRITE
 		),
 		U_.mesh(),
 		dimensionedScalar
@@ -479,7 +528,7 @@ Foam::admMixture::admMixture
             alpha1_.time().timeName(),
 			U_.mesh(),
 			IOobject::NO_READ,
-			IOobject::NO_WRITE
+			IOobject::AUTO_WRITE
 		),
 		U_.mesh(),
 		dimensionedScalar
@@ -497,7 +546,7 @@ Foam::admMixture::admMixture
             alpha1_.time().timeName(),
 			U_.mesh(),
 			IOobject::NO_READ,
-			IOobject::NO_WRITE
+			IOobject::AUTO_WRITE
 		),
 		U_.mesh(),
 		dimensionedScalar
@@ -515,7 +564,7 @@ Foam::admMixture::admMixture
             alpha1_.time().timeName(),
 			U_.mesh(),
 			IOobject::NO_READ,
-			IOobject::NO_WRITE
+			IOobject::AUTO_WRITE
 		),
 		U_.mesh(),
 		dimensionedScalar
@@ -533,7 +582,7 @@ Foam::admMixture::admMixture
         this->subDict("degassing").lookupOrDefault
         (
             "mDotTest",
-            1e-5
+            1e-12
         )
     ),
     phiD_
@@ -653,7 +702,7 @@ Foam::admMixture::admMixture
     // testing
     limitAlpha();
 
-    // initializing Si and Gi for ADMno1
+    // // initializing Si and Gi for ADMno1
     speciesADMCorrect();
 
     // marking inter-phase mass transfer surfaces
@@ -757,6 +806,8 @@ void Foam::admMixture::limit()
 };
 
 
+// Use this to log phase volume corrected generation rate
+// TODO: make for Gh2, Gco2 and Gch4
 const Foam::volScalarField&
 Foam::admMixture::mDot()
 {
@@ -765,20 +816,18 @@ Foam::admMixture::mDot()
         min(max(alpha1_, scalar(0)), scalar(1))
     );
 
-    mDot_ = limitedAlpha1*mDotTest_*((1/alphaW_)*actPatchCells_);
-    // mDot_ = -limitedAlpha1*mDotTest_*(actAlphaCells_ + (1/alphaW_)*actPatchCells_);
-    // mDot_ = -limitedAlpha1*mDotTest_;
+    mDot_ = limitedAlpha1*(-mDotTest_)*(actAlphaCells_ + (1/alphaW_)*actPatchCells_);
 
     return mDot_;
 }
 
 
+// use this for updateing dY in reaction_
+// TODO:  make for Gh2, Gco2 and Gch4
 const Foam::volScalarField&
 Foam::admMixture::mDotAlphal()
 {
-    mDotAlphal_ = mDotTest_*((1/alphaW_)*actPatchCells_);
-    // mDotAlphal_ = -mDotTest_*(actAlphaCells_ + (1/alphaW_)*actPatchCells_);
-    // mDotAlphal_ = -mDotTest_;
+    mDotAlphal_ = (-mDotTest_)*(actAlphaCells_ + (1/alphaW_)*actPatchCells_);
      
     return mDotAlphal_;
 }
@@ -828,7 +877,6 @@ void Foam::admMixture::limitAlpha()
 
     this->alpha2() = 1 - this->alpha1();
     this->alpha2().correctBoundaryConditions();
-
 }
 
 
@@ -839,10 +887,7 @@ void Foam::admMixture::solve
 {
     // // DEBUG
     // Info<< ">>> testing admMixture::solve()" << endl;
-
-    // DEBUG
     actAlphaCells();
-    gasSpeciesConcentration();
     
     // speciesAlphaCorrect();
 
@@ -850,8 +895,9 @@ void Foam::admMixture::solve
 
     speciesMules(interface);
 
-    // speciesADMCorrect();
+    speciesADMCorrect();
 
+    // printGasGenRate();
 }
 
 

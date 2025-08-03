@@ -1,0 +1,943 @@
+/*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
+     \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2021 OpenCFD Ltd.
+-------------------------------------------------------------------------------
+License
+    This file is part of OpenFOAM.
+
+    OpenFOAM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+
+\*---------------------------------------------------------------------------*/
+
+#include "multiphaseADMixture.H"
+
+#include "fixedValueFvsPatchFields.H"
+#include "Time.H"
+#include "subCycle.H"
+#include "fvcMeshPhi.H"
+
+#include "surfaceInterpolate.H"
+#include "fvMatrix.H"
+#include "fvmDdt.H"
+#include "fvmSup.H"
+#include "fvcDdt.H"
+#include "fvcDiv.H"
+#include "fvcGrad.H"
+#include "fvcSnGrad.H"
+#include "fvcFlux.H"
+#include "fvcMeshPhi.H"
+#include "CMULES.H"
+
+#include "unitConversion.H"
+#include "alphaContactAngleFvPatchScalarField.H"
+
+// * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
+
+void Foam::multiphaseADMixture::calcAlphas()
+{
+    scalar level = 0.0;
+    alphas_ == 0.0;
+
+    for (const phaseADM& ph : phases_)
+    {
+        alphas_ += level * ph;
+        level += 1.0;
+    }
+}
+
+
+#include "multiphaseSolveAlphas.H"
+
+
+Foam::tmp<Foam::surfaceVectorField> Foam::multiphaseADMixture::nHatfv
+(
+    const volScalarField& alpha1,
+    const volScalarField& alpha2
+) const
+{
+    /*
+    // Cell gradient of alpha
+    volVectorField gradAlpha =
+        alpha2*fvc::grad(alpha1) - alpha1*fvc::grad(alpha2);
+
+    // Interpolated face-gradient of alpha
+    surfaceVectorField gradAlphaf = fvc::interpolate(gradAlpha);
+    */
+
+    surfaceVectorField gradAlphaf
+    (
+        fvc::interpolate(alpha2)*fvc::interpolate(fvc::grad(alpha1))
+      - fvc::interpolate(alpha1)*fvc::interpolate(fvc::grad(alpha2))
+    );
+
+    // Face unit interface normal
+    return gradAlphaf/(mag(gradAlphaf) + deltaN_);
+}
+
+
+Foam::tmp<Foam::surfaceScalarField> Foam::multiphaseADMixture::nHatf
+(
+    const volScalarField& alpha1,
+    const volScalarField& alpha2
+)
+{
+    // Face unit interface normal flux
+    nHatf_ = nHatfv(alpha1, alpha2) & mesh_.Sf();
+    return nHatf_;
+}
+
+
+// Correction for the boundary condition on the unit normal nHat on
+// walls to produce the correct contact angle.
+
+// The dynamic contact angle is calculated from the component of the
+// velocity on the direction of the interface, parallel to the wall.
+
+void Foam::multiphaseADMixture::correctContactAngle
+(
+    const phaseADM& alpha1,
+    const phaseADM& alpha2,
+    surfaceVectorField::Boundary& nHatb
+) const
+{
+    const volScalarField::Boundary& gb1f = alpha1.boundaryField();
+    const volScalarField::Boundary& gb2f = alpha2.boundaryField();
+
+    const fvBoundaryMesh& boundary = mesh_.boundary();
+
+    forAll(boundary, patchi)
+    {
+        if (isA<alphaContactAngleFvPatchScalarField>(gb1f[patchi]))
+        {
+            const alphaContactAngleFvPatchScalarField& acap =
+                refCast<const alphaContactAngleFvPatchScalarField>(gb1f[patchi]);
+
+            correctBoundaryContactAngle(acap, patchi, alpha1, alpha2, nHatb);
+        }
+        else if (isA<alphaContactAngleFvPatchScalarField>(gb2f[patchi]))
+        {
+            const alphaContactAngleFvPatchScalarField& acap =
+                refCast<const alphaContactAngleFvPatchScalarField>(gb2f[patchi]);
+
+            correctBoundaryContactAngle(acap, patchi, alpha2, alpha1, nHatb);
+        }
+    }
+}
+
+
+void Foam::multiphaseADMixture::correctBoundaryContactAngle
+(
+    const alphaContactAngleFvPatchScalarField& acap,
+    label patchi,
+    const phaseADM& alpha1,
+    const phaseADM& alpha2,
+    surfaceVectorField::Boundary& nHatb
+) const
+{
+    const fvBoundaryMesh& boundary = mesh_.boundary();
+
+    vectorField& nHatPatch = nHatb[patchi];
+
+    vectorField AfHatPatch
+    (
+        mesh_.Sf().boundaryField()[patchi]
+       /mesh_.magSf().boundaryField()[patchi]
+    );
+
+    const auto tp = acap.thetaProps().cfind(interfacePair(alpha1, alpha2));
+
+    if (!tp.found())
+    {
+        FatalErrorInFunction
+            << "Cannot find interface " << interfacePair(alpha1, alpha2)
+            << "\n    in table of theta properties for patch "
+            << acap.patch().name()
+            << exit(FatalError);
+    }
+
+    const bool matched = (tp.key().first() == alpha1.name());
+
+    const scalar theta0 = degToRad(tp().theta0(matched));
+    scalarField theta(boundary[patchi].size(), theta0);
+
+    const scalar uTheta = tp().uTheta();
+
+    // Calculate the dynamic contact angle if required
+    if (uTheta > SMALL)
+    {
+        const scalar thetaA = degToRad(tp().thetaA(matched));
+        const scalar thetaR = degToRad(tp().thetaR(matched));
+
+        // Calculated the component of the velocity parallel to the wall
+        vectorField Uwall
+        (
+            U_.boundaryField()[patchi].patchInternalField()
+          - U_.boundaryField()[patchi]
+        );
+        Uwall -= (AfHatPatch & Uwall)*AfHatPatch;
+
+        // Find the direction of the interface parallel to the wall
+        vectorField nWall
+        (
+            nHatPatch - (AfHatPatch & nHatPatch)*AfHatPatch
+        );
+
+        // Normalise nWall
+        nWall /= (mag(nWall) + SMALL);
+
+        // Calculate Uwall resolved normal to the interface parallel to
+        // the interface
+        scalarField uwall(nWall & Uwall);
+
+        theta += (thetaA - thetaR)*tanh(uwall/uTheta);
+    }
+
+    // Reset nHatPatch to correspond to the contact angle
+
+    scalarField a12(nHatPatch & AfHatPatch);
+
+    scalarField b1(cos(theta));
+
+    scalarField b2(nHatPatch.size());
+
+    forAll(b2, facei)
+    {
+        b2[facei] = cos(acos(a12[facei]) - theta[facei]);
+    }
+
+    scalarField det(1.0 - a12*a12);
+
+    scalarField a((b1 - a12*b2)/det);
+    scalarField b((b2 - a12*b1)/det);
+
+    nHatPatch = a*AfHatPatch + b*nHatPatch;
+
+    nHatPatch /= (mag(nHatPatch) + deltaN_.value());
+}
+
+
+Foam::tmp<Foam::volScalarField> Foam::multiphaseADMixture::K
+(
+    const phaseADM& alpha1,
+    const phaseADM& alpha2
+) const
+{
+    tmp<surfaceVectorField> tnHatfv = nHatfv(alpha1, alpha2);
+
+    correctContactAngle(alpha1, alpha2, tnHatfv.ref().boundaryFieldRef());
+
+    // Simple expression for curvature
+    return -fvc::div(tnHatfv & mesh_.Sf());
+}
+
+
+// testing -----------------------------------------------------------
+//- Find actGasMixCells_
+void Foam::multiphaseADMixture::actGasMixCells()
+{
+    // TODO: for noew only apply to liquid-gas phase 
+    // could be expanded to other phase pairs in needed
+
+    actGasMixCells_ = 
+    (
+        max(zeroField(), phases_["liquid"] - (1.0 - actAlpha_))/(phases_["liquid"] - (1.0 - actAlpha_))
+      + max(zeroField(), actAlpha_ - phases_["liquid"])/(actAlpha_ - phases_["liquid"])
+    );
+
+    actGasMixCells_ = 1.0 - actGasMixCells_;
+}
+
+        
+//- Find actPatchCells_
+void Foam::multiphaseADMixture::actPatchCells()
+{
+    // TODO: for noew only apply to liquid-gas phase 
+    // could be expanded to other phase pairs in needed
+
+    forAll(actPatch_, wallI)
+    {
+        // To access the boundary patches information
+        const fvPatch& cPatch = U_.mesh().boundary()[actPatch_[wallI]];
+
+        // Starting index of the face in a patch
+        label faceId_start = cPatch.start() ;
+
+        // List of cells close to a boundary
+        const labelUList& faceCells = cPatch.faceCells();
+
+        forAll(cPatch, faceI) 
+        { 
+            // index of each face
+            label faceID = faceId_start + faceI;
+
+            // id of the owner cell having the face
+            label faceOwner = faceCells[faceI];
+
+            // mark the cells
+            actPatchCells_[faceOwner] = 1;
+        }
+    }
+}
+// -------------------------------------------------------------------
+
+
+// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
+
+Foam::multiphaseADMixture::multiphaseADMixture
+(
+    const volScalarField& Top,
+    const volVectorField& U,
+    const surfaceScalarField& phi
+)
+:
+    IOdictionary
+    (
+        IOobject
+        (
+            "transportProperties",
+            U.time().constant(),
+            U.db(),
+            IOobject::MUST_READ_IF_MODIFIED,
+            IOobject::NO_WRITE
+        )
+    ),
+    phases_(lookup("phases"), phaseADM::iNew(U, phi)),
+    mesh_(U.mesh()),
+    U_(U),
+    phi_(phi),
+    rhoPhi_
+    (
+        IOobject
+        (
+            "rhoPhi",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar(dimMass/dimTime, Zero)
+    ),
+    alphas_
+    (
+        IOobject
+        (
+            "alphas",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh_,
+        dimensionedScalar(dimless, Zero)
+    ),
+    nu_
+    (
+        IOobject
+        (
+            "nu",
+            mesh_.time().timeName(),
+            mesh_
+        ),
+        mu()/rho()   
+    ),
+    sigmas_(lookup("sigmas")),
+    dimSigma_(1, 0, -2, 0, 0),
+    deltaN_
+    (
+        "deltaN",
+        1e-8/cbrt(average(mesh_.V()))
+    ),
+    nHatf_
+    (
+        IOobject
+        (
+            "nHatf", 
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE 
+        ),
+        mesh_, 
+        dimensionedScalar
+        (
+            dimArea,
+            Zero
+        )
+    ),
+    reaction_
+    (
+        ADMno1::New(Top, mesh_)
+    ),
+    ddtAlphaMax_
+    (
+        "ddtAlphaMax",
+        dimless, // <-- TODO:check dimensions?
+        Zero
+    ),
+    // testing -----------------------------------------------------------
+    alpha1Full_
+    (
+        IOobject
+        (
+            "alpha1Full_",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        U_.mesh(),
+        dimensionedScalar
+        (
+            dimless,
+            Zero
+        )
+    ),
+    actAlpha_
+    (
+        "interfaceThreshold",
+        dimless,
+        this->subDict("degassing").lookupOrDefault
+        (
+            "alphaInterface",
+            0.1
+        )
+    ),
+    actPatch_
+    (
+        this->subDict("degassing").subDict("walls").toc()
+    ),
+    actGasMixCells_
+    (
+        IOobject
+        (
+            "actGasMixCells",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        U_.mesh(),
+        dimensionedScalar
+        (
+            dimless,
+            Zero
+        )
+    ),
+    actPatchCells_
+    (
+        IOobject
+        (
+            "actPatchCells",
+            mesh_.time().timeName(),
+            mesh_,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        U_.mesh(),
+        dimensionedScalar
+        (
+            dimless,
+            Zero
+        )
+    ),
+    alphaW_
+    (
+        "alphaW",
+        dimless,
+        this->subDict("degassing").get<scalar>("alphaW")
+    )
+    ,mDotTest_
+    (
+        "mDotTest",
+        // dimDensity/dimTime,
+        dimless/dimTime,
+        this->subDict("degassing").lookupOrDefault
+        (
+            "mDotTest",
+            1e-5
+        )
+    )
+    // -------------------------------------------------------------------
+{
+    // initializing
+    rhoPhi_.setOriented();
+
+    calcAlphas();
+
+    alphas_.write();
+
+    for (auto iter = phases_.cbegin(); iter != phases_.cend(); ++iter)
+    {
+        Su_.insert
+        (
+            iter().name(),
+            volScalarField::Internal
+            (
+                IOobject
+                (
+                    "Su" + iter().name(),
+                    mesh_.time().timeName(),
+                    mesh_
+                ),
+                mesh_,
+                dimensionedScalar(dimless/dimTime, Zero)
+            )
+        );
+ 
+        Sp_.insert
+        (
+            iter().name(),
+            volScalarField::Internal
+            (
+                IOobject
+                (
+                    "Sp" + iter().name(),
+                    mesh_.time().timeName(),
+                    mesh_
+                ),
+                mesh_,
+                dimensionedScalar(dimless/dimTime, Zero)
+            )
+        );
+    }
+
+    checkPhases();
+
+    actPatchCells();
+}
+
+
+// * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //
+
+
+Foam::tmp<Foam::volScalarField>
+Foam::multiphaseADMixture::nearInterface() const
+{
+    tmp<volScalarField> tnearInt
+    (
+        new volScalarField
+        (
+            IOobject
+            (
+                "nearInterface",
+                mesh_.time().timeName(),
+                mesh_
+            ),
+            mesh_,
+            dimensionedScalar(dimless, Zero)
+        )
+    );
+
+    for (const phaseADM& ph : phases_)
+    {
+        tnearInt.ref() = max(tnearInt(), pos0(ph - 0.01)*pos0(0.99 - ph));
+    }
+
+    return tnearInt;
+}
+
+
+Foam::tmp<Foam::volScalarField>
+Foam::multiphaseADMixture::rho() const
+{
+    tmp<volScalarField> trhov
+    (
+        new volScalarField
+        (
+            IOobject
+            (
+                "trhov", 
+                mesh_.time().timeName(),
+                mesh_,
+                IOobject::NO_READ,
+                IOobject::NO_WRITE 
+            ),
+            mesh_, 
+            dimensionedScalar
+            (
+                dimDensity,
+                Zero
+            )
+        )
+    );
+
+    volScalarField& rho = trhov.ref();
+    rho *= 0.0;
+
+    for (auto iter = phases_.cbegin(); iter != phases_.cend(); ++iter)
+    {
+        rho += iter()*iter().rho();
+    }
+
+    return trhov;
+}
+
+
+Foam::tmp<Foam::scalarField>
+Foam::multiphaseADMixture::rho(const label patchi) const
+{
+
+    tmp<scalarField> trho
+    (
+        new scalarField
+        (
+            mesh_.boundary().size(),
+            Zero
+        )
+    );
+
+    scalarField& rho = trho.ref();
+    rho *= 0.0;
+
+    for (auto iter = phases_.cbegin(); iter != phases_.cend(); ++iter)
+    {
+        rho += iter().boundaryField()[patchi]*iter().rho().value();
+    }
+
+    return trho;
+}
+
+
+Foam::tmp<Foam::volScalarField>
+Foam::multiphaseADMixture::mu() const
+{
+
+    tmp<volScalarField> tmuv
+    (
+        new volScalarField
+        (
+            IOobject
+            (
+                "tmuv", 
+                mesh_.time().timeName(),
+                mesh_,
+                IOobject::NO_READ,
+                IOobject::NO_WRITE 
+            ),
+            mesh_, 
+            dimensionedScalar
+            (
+                dimViscosity*dimDensity,
+                Zero
+            )
+        )
+    );
+
+    volScalarField& mu = tmuv.ref();
+    mu *= 0.0;
+
+    for (auto iter = phases_.cbegin(); iter != phases_.cend(); ++iter)
+    {
+        mu += iter()*iter().rho()*iter().nu();
+    }
+
+    return tmuv;
+}
+
+
+Foam::tmp<Foam::scalarField>
+Foam::multiphaseADMixture::mu(const label patchi) const
+{
+    tmp<scalarField> tmu
+    (
+        new scalarField
+        (
+            mesh_.boundary().size(),
+            Zero
+        )
+    );
+
+    scalarField& mu = tmu.ref();
+    mu *= 0.0;
+
+    for (auto iter = phases_.cbegin(); iter != phases_.cend(); ++iter)
+    {
+        mu +=
+        (
+            iter().boundaryField()[patchi]
+           *iter().rho().value()
+           *iter().nu(patchi)
+        );
+    }
+
+    return tmu;
+}
+
+
+Foam::tmp<Foam::surfaceScalarField>
+Foam::multiphaseADMixture::muf() const
+{
+    tmp<surfaceScalarField> tmuf
+    (
+        new surfaceScalarField
+        (
+            IOobject
+            (
+                "tmuv", 
+                mesh_.time().timeName(),
+                mesh_,
+                IOobject::NO_READ,
+                IOobject::NO_WRITE 
+            ),
+            mesh_, 
+            dimensionedScalar
+            (
+                dimViscosity*dimDensity,
+                Zero
+            )
+        )
+    );
+
+    surfaceScalarField& muf = tmuf.ref();
+    muf *= 0.0;
+
+    for (auto iter = phases_.cbegin(); iter != phases_.cend(); ++iter)
+    {
+        muf +=
+            fvc::interpolate(iter())*iter().rho()*fvc::interpolate(iter().nu());
+    }
+
+    return tmuf;
+}
+
+Foam::tmp<Foam::volScalarField>
+Foam::multiphaseADMixture::nu() const
+{
+    return nu_;
+}
+
+
+Foam::tmp<Foam::scalarField>
+Foam::multiphaseADMixture::nu(const label patchi) const
+{
+    return nu_.boundaryField()[patchi];
+}
+
+
+Foam::tmp<Foam::surfaceScalarField>
+Foam::multiphaseADMixture::nuf() const
+{
+    return muf()/fvc::interpolate(rho());
+}
+
+
+Foam::tmp<Foam::surfaceScalarField>
+Foam::multiphaseADMixture::surfaceTensionForce() const
+{
+    tmp<surfaceScalarField> tstf
+    (
+        new surfaceScalarField
+        (
+            IOobject
+            (
+                "surfaceTensionForce",
+                mesh_.time().timeName(),
+                mesh_
+            ),
+            mesh_,
+            dimensionedScalar(dimensionSet(1, -2, -2, 0, 0), Zero)
+        )
+    );
+
+    surfaceScalarField& stf = tstf.ref();
+    stf.setOriented();
+
+    forAllConstIters(phases_, iter1)
+    {
+        const phaseADM& alpha1 = iter1();
+
+        auto iter2 = iter1;
+
+        for (++iter2; iter2 != phases_.cend(); ++iter2)
+        {
+            const phaseADM& alpha2 = iter2();
+
+            auto sigma = sigmas_.cfind(interfacePair(alpha1, alpha2));
+
+            if (!sigma.found())
+            {
+                FatalErrorInFunction
+                    << "Cannot find interface " << interfacePair(alpha1, alpha2)
+                    << " in list of sigma values"
+                    << exit(FatalError);
+            }
+
+            stf += dimensionedScalar("sigma", dimSigma_, *sigma)
+               *fvc::interpolate(K(alpha1, alpha2))*
+                (
+                    fvc::interpolate(alpha2)*fvc::snGrad(alpha1)
+                  - fvc::interpolate(alpha1)*fvc::snGrad(alpha2)
+                );
+        }
+    }
+
+    return tstf;
+}
+
+
+#include "multiphaseSolveVolTransfer.H"
+
+void Foam::multiphaseADMixture::solve
+(
+    // const PtrListDictionary<volScalarField::Internal>& vDotList
+)
+{
+    correct();
+
+    const Time& runTime = mesh_.time();
+
+    volScalarField& alpha = phases_.first();
+
+    const dictionary& alphaControls = mesh_.solverDict("alpha");
+    label nAlphaSubCycles(alphaControls.get<label>("nAlphaSubCycles"));
+    scalar cAlpha(alphaControls.get<scalar>("cAlpha"));
+
+    if (nAlphaSubCycles > 1)
+    {
+        surfaceScalarField rhoPhiSum
+        (
+            IOobject
+            (
+                "rhoPhiSum",
+                runTime.timeName(),
+                mesh_
+            ),
+            mesh_,
+            dimensionedScalar(rhoPhi_.dimensions(), Zero)
+        );
+
+        dimensionedScalar totalDeltaT = runTime.deltaT();
+
+        for
+        (
+            subCycle<volScalarField> alphaSubCycle(alpha, nAlphaSubCycles);
+            !(++alphaSubCycle).end();
+        )
+        {
+            solveAlphas
+            (
+                cAlpha
+                // ,vDotList
+            );
+            rhoPhiSum += (runTime.deltaT()/totalDeltaT)*rhoPhi_;
+        }
+
+        rhoPhi_ = rhoPhiSum;
+    }
+    else
+    {
+        solveAlphas
+        (
+            cAlpha
+            // ,vDotList   
+        );
+    }
+
+    // Update the mixture kinematic viscosity
+    nu_ = mu()/rho();
+}
+
+
+void Foam::multiphaseADMixture::correct()
+{   
+    //- Find liquid-gas interface cells for mass transfer
+    actGasMixCells();
+
+    // TODO: its really doing nothing?
+    for (phaseADM& ph : phases_)
+    {
+        ph.correct();
+    }
+
+    // //- Species transport equations
+    // massTransferCoeffs();
+
+    // //- MULES solver for species
+    // speciesMules();
+}
+
+
+bool Foam::multiphaseADMixture::read()
+{
+    if (transportModel::read())
+    {
+        bool readOK = true;
+
+        PtrList<entry> phaseData(lookup("phases"));
+        label phasei = 0;
+
+        for (phaseADM& ph : phases_)
+        {
+            readOK &= ph.read(phaseData[phasei++].dict());
+        }
+
+        readEntry("sigmas", sigmas_);
+
+        return readOK;
+    }
+
+    return false;
+}
+
+
+// testing -----------------------------------------------------------
+void Foam::multiphaseADMixture::checkPhases()
+{
+    // checking for liquid phase (mandatory)
+    if(!phases_.found("liquid"))
+    {
+        FatalErrorInFunction
+            << "Solver must contain 'liquid' phase as the base of all speices.\n"
+            << "please add it in constant/transportProperties and 0/alpha.liquid"
+            << exit(FatalError);
+    }
+
+    // TODO: may be able to get rid of this
+    // checking number of phases 
+    if (phases_.size() > 3)
+    {
+        FatalErrorInFunction
+            << "Current implementation does not allow phases other than these 3 phases:\n" 
+            << "(liquid, gas, sludge)"
+            << exit(FatalError);
+    }
+
+    // check phases
+    for (phaseADM& ph : phases_)
+    {
+        if 
+        (
+            (ph.name() != "liquid")
+         && (ph.name() != "gas") 
+         && (ph.name() != "sludge")
+        )
+        {
+            FatalErrorInFunction
+                << "Current implementation does not allow phases other than these 3 phases:\n" 
+                << "(liquid, gas, sludge)"
+                << exit(FatalError);
+        }
+
+    }
+}
+// -------------------------------------------------------------------
+
+// ************************************************************************* //

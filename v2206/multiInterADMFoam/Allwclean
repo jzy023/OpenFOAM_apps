@@ -3,8 +3,7 @@ cd "${0%/*}" || exit    # Run from this directory
 #------------------------------------------------------------------------------
 
 wclean libso ../ADMno1
-wclean libso admInterfaceProperties
-wclean libso admMixture
+wclean libso multiphaseADMixture
 wclean
 
 #------------------------------------------------------------------------------

@@ -6,6 +6,12 @@
 
     tmp<surfaceScalarField> talphaPhi;
 
+    // const volScalarField vDotcAlphal = 0.0*mixture->vDotAlphal();
+    // const volScalarField vDotvAlphal = mixture->vDotAlphal();
+    // const volScalarField vDotvmcAlphal(vDotvAlphal - vDotcAlphal);
+
+    const volScalarField& vDotAlphal = mixture->vDotAlphal();
+
     if (MULESCorr)
     {
         fvScalarMatrix alpha1Eqn
@@ -19,7 +25,9 @@
             ).fvmDiv(phi, alpha1)
           - fvm::Sp(divU, alpha1)
           ==
-            fvm::Sp(mixture->vDotAlphal(), alpha1)
+            fvm::Sp(vDotAlphal, alpha1)
+        //     fvm::Sp(vDotvmcAlphal, alpha1)
+        //   + vDotcAlphal
         );
 
         alpha1Eqn.solve();
@@ -31,10 +39,6 @@
             << endl;
 
         talphaPhi = alpha1Eqn.flux();
-
-        alpha2 = 1.0 - alpha1;
-
-        interface.correct();
     }
 
     volScalarField alpha10("alpha10", alpha1);
@@ -70,11 +74,16 @@
                 alpha1,
                 talphaPhi(),
                 talphaPhiCorr.ref(),
-                mixture->vDotAlphal(),
+                vDotAlphal,
                 (
                     divU*(alpha10 - alpha100)
-                  - mixture->vDotAlphal()*alpha10
+                  - vDotAlphal*alpha10
                 )(),
+                // vDotvmcAlphal,
+                // (
+                //     divU*(alpha10 - alpha100)
+                //   - vDotvmcAlphal*alpha10
+                // )(),
                 oneField(),
                 zeroField()
             );
@@ -98,8 +107,10 @@
                 alpha1,
                 phi,
                 talphaPhiCorr.ref(),
-                mixture->vDotAlphal(),
+                vDotAlphal,
                 (divU*alpha1)(),
+                // vDotvmcAlphal,
+                // (divU*alpha1 + vDotcAlphal)(),
                 oneField(),
                 zeroField()
             );
@@ -108,8 +119,6 @@
         }
 
         alpha2 = 1.0 - alpha1;
-
-        interface.correct();
     }
 
     rhoPhi = talphaPhi()*(rho1 - rho2) + phi*rho2;
@@ -119,7 +128,7 @@
 
     // testing
     // limit alphas
-    mixture->limitAlpha();
+    // mixture->limitAlpha();
 
 
     Info<< "Liquid phase volume fraction = "

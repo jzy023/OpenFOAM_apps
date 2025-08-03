@@ -24,8 +24,8 @@
     constrainPressure(p_rgh, U, phiHbyA, rAUf);
 
     // Pair<tmp<volScalarField>> vDot = mixture->vDot();
-    // const volScalarField& vDotc = vDot[0]();
-    // const volScalarField& vDotv = vDot[1]();
+    // const volScalarField vDotv = mixture->vDot(); // vDot[0]();
+    // const volScalarField vDotc = 0.0*mixture->vDot(); // vDot[1]();
 
     while (pimple.correctNonOrthogonal())
     {

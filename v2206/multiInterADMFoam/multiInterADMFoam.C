@@ -5,7 +5,7 @@
     \\  /    A nd           | www.openfoam.com
      \\/     M anipulation  |
 -------------------------------------------------------------------------------
-    Copyright (C) 2016-2020 OpenCFD Ltd.
+    Copyright (C) 2017-2021 OpenCFD Ltd.
 -------------------------------------------------------------------------------
 License
     This file is part of OpenFOAM.
@@ -24,16 +24,15 @@ License
     along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
 
 Application
-    interADMFoam
+    multiInterADMFoam
 
 Group
     grpMultiphaseSolvers
 
 Description
-    Solver for two incompressible, non-isothermal immiscible fluids with
-    phase-change (evaporation-condensation) between a fluid and its vapour.
-    Uses a VOF (volume of fluid) phase-fraction based interface capturing
-    approach.
+    Solver for N incompressible, non-isothermal immiscible fluids with
+    phase-change.  Uses a VOF (volume of fluid) phase-fraction based interface
+    capturing approach.
 
     The momentum, energy and other fluid properties are of the "mixture" and a
     single momentum equation is solved.
@@ -44,175 +43,131 @@ Description
 
 #include "fvCFD.H"
 #include "dynamicFvMesh.H"
-#include "CMULES.H"
-#include "EulerDdtScheme.H"
-#include "localEulerDdtScheme.H"
-#include "CrankNicolsonDdtScheme.H"
-#include "subCycle.H"
-
 #include "turbulentTransportModel.H"
-#include "turbulenceModel.H"
 #include "pimpleControl.H"
 #include "fvOptions.H"
 #include "CorrectPhi.H"
-#include "fvcSmooth.H"
 
-// multiphase ADMno1 implementation
+#include "ADMno1.H"
+#include "multiphaseADMixture.H"
+#include "CMULES.H"
 #include "upwind.H"
 #include "downwind.H"
-#include "ADMno1.H"
-#include "interfaceProperties.H"
-#include "incompressibleTwoPhaseMixture.H"
-#include "admMixture.H"
-
+ 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
+ 
 int main(int argc, char *argv[])
 {
     argList::addNote
     (
-        "Solver for two incompressible, non-isothermal immiscible fluids with"
-        " phase-change,"
-        " using VOF phase-fraction based interface capturing.\n"
-        "With optional mesh motion and mesh topology changes including"
-        " adaptive re-meshing."
+        "Solver for N incompressible fluids which captures the interfaces and"
+        " includes surface-tension and contact-angle effects for each phase.\n"
+        "With optional mesh motion and mesh topology changes."
     );
-
+ 
     #include "postProcess.H"
-
+ 
     #include "addCheckCaseOptions.H"
     #include "setRootCaseLists.H"
     #include "createTime.H"
     #include "createDynamicFvMesh.H"
     #include "initContinuityErrs.H"
     #include "createDyMControls.H"
-
     #include "createFields.H"
-    #include "createAlphaFluxes.H"
     #include "initCorrectPhi.H"
     #include "createUfIfPresent.H"
-
+ 
+    turbulence->validate();
+ 
     #include "CourantNo.H"
     #include "setInitialDeltaT.H"
-
-    turbulence->validate();
-
-    // TODO: try revert back to interCondensateEvaporateFoam schemes
-
+ 
+    const surfaceScalarField& rhoPhi(mixture.rhoPhi());
+ 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-    Info<< "\nStarting time loop\n" << endl; 
-
+ 
+    Info<< "\nStarting time loop\n" << endl;
+ 
     while (runTime.run())
     {
         #include "readDyMControls.H"
-
-        // Store divU from the previous mesh so that it can be mapped
-        // and used in correctPhi to ensure the corrected phi has the
-        // same divergence
-
-        volScalarField divU("divU", fvc::div(fvc::absolute(phi, U)));
-
-        {
-            #include "CourantNo.H"
-            #include "alphaCourantNo.H"
-            #include "setDeltaT.H"
-        }
-
+        #include "CourantNo.H"
+        #include "alphaCourantNo.H"
+        #include "setDeltaT.H"
+ 
         ++runTime;
-
+ 
         Info<< "Time = " << runTime.timeName() << nl << endl;
-
+ 
         // --- Pressure-velocity PIMPLE corrector loop
         while (pimple.loop())
         {
             if (pimple.firstIter() || moveMeshOuterCorrectors)
             {
+                scalar timeBeforeMeshUpdate = runTime.elapsedCpuTime();
+ 
                 mesh.update();
-
+ 
                 if (mesh.changing())
                 {
-                    // Do not apply previous time-step mesh compression flux
-                    // if the mesh topology changed
-                    if (mesh.topoChanging())
-                    {
-                        talphaPhi1Corr0.clear();
-                    }
-
+                    Info<< "Execution time for mesh.update() = "
+                        << runTime.elapsedCpuTime() - timeBeforeMeshUpdate
+                        << " s" << endl;
+ 
                     gh = (g & mesh.C()) - ghRef;
                     ghf = (g & mesh.Cf()) - ghRef;
-
+ 
                     MRF.update();
-
+ 
                     if (correctPhi)
                     {
                         // Calculate absolute flux
                         // from the mapped surface velocity
                         phi = mesh.Sf() & Uf();
-
+ 
                         #include "correctPhi.H"
-
+ 
                         // Make the flux relative to the mesh motion
                         fvc::makeRelative(phi, U);
-
-                        interface.correct();
+ 
+                        mixture.correct();
                     }
-
+ 
                     if (checkMeshCourantNo)
                     {
                         #include "meshCourantNo.H"
                     }
                 }
             }
-
-            #include "alphaControls.H"
-
-            // solve YiMules
-            mixture->solve(interface);
-            
-            // #include "GeoChems/alphaEqnSubCycle.H"
-            #include "admMixture/alphaEqnSubCycle.H"
-
-            interface.correct();
-            
-            // #include "GeoChems/UEqn.H"
-            #include "admMixture/UEqn.H"
-
-            // TODO: 
-            // #include "TEqn.H"
-
+ 
+            mixture.solve();
+            rho = mixture.rho();
+ 
+            // #include "UEqn.H"
+            #include "multiEqns/UEqn.H"
+ 
             // --- Pressure corrector loop
             while (pimple.correct())
             {
-
-                // #include "GeoChems/pEqn.H"
-                #include "admMixture/pEqn.H"
+                // #include "pEqn.H"
+                #include "multiEqns/pEqn.H"
             }
-
-            // // // TODO: clean up and add reaction() too
-            // mixture->speciesADMCorrect();
-            // mixture->speciesAlphaCorrect();
-
+ 
             if (pimple.turbCorr())
             {
                 turbulence->correct();
             }
         }
-
-        rho = alpha1*rho1 + alpha2*rho2;
-
-        // #include "GeoChems/admEqn.H"
-        #include "admMixture/admEqn.H"  
-
+ 
         runTime.write();
-
+ 
         runTime.printExecutionTime(Info);
     }
-
+ 
     Info<< "End\n" << endl;
-
+ 
     return 0;
 }
-
-
+ 
+ 
 // ************************************************************************* //

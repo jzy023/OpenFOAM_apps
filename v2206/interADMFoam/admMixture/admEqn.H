@@ -32,7 +32,7 @@
             }
         }
 
-        mixture->speciesADMCorrect();
+        // mixture->speciesADMCorrect();
 
         // Info<< "Species concentration = "
         // << Yi.weightedAverage(mesh.V()).value()
@@ -43,8 +43,8 @@
         << endl;
     // }
 
-    //calculate mass transfer flux
-    mixture->limit();
+    // //calculate mass transfer flux
+    // mixture->limit();
 
     // // Gaseous
     // forAll(Gi, i)
