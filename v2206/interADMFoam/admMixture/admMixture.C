@@ -316,6 +316,16 @@ Foam::admMixture::admMixture
         dimless,
         this->subDict("degassing").get<scalar>("alphaW")
     ),
+    R_
+    (
+        "R",
+        dimPressure*dimVolume/dimMass/dimTemperature,
+        this->subDict("degassing").lookupOrDefault
+        (
+            "R",
+            8.3145
+        )
+    ),
     H_
     (
         "H",

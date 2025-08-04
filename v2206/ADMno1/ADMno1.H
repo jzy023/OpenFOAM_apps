@@ -445,6 +445,22 @@ public:
     //- Return components consumption rate matrix, i.e. source term.
     tmp<fvScalarMatrix> RG_test(label i) const;
 
+    //- Return Henry's constant
+    // TODO: maybe return PtrList<scalar> instead?
+    inline volScalarField::Internal& KHh2()
+    {
+        return KHh2_;
+    };
+
+    inline volScalarField::Internal& KHch4()
+    {
+        return KHch4_;
+    };
+
+    inline volScalarField::Internal& KHco2()
+    {
+        return KHco2_;
+    };
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

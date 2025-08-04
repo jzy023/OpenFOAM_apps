@@ -77,6 +77,9 @@ protected:
         // higher alphaW means smaller contact angle (more wetting)
         dimensionedScalar alphaW_;
 
+        //- Ideal gas constant
+        dimensionedScalar R_;
+
         //- Henry's coefficient
         // TODO: maybe remove this eventually?
         dimensionedScalar H_;
@@ -309,22 +312,49 @@ public:
 
         // testing ------------------------------------------------------------
         // TODO: corrected by mesh().V()
-        dimensionedScalar speciesAlphaAverage
+        // dimensionedScalar speciesAlphaAverage
+        // (
+        //     const volScalarField& YiAlpha,
+        //     const volScalarField& alpha
+        // )
+        // {
+        //     volScalarField magAlpha = mag(alpha);
+
+        //     return
+        //     (
+        //         dimensionedScalar
+        //         (
+        //             YiAlpha.dimensions()/alpha.dimensions(),
+        //             gSum(YiAlpha)/gSum(magAlpha)
+        //         )
+        //     );
+        // }
+
+
+        void gasPartialPressure
         (
-            const volScalarField& YiAlpha,
-            const volScalarField& alpha
+            const volScalarField& Top
         )
         {
-            volScalarField magAlpha = mag(alpha);
-
-            return
+            
+            // Identifying region for averaging gaseous species for partial pressure calculation
+            volScalarField limitedAlpha2
             (
-                dimensionedScalar
-                (
-                    YiAlpha.dimensions()/alpha.dimensions(),
-                    gSum(YiAlpha)/gSum(magAlpha)
-                )
+                min(max((1 - alpha1_), scalar(1e-16)), scalar(1))
             );
+
+            volScalarField alphaGasRegion_ = max(zeroField(), limitedAlpha2 - 0.1)/(limitedAlpha2 - 0.1);
+            volScalarField::Internal GiAlphaTopKH = 
+            (
+                alphaGasRegion_.internalField()*GiAlpha_[0].internalField()
+              * Top.internalField()*reaction_->KHh2()
+            );
+
+            dimensionedScalar GiAlphaTopKHAve = GiAlphaTopKH.weightedAverage(alpha1_.mesh().V());
+            dimensionedScalar Ph2 = R_ * GiAlphaTopKHAve;
+
+            // // DEBUG
+            // Info<< ">>> " << Ph2.dimensions() << endl;
         }
 
 
@@ -416,60 +446,7 @@ public:
                 volScalarField::Internal massFieldADM = reaction_->Y()[i].internalField();//*limitedAlpha1*alpha1Full_.mesh().V();
                 Info<<   ">>> Sac mass (* alpha): " << gSum(massFieldADMAlpha)
                     << "\n>>> Sac mass (w/o alpha): " << gSum(massFieldADMcorrected)
-                    << "\n>>> phase volume: " << gSum(volumeFieldADM) << endl; 
-                // Info<< ">>> " << gSum(alphaAll_) 
-                //     << " = " << gSum(alpha1Empty_) + gSum(alpha1Full_)
-                //     << " ? " << gSum(alpha1Empty_) + gSum(alpha1Full_) + gSum(alpha1Interface_) << endl;
-
-            // // -------------------------------------------------------------------------------------------------
-            //     volScalarField limitedAlpha1
-            //     (
-            //         min(max(alpha1_, scalar(1e-6)), scalar(1))
-            //     );
-
-            //     alpha1Full_ = max(zeroField(), limitedAlpha1 - alpha0)/(limitedAlpha1 - alpha0);
-            //     volScalarField alpha1Empty = 1 - alpha1Full_;
-
-            //     // total mass of species in non-full cells
-            //     volScalarField::Internal YiMassEmpty = SiAlpha_[i].internalField()*alpha1Empty*alpha1_.mesh().V();
-            //     dimensionedScalar residualYiMassEmpty = gSum(YiMassEmpty);
-
-            //     // total volume of non-full cells
-            //     volScalarField::Internal alpha1EmptyV = alpha1Empty*alpha1_.mesh().V();
-            //     dimensionedScalar residualV = gSum(alpha1EmptyV);
-
-            //     // average volume fraction of alpha1 in non-full cells
-            //     volScalarField::Internal alpha1Alpha1Empty = alpha1Empty*limitedAlpha1;
-            //     dimensionedScalar residualAlpha = gSum(alpha1Alpha1Empty)/gSum(alpha1Empty);
-
-            //     //
-            //     YiAlphaAverage.value() = (residualYiMassEmpty/residualAlpha/residualV).value();
-            //     reaction_->Y()[i] = SiAlpha_[i]/limitedAlpha1*alpha1Full_ + YiAlphaAverage*alpha1Empty;
-
-            //     //
-            //     volScalarField::Internal sum = reaction_->Y()[i].internalField()*limitedAlpha1.internalField()*alpha1_.mesh().V();
-            //     Info<< "Species concentration (ADM corrected sum) = "
-            //         << gSum(sum) << endl;
-            //     Info<< ">>> total mass of species in non-full cells = "
-            //         << residualYiMassEmpty.value() << endl;
-            //     Info<< ">>> total volume of non-full cells = "
-            //         << residualV.value() << endl;
-            //     Info<< ">>> average volume fraction of alpha1 in non-full cells = "
-            //         << residualAlpha.value() << endl;
-            //     Info<< ">>> YiAlphaAverage for empty = "
-            //         << YiAlphaAverage.value() << endl;
-            // // -------------------------------------------------------------------------------------------------
-
-            //     // YiAlphaAverage = speciesAlphaAverage(SiAlpha_[i], alpha1_);
-            //     // reaction_->Y()[i] = SiAlpha_[i]/alpha1_*alpha1Full_ + YiAlphaAverage*(1 - alpha1Full_);
-            // // }
-
-            // forAll(GiAlpha_, i)
-            // {
-            //     alpha1Full_ = max(zeroField(), alpha2_ - alpha0)/(alpha2_ - alpha0);
-            //     YiAlphaAverage = speciesAlphaAverage(GiAlpha_[i], alpha2_);
-
-            //     reaction_->G()[i] = GiAlpha_[i]/alpha2_*alpha1Full_ + YiAlphaAverage*(1 - alpha1Full_);
+                    << "\n>>> phase volume: " << gSum(volumeFieldADM) << endl;
             // }
         }
 
