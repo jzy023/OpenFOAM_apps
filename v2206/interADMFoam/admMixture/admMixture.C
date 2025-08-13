@@ -42,21 +42,21 @@ namespace Foam
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
-//- Find actAlphaCells_
-void Foam::admMixture::actAlphaCells()
+//- Find isCellsInterface_
+void Foam::admMixture::findCellsInterface()
 {
-    actAlphaCells_ = 
+    isCellsInterface_ = 
     (
-        max(zeroField(), alpha1_ - (1.0 - actAlpha_))/(alpha1_ - (1.0 - actAlpha_))
-      + max(zeroField(), actAlpha_ - alpha1_)/(actAlpha_ - alpha1_)
+        max(zeroField(), alpha1_ - (1.0 - alphaInterface_))/(alpha1_ - (1.0 - alphaInterface_))
+      + max(zeroField(), alphaInterface_ - alpha1_)/(alphaInterface_ - alpha1_)
     );
 
-    actAlphaCells_ = 1.0 - actAlphaCells_;
+    isCellsInterface_ = 1.0 - isCellsInterface_;
 }
 
         
-//- Find actPatchCells_
-void Foam::admMixture::actPatchCells()
+//- Find isCellsActWall_
+void Foam::admMixture::findCellsActWall()
 {
     forAll(actPatch_, wallI)
     {
@@ -78,7 +78,7 @@ void Foam::admMixture::actPatchCells()
             label faceOwner = faceCells[faceI];
 
             // mark the cells
-            actPatchCells_[faceOwner] = 1;
+            isCellsActWall_[faceOwner] = 1;
         }
     }
 }
@@ -202,57 +202,8 @@ void Foam::admMixture::speciesMules
     // // Soluables
     // forAll(Si, i)
 	// {
-        label i = 6;
-        volScalarField& Yi = Si[i];
-        
-        scalar maxYi = max(gMax(Yi), gMax(Yi.boundaryField())) + 1e-30;
 
-        // normalizing
-        Yi.oldTime() == Yi.oldTime() / maxYi;
-        Yi == Yi / maxYi;
-
-		surfaceScalarField phiComp = fvc::flux
-        (
-            -fvc::flux(-phir, alpha2_, alpharScheme),
-            alpha1_,
-            alpharScheme
-        );
-
-        tmp<surfaceScalarField> tYiPhi1Un
-        (
-            fvc::flux
-            (
-                phi_,
-                Yi,
-                YiScheme
-            )
-		  + phiComp * compressionCoeff(Yi)
-        );
-
-        {
-            surfaceScalarField YiPhi10 = tYiPhi1Un;
-
-            MULES::explicitSolve
-            (
-                geometricOneField(),
-                Yi,
-                phi_,
-                YiPhi10,
-                zeroField(),
-                zeroField(),
-                oneField(),
-                zeroField()
-            );
-        }
-
-        Yi.oldTime() == Yi.oldTime() * maxYi;
-        Yi == Yi * maxYi;
-    // }
-
-    // // Gaseous
-    // forAll(Gi, i)
-	// {
-    //     volScalarField& Yi = Gi[i];
+    //     volScalarField& Yi = Si[i];
         
     //     scalar maxYi = max(gMax(Yi), gMax(Yi.boundaryField())) + 1e-30;
 
@@ -296,6 +247,57 @@ void Foam::admMixture::speciesMules
 
     //     Yi.oldTime() == Yi.oldTime() * maxYi;
     //     Yi == Yi * maxYi;
+    // }
+
+    // Gaseous
+    // forAll(Gi, i)
+	// {
+        label i = 0;
+
+        volScalarField& Yi = Gi[i];
+        
+        scalar maxYi = max(gMax(Yi), gMax(Yi.boundaryField())) + 1e-30;
+
+        // normalizing
+        Yi.oldTime() == Yi.oldTime() / maxYi;
+        Yi == Yi / maxYi;
+
+		surfaceScalarField phiComp = fvc::flux
+        (
+            -fvc::flux(-phir, alpha2_, alpharScheme),
+            alpha1_,
+            alpharScheme
+        );
+
+        tmp<surfaceScalarField> tYiPhi1Un
+        (
+            fvc::flux
+            (
+                phi_,
+                Yi,
+                YiScheme
+            )
+		  + phiComp * compressionCoeff(Yi)
+        );
+
+        {
+            surfaceScalarField YiPhi10 = tYiPhi1Un;
+
+            MULES::explicitSolve
+            (
+                geometricOneField(),
+                Yi,
+                phi_,
+                YiPhi10,
+                zeroField(),
+                zeroField(),
+                oneField(),
+                zeroField()
+            );
+        }
+
+        Yi.oldTime() == Yi.oldTime() * maxYi;
+        Yi == Yi * maxYi;
     // }
 }
 
@@ -411,11 +413,11 @@ Foam::admMixture::admMixture
     (
         ADMno1::New(Top, U_.mesh())
     ),
-    alpha1Full_
+    isCellsFull_
     (
         IOobject
         (
-            "alpha1Full_",
+            "isCellsFull_",
             alpha1_.time().timeName(),
             U_.mesh(),
             IOobject::NO_READ,
@@ -429,11 +431,11 @@ Foam::admMixture::admMixture
         )
     ),
     // testing -------------------------------------------------------
-    alpha1Empty_
+    isCellsEmpty_
     (
         IOobject
         (
-            "alpha1Empty_",
+            "isCellsEmpty_",
             alpha1_.time().timeName(),
             U_.mesh(),
             IOobject::NO_READ,
@@ -446,11 +448,11 @@ Foam::admMixture::admMixture
             Zero
         )
     ),
-    alpha1Interface_
+    isCellsInterface_
     (
         IOobject
         (
-            "alpha1Interface_",
+            "isCellsInterface_",
             alpha1_.time().timeName(),
             U_.mesh(),
             IOobject::NO_READ,
@@ -464,7 +466,7 @@ Foam::admMixture::admMixture
         )
     ),
     // ---------------------------------------------------------------
-    actAlpha_
+    alphaInterface_
     (
         "interfaceThreshold",
         dimless,
@@ -478,28 +480,11 @@ Foam::admMixture::admMixture
     (
         this->subDict("degassing").subDict("walls").toc()
     ),
-    actAlphaCells_
+    isCellsActWall_
     (
         IOobject
         (
-            "actAlphaCells",
-            alpha1_.time().timeName(),
-            U_.mesh(),
-            IOobject::NO_READ,
-            IOobject::AUTO_WRITE
-        ),
-        U_.mesh(),
-        dimensionedScalar
-        (
-            dimless,
-            Zero
-        )
-    ),
-    actPatchCells_
-    (
-        IOobject
-        (
-            "actPatchCells",
+            "isActWallCells",
             alpha1_.time().timeName(),
             U_.mesh(),
             IOobject::NO_READ,
@@ -713,10 +698,10 @@ Foam::admMixture::admMixture
     limitAlpha();
 
     // // initializing Si and Gi for ADMno1
-    speciesADMCorrect();
+    // speciesADMCorrect();
 
     // marking inter-phase mass transfer surfaces
-    actPatchCells();
+    findCellsActWall();
 
     // DEBUG
     Info<< "H: "    << H_ 
@@ -826,7 +811,7 @@ Foam::admMixture::mDot()
         min(max(alpha1_, scalar(0)), scalar(1))
     );
 
-    mDot_ = limitedAlpha1*(-mDotTest_)*(actAlphaCells_ + (1/alphaW_)*actPatchCells_);
+    mDot_ = limitedAlpha1*(-mDotTest_)*(isCellsInterface_ + (1/alphaW_)*isCellsActWall_);
 
     return mDot_;
 }
@@ -837,7 +822,7 @@ Foam::admMixture::mDot()
 const Foam::volScalarField&
 Foam::admMixture::mDotAlphal()
 {
-    mDotAlphal_ = (-mDotTest_)*(actAlphaCells_ + (1/alphaW_)*actPatchCells_);
+    mDotAlphal_ = (-mDotTest_)*(isCellsInterface_ + (1/alphaW_)*isCellsActWall_);
      
     return mDotAlphal_;
 }
@@ -897,7 +882,7 @@ void Foam::admMixture::solve
 {
     // // DEBUG
     // Info<< ">>> testing admMixture::solve()" << endl;
-    actAlphaCells();
+    findCellsInterface();
     
     // speciesAlphaCorrect();
 
@@ -905,7 +890,7 @@ void Foam::admMixture::solve
 
     speciesMules(interface);
 
-    speciesADMCorrect();
+    // speciesADMCorrect();
 
     // printGasGenRate();
 }

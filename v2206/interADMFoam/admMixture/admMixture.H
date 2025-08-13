@@ -109,21 +109,20 @@ protected:
         PtrList<volScalarField> GiAlpha_;
 
         //- Cells marked as mainly fluid
-        volScalarField alpha1Full_;
-        volScalarField alpha1Empty_;
-        volScalarField alpha1Interface_;
+        volScalarField isCellsFull_;
+        volScalarField isCellsEmpty_;
 
         //- Volume fraction threshold to activate inter-phase mass transfer
-        dimensionedScalar actAlpha_;
+        dimensionedScalar alphaInterface_;
 
         //- Name of patches to activate inter-phase mass transfer
         wordList actPatch_;
 
         //- Cells marked as activated for inter-phase mass transfer due to interface
-        volScalarField actAlphaCells_;
+        volScalarField isCellsInterface_;
 
         //- Cells marked as activated for inter-phase mass transfer due to solid surface
-        volScalarField actPatchCells_;
+        volScalarField isCellsActWall_;
 
         //- Phase change ADMno1 
         volScalarField mDot_;
@@ -148,11 +147,11 @@ protected:
         //- No copy assignment
         void operator=(const admMixture&) = delete;
 
-        //- Find actAlphaCells_
-        void actAlphaCells();
+        //- Find isCellsInterface_
+        void findCellsInterface();
         
-        //- Find actPatchCells_
-        void actPatchCells();
+        //- Find isCellsActWall_
+        void findCellsActWall();
 
         //- Normalizing for MULES
         void normalizeYi();
@@ -377,10 +376,6 @@ public:
         void speciesADMCorrect()
         {
             //- threshold volume fraction alpha0, to avoid error introduced by interface correction
-            // alpha0 = 0.10  -->  high error
-            // alpha0 = 0.90  -->  low error
-            // limitAlpha();
-            scalar alpha0 = 0.9;
             scalar alpha00 = 1e-2;
 
             dimensionedScalar YiAlphaAverage
@@ -402,25 +397,31 @@ public:
 
             // forAll(SiAlpha_, i)
             // {
-                label i = 6;
+                // label i = 6;
+                // volScalarField& Yi = SiAlpha_[i];
+                // volScalarField& YiADM = reaction_->Y()[i];
 
-                alpha1Empty_ = min(zeroField(), limitedAlpha1 - alpha00)/(limitedAlpha1 - alpha00);
-                alpha1Full_ = max(zeroField(), limitedAlpha1 - alpha0)/(limitedAlpha1 - alpha0);
-                alpha1Interface_ = 1 - alpha1Empty_ - alpha1Full_;
+                label i = 0;
+                volScalarField& Yi = GiAlpha_[i];
+                volScalarField& YiADM = reaction_->G()[i];
+
+                isCellsEmpty_ = min(zeroField(), limitedAlpha1 - alpha00)/(limitedAlpha1 - alpha00);
+                isCellsFull_ = max(zeroField(), limitedAlpha1 - (1.0 - alphaInterface_))/(limitedAlpha1 - (1.0 - alphaInterface_));
+                isCellsInterface_ = 1 - isCellsEmpty_ - isCellsFull_;
 
                 // Total mass and volume field
-                volScalarField::Internal massField = SiAlpha_[i].internalField()*U_.mesh().V();
-                volScalarField::Internal volumeField = limitedAlpha1*alpha1Full_.mesh().V();
+                volScalarField::Internal massField = Yi.internalField()*U_.mesh().V();
+                volScalarField::Internal volumeField = limitedAlpha1*isCellsFull_.mesh().V();
                 YiAlphaAverage.value() = gSum(massField) / gSum(volumeField);
 
                 // // Total mass from full and full cells
-                // volScalarField::Internal massFieldFull = alpha1Full_*SiAlpha_[i].internalField()*alpha1Full_*U_.mesh().V();
-                // volScalarField::Internal volumeFieldFull = alpha1Full_*limitedAlpha1*alpha1Full_.mesh().V();
+                // volScalarField::Internal massFieldFull = isCellsFull_*Yi.internalField()*isCellsFull_*U_.mesh().V();
+                // volScalarField::Internal volumeFieldFull = isCellsFull_*limitedAlpha1*isCellsFull_.mesh().V();
 
                 // Mass and volume field at interface cells
-                volScalarField::Internal massFieldInterface = alpha1Interface_*SiAlpha_[i].internalField()*U_.mesh().V();
-                volScalarField::Internal volumeFieldInterface = alpha1Interface_*limitedAlpha1.internalField()*U_.mesh().V();
-                if (gSum(alpha1Interface_) < 1)
+                volScalarField::Internal massFieldInterface = isCellsInterface_*Yi.internalField()*U_.mesh().V();
+                volScalarField::Internal volumeFieldInterface = isCellsInterface_*limitedAlpha1.internalField()*U_.mesh().V();
+                if (gSum(isCellsInterface_) < 1)
                 {
                     YiAlphaAverageInterface.value() = YiAlphaAverage.value();
                 }
@@ -430,20 +431,20 @@ public:
                 }
 
                 // Recreate ADM Yi fields
-                reaction_->Y()[i] = 
+                YiADM = 
                 (
-                    SiAlpha_[i]/limitedAlpha1*alpha1Full_ 
-                  + YiAlphaAverage*alpha1Empty_
-                  + YiAlphaAverageInterface*alpha1Interface_
+                    Yi/limitedAlpha1*isCellsFull_ 
+                  + YiAlphaAverage*isCellsEmpty_
+                  + YiAlphaAverageInterface*isCellsInterface_
                 );
 
                 // DEBUG
-                volScalarField::Internal massFieldADMAlpha = reaction_->Y()[i].internalField()*limitedAlpha1*alpha1Full_.mesh().V();
-                volScalarField::Internal massFieldADMcorrected = reaction_->Y()[i].internalField()*0.75*alpha1Full_.mesh().V();
-                volScalarField::Internal volumeFieldADM = limitedAlpha1*alpha1Full_.mesh().V();
+                volScalarField::Internal massFieldADMAlpha = YiADM.internalField()*limitedAlpha1*isCellsFull_.mesh().V();
+                volScalarField::Internal massFieldADMcorrected = YiADM.internalField()*0.75*isCellsFull_.mesh().V();
+                volScalarField::Internal volumeFieldADM = limitedAlpha1*isCellsFull_.mesh().V();
 
                 Info<< "DEBUG!!!" << endl;
-                volScalarField::Internal massFieldADM = reaction_->Y()[i].internalField();//*limitedAlpha1*alpha1Full_.mesh().V();
+                volScalarField::Internal massFieldADM = YiADM.internalField();//*limitedAlpha1*isCellsFull_.mesh().V();
                 Info<<   ">>> Sac mass (* alpha): " << gSum(massFieldADMAlpha)
                     << "\n>>> Sac mass (w/o alpha): " << gSum(massFieldADMcorrected)
                     << "\n>>> phase volume: " << gSum(volumeFieldADM) << endl;
