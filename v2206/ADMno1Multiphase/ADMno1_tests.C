@@ -701,52 +701,52 @@ Foam::ADMno1::ADMno1
         GPtrs_test.set
         (
             i,
-            new volScalarField
+            new dimensionedScalar
             (
-                IOobject
+                namesGaseous[i], 
+                dimPressure,
+                ADMno1Dict.lookupOrDefault
                 (
-                    namesGaseous[i] + "_test",
-                    mesh.time().timeName(),
-                    mesh,
-                    IOobject::NO_READ,
-                    IOobject::AUTO_WRITE
-                ),
-                mesh,
-                dimensionedScalar
-                (
-                    YPtrs_[0].dimensions(),
-                    Zero
+                    namesGaseous[i],
+                    benchmarkGaseous[i]
                 )
             )
         );
     }
 
-    GRPtrs_test.resize(namesGaseous.size());
+    // GPtrs_test
+    // (
+    //     "test",
+    //     dimPressure,
+    //     ADMno1Dict.lookupOrDefault("test", Zero)
+    // );
 
-    forAll(namesGaseous, i)
-    {
-        GRPtrs_test.set
-        (
-            i,
-            new volScalarField::Internal
-            (
-                IOobject
-                (
-                    IOobject::groupName("GRs_test_", Foam::name(i)),
-                    mesh.time().timeName(),
-                    mesh,
-                    IOobject::NO_READ,
-                    IOobject::NO_WRITE
-                ),
-                mesh,
-                dimensionedScalar
-                (
-                    dGPtrs_[0].dimensions(), 
-                    Zero
-                )
-            )
-        );
-    }
+    // GRPtrs_test.resize(namesGaseous.size());
+
+    // forAll(namesGaseous, i)
+    // {
+    //     GRPtrs_test.set
+    //     (
+    //         i,
+    //         new volScalarField::Internal
+    //         (
+    //             IOobject
+    //             (
+    //                 IOobject::groupName("GRs_test_", Foam::name(i)),
+    //                 mesh.time().timeName(),
+    //                 mesh,
+    //                 IOobject::NO_READ,
+    //                 IOobject::NO_WRITE
+    //             ),
+    //             mesh,
+    //             dimensionedScalar
+    //             (
+    //                 dGPtrs_[0].dimensions(), 
+    //                 Zero
+    //             )
+    //         )
+    //     );
+    // }
 
     vDotList_test.set
     (
@@ -917,89 +917,89 @@ void Foam::ADMno1::gasTest
         )
     );
 
-    // TODO!!!: This needs to be reviewed since now we have multiphase and due to the volume fraction 
-    //          of the gas phase, the concentration might differ from the origial calculation
-    //          Consult solvers like [icoReactingMultiphaseInterFoam]
-    // NOTE:    The concentration in the liquid phase doesn't not change with the phase vol fraction
-    //          
-    GRPtrs_test[0] = // <- in dimension of [kg * m-3 * s-1]
-    (                // TODO: may need correction from saturation pressure
-        para_.DTOS() * kLa_                                 // GPtrs is gas fraction based concentration for now !!
-      * (YPtrs_[7].internalField() - R_ * TopDummy_.internalField() * GPtrs_test[0].internalField() * KHh2_)
-    );
-
-    GRPtrs_test[1] = // <- in dimension of [kg * m-3 * s-1]
-    (                // TODO: may need correction from saturation pressure
-        para_.DTOS() * kLa_                                 // GPtrs is gas fraction based concentration for now !!
-      * (YPtrs_[8].internalField() - R_ * TopDummy_.internalField() * GPtrs_test[1].internalField() * KHch4_)
-    );
-
-    GRPtrs_test[2] = // <- in dimension of [mol * m-3 * s-1]
-    (                // TODO: may need correction from saturation pressure
-        para_.DTOS() * kLa_                                 // GPtrs is gas fraction based concentration for now !!
-      * (MPtrs_[0].internalField() - R_ * TopDummy_.internalField() * GPtrs_test[2].internalField() * KHco2_)
-    );// ^ Sco2 instead of SIC
-
+    // // TODO!!!: This needs to be reviewed since now we have multiphase and due to the volume fraction 
+    // //          of the gas phase, the concentration might differ from the origial calculation
+    // //          Consult solvers like [icoReactingMultiphaseInterFoam]
+    // // NOTE:    The concentration in the liquid phase doesn't not change with the phase vol fraction
+    // //          
     // GRPtrs_test[0] = // <- in dimension of [kg * m-3 * s-1]
     // (                // TODO: may need correction from saturation pressure
-    //     para_.DTOS() * kLa_
-    //   * (YPtrs_[7].internalField() - Ph2 * KHh2_)
+    //     para_.DTOS() * kLa_                                 // GPtrs is gas fraction based concentration for now !!
+    //   * (YPtrs_[7].internalField() - R_ * TopDummy_.internalField() * GPtrs_test[0].internalField() * KHh2_)
     // );
 
     // GRPtrs_test[1] = // <- in dimension of [kg * m-3 * s-1]
     // (                // TODO: may need correction from saturation pressure
-    //     para_.DTOS() * kLa_
-    //   * (YPtrs_[8].internalField() - Pch4 * KHch4_)
+    //     para_.DTOS() * kLa_                                 // GPtrs is gas fraction based concentration for now !!
+    //   * (YPtrs_[8].internalField() - R_ * TopDummy_.internalField() * GPtrs_test[1].internalField() * KHch4_)
     // );
 
     // GRPtrs_test[2] = // <- in dimension of [mol * m-3 * s-1]
     // (                // TODO: may need correction from saturation pressure
-    //     para_.DTOS() * kLa_                                    
-    //   * (MPtrs_[0].internalField() - Pco2 * KHco2_) 
+    //     para_.DTOS() * kLa_                                 // GPtrs is gas fraction based concentration for now !!
+    //   * (MPtrs_[0].internalField() - R_ * TopDummy_.internalField() * GPtrs_test[2].internalField() * KHco2_)
     // );// ^ Sco2 instead of SIC
 
+    // // GRPtrs_test[0] = // <- in dimension of [kg * m-3 * s-1]
+    // // (                // TODO: may need correction from saturation pressure
+    // //     para_.DTOS() * kLa_
+    // //   * (YPtrs_[7].internalField() - Ph2 * KHh2_)
+    // // );
 
-    // ==================================================================================
-    // field of cell volume for mesh 
-    const dimensionedScalar TSat(dimTemperature, 310);
-    const dimensionedScalar T0(dimTemperature, Zero);
-    scalarField volMeshField = GPtrs_[0].mesh().V().field();
+    // // GRPtrs_test[1] = // <- in dimension of [kg * m-3 * s-1]
+    // // (                // TODO: may need correction from saturation pressure
+    // //     para_.DTOS() * kLa_
+    // //   * (YPtrs_[8].internalField() - Pch4 * KHch4_)
+    // // );
 
-    // density of the bulk gas phase
-    // rho = mi / V = Mi * ni / V = M * P / (R * T)
-    // rhoGas_test.field() = 
-    // (
-    //     (Ptotal.field() / R_ * TopDummy_.internalField())
-    //   * (
-    //         (GPtrs_[0].internalField() / 8.0  + GPtrs_[1].internalField() / 4.0 + GPtrs_[2].internalField() * 0.044) 
-    //       / (GPtrs_[0].internalField() / 16.0  + GPtrs_[1].internalField() / 64.0 + GPtrs_[2].internalField())
-    //     )
+    // // GRPtrs_test[2] = // <- in dimension of [mol * m-3 * s-1]
+    // // (                // TODO: may need correction from saturation pressure
+    // //     para_.DTOS() * kLa_                                    
+    // //   * (MPtrs_[0].internalField() - Pco2 * KHco2_) 
+    // // );// ^ Sco2 instead of SIC
 
+
+    // // ==================================================================================
+    // // field of cell volume for mesh 
+    // const dimensionedScalar TSat(dimTemperature, 310);
+    // const dimensionedScalar T0(dimTemperature, Zero);
+    // scalarField volMeshField = GPtrs_[0].mesh().V().field();
+
+    // // density of the bulk gas phase
+    // // rho = mi / V = Mi * ni / V = M * P / (R * T)
+    // // rhoGas_test.field() = 
+    // // (
+    // //     (Ptotal.field() / R_ * TopDummy_.internalField())
+    // //   * (
+    // //         (GPtrs_[0].internalField() / 8.0  + GPtrs_[1].internalField() / 4.0 + GPtrs_[2].internalField() * 0.044) 
+    // //       / (GPtrs_[0].internalField() / 16.0  + GPtrs_[1].internalField() / 64.0 + GPtrs_[2].internalField())
+    // //     )
+
+    // // vDotList_test["gas"].field() = // <-- check dimensions for Ptotal for multiphase
+    // // (  
+    // //     // amplifier * max(T - TSat, T0) // DEBUG MULTI (K) just to trigger phase change on the bottom
+    // //     amplifier * (T - TSat) / TSat * pos(T - TSat)
+    // // );
+    // // );
+
+    // // TODO: maybe just return a single vDot instead Gh2, Gch4 and Gco2 sepreately?
+    // // (m3) [Pa * K-1 * m3 * mol-1] * K * Pa-1 * [mol * m-3 * s-1]
     // vDotList_test["gas"].field() = // <-- check dimensions for Ptotal for multiphase
     // (  
-    //     // amplifier * max(T - TSat, T0) // DEBUG MULTI (K) just to trigger phase change on the bottom
-    //     amplifier * (T - TSat) / TSat * pos(T - TSat)
-    // );
+    //     max
+    //     (
+    //         (/*volMeshField * */ R_ * TopDummy_.internalField() / Ptotal.field())                
+    //       * (
+    //             (para_.MTOm() * GRPtrs_test[2].field())
+    //           + (para_.MTOm() * GRPtrs_test[0].field() / 16.0) // converting from kgCOD/m3 to mol/m3 (1kg H2 needs 8kg O2)                       
+    //           + (para_.MTOm() * GRPtrs_test[1].field() / 64.0) // converting from kgCOD/m3 to mol/m3 (1kg CH4 needs 4kg O2)                  
+    //         )
+    //         ,
+    //         scalar(0)
+    //     ) * scalar(2e-5)
     // );
 
-    // TODO: maybe just return a single vDot instead Gh2, Gch4 and Gco2 sepreately?
-    // (m3) [Pa * K-1 * m3 * mol-1] * K * Pa-1 * [mol * m-3 * s-1]
-    vDotList_test["gas"].field() = // <-- check dimensions for Ptotal for multiphase
-    (  
-        max
-        (
-            (/*volMeshField * */ R_ * TopDummy_.internalField() / Ptotal.field())                
-          * (
-                (para_.MTOm() * GRPtrs_test[2].field())
-              + (para_.MTOm() * GRPtrs_test[0].field() / 16.0) // converting from kgCOD/m3 to mol/m3 (1kg H2 needs 8kg O2)                       
-              + (para_.MTOm() * GRPtrs_test[1].field() / 64.0) // converting from kgCOD/m3 to mol/m3 (1kg CH4 needs 4kg O2)                  
-            )
-            ,
-            scalar(0)
-        ) * scalar(2e-5)
-    );
-
-    vDotGas_test.field() = vDotList_test["gas"].field();
+    // vDotGas_test.field() = vDotList_test["gas"].field();
     
 
     // ==================================================================================
@@ -1282,8 +1282,8 @@ void Foam::ADMno1::correct
 }
 
 
-Foam::PtrList<Foam::volScalarField>& Foam::ADMno1::G_test()
-{
-    return GPtrs_test;
-}
+// Foam::PtrList<Foam::volScalarField>& Foam::ADMno1::G_test()
+// {
+//     return GPtrs_test;
+// }
 

@@ -465,6 +465,11 @@ public:
             //     Info<< "total gas generation rate [mol * m-3]: " << sumGasGen << endl;
             // }
         }
+
+        autoPtr<ADMno1> reaction()
+        {
+            return reaction_;
+        }
 };
 
 

@@ -367,13 +367,18 @@ public:
     // combustionModels/laminar.C -> template<class ReactionThermo>
                                   // Foam::tmp<Foam::fvScalarMatrix>
                                   // Foam::combustionModels::laminar<ReactionThermo>::R(volScalarField& Y) const
-
-
-
+                                  
 
     // testing ------------------------------------------------------------
-    // // Averaged concentrations of gaseous species (perfect mixture)
-    // PtrList<dimensionedScalar> GPtrs_test;
+    const scalarList benchmarkGaseous = 
+    {1.1032e-5, 1.6535, 13.5};
+
+    // Averaged concentrations of gaseous species (perfect mixture)
+    PtrList<dimensionedScalar> GPtrs_test;
+    // PtrList<dimensionedScalar> GRPtrs_test;
+
+    // PtrList<volScalarField> GPtrs_test;
+    // PtrList<volScalarField::Internal> GRPtrs_test;
 
     volScalarField rhoGas_test;
 
@@ -382,10 +387,6 @@ public:
     volScalarField Vfrac_test;
 
     volScalarField Vgas_test;
-
-    PtrList<volScalarField> GPtrs_test;
-
-    PtrList<volScalarField::Internal> GRPtrs_test;
 
     PtrListDictionary<volScalarField::Internal> vDotList_test;
     // PtrList<volScalarField::Internal> vDotPtrs_test;
@@ -439,14 +440,22 @@ public:
         const volScalarField& Ptotal
     );
 
-    //- Return GPtrs_test
-    PtrList<volScalarField>& G_test();
+    // //- Return GPtrs_test
+    // PtrList<volScalarField>& G_test();
+    PtrList<dimensionedScalar>& G_test()
+    {
+        return GPtrs_test;
+    };
 
-    //- Return dGPtrs_test
-    PtrList<volScalarField::Internal>& dG_test();
+    // //- Return dGPtrs_test
+    // PtrList<volScalarField::Internal>& dG_test();
+    PtrList<volScalarField::Internal>& dG_test()
+    {
+        return dGPtrs_;
+    };
 
-    //- Return components consumption rate matrix, i.e. source term.
-    tmp<fvScalarMatrix> RG_test(label i) const;
+    // //- Return components consumption rate matrix, i.e. source term.
+    // tmp<fvScalarMatrix> RG_test(label i) const;
 
     //- Return Henry's constant
     // TODO: maybe return PtrList<scalar> instead?

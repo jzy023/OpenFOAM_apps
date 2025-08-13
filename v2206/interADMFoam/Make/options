@@ -2,7 +2,7 @@ VoF = ../multiphaseOFSolvers/VoF
 
 EXE_INC = \
     -I$(VoF) \
-    -I../ADMno1/lnInclude \
+    -I../ADMno1Multiphase/lnInclude \
 	-I./admInterfaceProperties/lnInclude \
 	-I./admMixture/lnInclude \
     -I$(LIB_SRC)/finiteVolume/lnInclude \
@@ -19,7 +19,7 @@ EXE_INC = \
 
 EXE_LIBS = \
     -L$(FOAM_USER_LIBBIN) \
-    -lADM \
+    -lADMulti \
 	-ladmInterfaceProperties \
 	-ladmMixture \
     -lfiniteVolume \

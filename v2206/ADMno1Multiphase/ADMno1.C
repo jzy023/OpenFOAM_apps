@@ -721,11 +721,18 @@ void Foam::ADMno1::gasPressure()
     );
 
     Ph2o.field() = Pvap_ * exp(5290.0 * fac_ * R_);
+    
     Pgas_.field() = 
     (
         Ph2o + R_ * TopDummy_
-     * (para_.MTOm() * GPtrs_[0] / 16.0 + para_.MTOm() * GPtrs_[1] / 64.0 + GPtrs_[2])
+     * (para_.MTOm() * GPtrs_test[0] / 16.0 + para_.MTOm() * GPtrs_test[1] / 64.0 + GPtrs_test[2])
     );
+
+    // Pgas_.field() = 
+    // (
+    //     Ph2o + R_ * TopDummy_
+    //  * (para_.MTOm() * GPtrs_[0] / 16.0 + para_.MTOm() * GPtrs_[1] / 64.0 + GPtrs_[2])
+    // );
 
     // in multiphase gas calculation: Ptotal is directly taken from the fluid calcualtion
     //                                GPtrs_[i] (kg COD/m3) are used to find the mole of each gas
@@ -739,20 +746,38 @@ void Foam::ADMno1::gasPhaseRate()
     GRPtrs_[0] = 
     (   // <-- kg COD m-3
         para_.DTOS() * kLa_ 
-      * (YPtrs_[7].internalField() - R_ * TopDummy_.internalField() * GPtrs_[0].internalField() * KHh2_)
+      * (YPtrs_[7].internalField() - R_ * TopDummy_.internalField() * GPtrs_test[0] * KHh2_)
     );
 
     GRPtrs_[1] = 
     (   // <-- kg COD m-3
         para_.DTOS() * kLa_ 
-      * (YPtrs_[8].internalField() - R_ * TopDummy_.internalField() * GPtrs_[1].internalField() * KHch4_)
+      * (YPtrs_[8].internalField() - R_ * TopDummy_.internalField() * GPtrs_test[1] * KHch4_)
     );
 
     GRPtrs_[2] = 
     (   // <-- mol COD m-3
         para_.DTOS() * kLa_ // Sco2 instead of SIC
-      * (MPtrs_[0].internalField() - R_ * TopDummy_.internalField() * GPtrs_[2].internalField() * KHco2_)
+      * (MPtrs_[0].internalField() - R_ * TopDummy_.internalField() * GPtrs_test[2] * KHco2_)
     );
+
+    // GRPtrs_[0] = 
+    // (   // <-- kg COD m-3
+    //     para_.DTOS() * kLa_ 
+    //   * (YPtrs_[7].internalField() - R_ * TopDummy_.internalField() * GPtrs_[0].internalField() * KHh2_)
+    // );
+
+    // GRPtrs_[1] = 
+    // (   // <-- kg COD m-3
+    //     para_.DTOS() * kLa_ 
+    //   * (YPtrs_[8].internalField() - R_ * TopDummy_.internalField() * GPtrs_[1].internalField() * KHch4_)
+    // );
+
+    // GRPtrs_[2] = 
+    // (   // <-- mol COD m-3
+    //     para_.DTOS() * kLa_ // Sco2 instead of SIC
+    //   * (MPtrs_[0].internalField() - R_ * TopDummy_.internalField() * GPtrs_[2].internalField() * KHco2_)
+    // );
 }
 
 
@@ -804,22 +829,40 @@ void Foam::ADMno1::gasSourceRate()
     // Info<< "DEBUG: Pgas: " << max(Pgas_.field()) << endl;
     // Info<< "DEBUG: qGas: " << max(qGasLocal.field() / (para_.DTOS() * (volMeshField / (Vgas_ + Vliq_).value()))) << endl;
 
+    // dGPtrs_[0].field() = 
+    // (
+    //     (GRPtrs_[0].field() * volLiq / volGas) 
+    //   - (GPtrs_[0].field() * qGasLocal.field() / volGas)
+    // );
+
+    // dGPtrs_[1].field() = 
+    // (
+    //     (GRPtrs_[1].field() * volLiq / volGas) 
+    //   - (GPtrs_[1].field() * qGasLocal.field() / volGas)
+    // );
+
+    // dGPtrs_[2].field() = 
+    // (
+    //     (GRPtrs_[2].field() * volLiq / volGas) 
+    //   - (GPtrs_[2].field() * qGasLocal.field() / volGas)
+    // );
+
     dGPtrs_[0].field() = 
     (
-        (GRPtrs_[0].field() * volLiq / volGas) 
-      - (GPtrs_[0].field() * qGasLocal.field() / volGas)
+        (GRPtrs_[0].field() * volLiq / volGas)               // <-- multiphase mass transfer
+      - (GPtrs_test[0].value() * qGasLocal.field() / volGas) // <-- gas released from chamber
     );
 
     dGPtrs_[1].field() = 
     (
-        (GRPtrs_[1].field() * volLiq / volGas) 
-      - (GPtrs_[1].field() * qGasLocal.field() / volGas)
+        (GRPtrs_[1].field() * volLiq / volGas)               // <-- multiphase mass transfer
+      - (GPtrs_test[1].value() * qGasLocal.field() / volGas) // <-- gas released from chamber
     );
 
     dGPtrs_[2].field() = 
     (
-        (GRPtrs_[2].field() * volLiq / volGas) 
-      - (GPtrs_[2].field() * qGasLocal.field() / volGas)
+        (GRPtrs_[2].field() * volLiq / volGas)               // <-- multiphase mass transfer
+      - (GPtrs_test[2].value() * qGasLocal.field() / volGas) // <-- gas released from chamber
     );
 };
 
@@ -1210,6 +1253,7 @@ void Foam::ADMno1::dYUpdate
     dIOPtrs_[1] = para_.DTOS() * (Qin_/Vliq_) * (para_.INFLOW(25) - IOPtrs_[1]);  // San
 
     //- calculate with STOI and gas transer
+    // TODO: fix with (isCellsInterface_ + (1/alphaW_)*isCellsActWall_)?
     dYPtrs_[8] -= GRPtrs_[1]; // Sch4 - Gch4
     dYPtrs_[9] -= GRPtrs_[2]; // SIC - Gco2
 }
