@@ -123,6 +123,10 @@ int main(int argc, char *argv[])
 
         Info<< "Time = " << runTime.timeName() << nl << endl;
 
+    // testing ------------------------------------------------------------
+        mixture->solveReaction(phi, Top);
+    // --------------------------------------------------------------------
+
         // --- Pressure-velocity PIMPLE corrector loop
         while (pimple.loop())
         {
@@ -168,14 +172,14 @@ int main(int argc, char *argv[])
             #include "alphaControls.H"
 
             // solve YiMules
-            mixture->solve(interface);
+            mixture->solvePhase(interface);
             
-            // #include "GeoChems/alphaEqnSubCycle.H"
+            // solve alphaEqns
             #include "admMixture/alphaEqnSubCycle.H"
 
+            // correct interface properties
             interface.correct();
             
-            // #include "GeoChems/UEqn.H"
             #include "admMixture/UEqn.H"
 
             // TODO: 
@@ -184,8 +188,6 @@ int main(int argc, char *argv[])
             // --- Pressure corrector loop
             while (pimple.correct())
             {
-
-                // #include "GeoChems/pEqn.H"
                 #include "admMixture/pEqn.H"
             }
 
@@ -201,7 +203,6 @@ int main(int argc, char *argv[])
 
         rho = alpha1*rho1 + alpha2*rho2;
 
-        // #include "GeoChems/admEqn.H"
         #include "admMixture/admEqn.H"  
 
         runTime.write();

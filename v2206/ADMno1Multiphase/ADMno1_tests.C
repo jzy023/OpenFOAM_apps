@@ -74,7 +74,8 @@ Foam::ADMno1::ADMno1
             mesh.time().timeName(),
             mesh,
             IOobject::NO_READ,
-            IOobject::AUTO_WRITE
+            IOobject::NO_WRITE
+            // IOobject::AUTO_WRITE
         ),
         mesh,
         dimensionedScalar
@@ -92,7 +93,8 @@ Foam::ADMno1::ADMno1
             mesh.time().timeName(),
             mesh,
             IOobject::NO_READ,
-            IOobject::AUTO_WRITE
+            IOobject::NO_WRITE
+            // IOobject::AUTO_WRITE
         ),
         mesh,
         dimensionedScalar
@@ -111,7 +113,8 @@ Foam::ADMno1::ADMno1
             mesh.time().timeName(),
             mesh,
             IOobject::NO_READ,
-            IOobject::AUTO_WRITE
+            IOobject::NO_WRITE
+            // IOobject::AUTO_WRITE
         ),
         mesh,
         dimensionedScalar
@@ -404,8 +407,7 @@ Foam::ADMno1::ADMno1
                     mesh.time().timeName(),
                     mesh,
                     IOobject::NO_READ,
-                    // IOobject::NO_WRITE
-                    IOobject::AUTO_WRITE
+                    IOobject::NO_WRITE
                 ),
                 mesh,
                 dimensionedScalar
@@ -704,7 +706,7 @@ Foam::ADMno1::ADMno1
             new dimensionedScalar
             (
                 namesGaseous[i], 
-                dimPressure,
+                GPtrs_[0].dimensions(),
                 ADMno1Dict.lookupOrDefault
                 (
                     namesGaseous[i],
@@ -760,7 +762,8 @@ Foam::ADMno1::ADMno1
                 mesh.time().timeName(),
                 mesh,
                 IOobject::NO_READ,
-                IOobject::AUTO_WRITE
+                IOobject::NO_WRITE
+                // IOobject::AUTO_WRITE
             ),
             mesh,
             dimensionedScalar
@@ -783,7 +786,8 @@ Foam::ADMno1::ADMno1
                 mesh.time().timeName(),
                 mesh,
                 IOobject::NO_READ,
-                IOobject::AUTO_WRITE
+                IOobject::NO_WRITE
+                // IOobject::AUTO_WRITE
             ),
             mesh,
             dimensionedScalar
@@ -1043,7 +1047,7 @@ void Foam::ADMno1::gasTest
 //- Functions for Sh2 calculations
 volScalarField::Internal Foam::ADMno1::fSh2
 (
-    const surfaceScalarField &flux,
+    const surfaceScalarField& phi,
     const volScalarField& alphaLiq, 
     volScalarField& Sh2Temp
 )
@@ -1082,8 +1086,8 @@ volScalarField::Internal Foam::ADMno1::fSh2
         IPtrs_[2] * IPtrs_[3] // Iphh2*IIN
     );
 
-    // volScalarField conv(fvc::div(flux, Sh2Temp));
-    // volScalarField conv(fvc::div(flux, Sh2Temp)) / Vcell;
+    // volScalarField conv(fvc::div(phi, Sh2Temp));
+    // volScalarField conv(fvc::div(phi, Sh2Temp)) / Vcell;
     volScalarField conv = para_.DTOS() * (Qin_/Vliq_) * (para_.INFLOW(7) - Sh2Temp);
     volScalarField::Internal GRSh2Temp = 
     (
@@ -1098,7 +1102,7 @@ volScalarField::Internal Foam::ADMno1::fSh2
 
 volScalarField::Internal Foam::ADMno1::dfSh2
 (
-    const surfaceScalarField &flux,
+    const surfaceScalarField& phi,
     const volScalarField& alphaLiq, 
     volScalarField& Sh2Temp
 )
@@ -1138,8 +1142,8 @@ volScalarField::Internal Foam::ADMno1::dfSh2
       / ((para_.KS().h2 + Sh2Temp.internalField()) * (para_.KS().h2 + Sh2Temp.internalField()))
     );
 
-    // volScalarField dConv(fvc::div(flux));
-    // volScalarField dConv(fvc::div(flux)) / Vcell;
+    // volScalarField dConv(fvc::div(phi));
+    // volScalarField dConv(fvc::div(phi)) / Vcell;
     dimensionedScalar dConv = - para_.DTOS() * (Qin_/Vliq_);
     dimensionedScalar dGRSh2Temp = para_.DTOS() * kLa_;
 
@@ -1150,7 +1154,7 @@ volScalarField::Internal Foam::ADMno1::dfSh2
 
 void Foam::ADMno1::calcSh2
 (
-    const surfaceScalarField &flux,
+    const surfaceScalarField& phi,
     const volScalarField& alphaLiq
 )
 {
@@ -1166,8 +1170,8 @@ void Foam::ADMno1::calcSh2
 
     do
     {
-        E.field() = fSh2(flux, x).field();
-        dE.field() = dfSh2(flux, x).field();
+        E.field() = fSh2(phi, x).field();
+        dE.field() = dfSh2(phi, x).field();
         x.field() = x.field() - E.field()/dE.field();
         // false check
         // if( min(x.field()) < 0 )
@@ -1203,7 +1207,7 @@ void Foam::ADMno1::calcSh2
 
 void Foam::ADMno1::dYUpdate
 (
-    const surfaceScalarField &flux,
+    const surfaceScalarField& phi,
     const volScalarField& alphaLiq
 )
 {
@@ -1235,50 +1239,50 @@ void Foam::ADMno1::dYUpdate
 
 void Foam::ADMno1::correct
 (
-    const surfaceScalarField& flux,
+    const surfaceScalarField& phi,
     const volScalarField& alphaLiq, 
     const volScalarField& alphaGas, 
     const volScalarField& T,
     const volScalarField& Ptotal
 )
 {
-    //- Calculate thermal factor and adjust parameters
-    // calcThermal(T); // DEBUG MULTI
+    // //- Calculate thermal factor and adjust parameters
+    // // calcThermal(T); // DEBUG MULTI
 
-    // testing <- not impacting the simulation for now
-    // gasTest(T, Ptotal);
-    gasTest
-    (
-        T, 
-        alphaLiq,
-        alphaGas, 
-        Ptotal
-    );
+    // // testing <- not impacting the simulation for now
+    // // gasTest(T, Ptotal);
+    // gasTest
+    // (
+    //     T, 
+    //     alphaLiq,
+    //     alphaGas, 
+    //     Ptotal
+    // );
 
-    //- Gas phase pressure
-    gasPressure();
+    // //- Gas phase pressure
+    // gasPressure();
 
-    //- Inhibition rates
-    inhibitions();
+    // //- Inhibition rates
+    // inhibitions();
 
-    //- calculate raction rates
-    kineticRate();
+    // //- calculate raction rates
+    // kineticRate();
 
-    //- calculate gas phase transfer rates
-    gasPhaseRate();
+    // //- calculate gas phase transfer rates
+    // gasPhaseRate();
 
-    //- calculate dY with STOI
-    // dYUpdate(flux, alphaLiq);
-    dYUpdate(flux);
+    // //- calculate dY with STOI
+    // // dYUpdate(phi, alphaLiq);
+    // dYUpdate(phi);
 
-    //- calculate gas exit rates
-    gasSourceRate();
+    // //- calculate gas exit rates
+    // gasSourceRate();
 
-    //- Acid-base calculations
-    calcShp();
+    // //- Acid-base calculations
+    // calcShp();
 
-    //- Sh2 calculations
-    calcSh2(flux);
+    // //- Sh2 calculations
+    // calcSh2(phi);
 }
 
 

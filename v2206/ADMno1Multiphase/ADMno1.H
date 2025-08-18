@@ -118,6 +118,7 @@ private:
     PtrList<volScalarField::Internal> dYPtrs_;
 
     //- List of pointers to the field of gas concentrations
+    // TODO: remove, now we use uniform dimenedScalars
     PtrList<volScalarField> GPtrs_;
 
     //- List of pointers to the field of gas concentrations 
@@ -174,7 +175,7 @@ private:
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
     //- Adjust for thermal condition
-    void calcThermal (const volScalarField& T);
+    void calcThermal(const volScalarField& T);
 
     //- Gas phase pressure
     void gasPressure();
@@ -183,7 +184,8 @@ private:
     void gasPhaseRate();
 
     //- Gas exit rates dG
-    void gasSourceRate();
+    // void gasSourceRate();
+    void gasSourceRate(const volScalarField& actCells);
 
     //- Calculate inhibition rates
     void inhibitions();
@@ -192,7 +194,7 @@ private:
     void kineticRate();
 
     //- Calculate derivative of species dY
-    void dYUpdate(const surfaceScalarField &flux);
+    void dYUpdate(const surfaceScalarField& phi);
 
     //- Calculate acid-base reactions (iteratively)
     volScalarField::Internal fShp
@@ -210,19 +212,19 @@ private:
     //- Calculate Sh2 (iteratively)
     volScalarField::Internal fSh2
     (
-        const surfaceScalarField &flux,
+        const surfaceScalarField& phi,
         volScalarField& Sh2Temp
     );
 
     volScalarField::Internal dfSh2
     (
-        const surfaceScalarField &flux,
+        const surfaceScalarField& phi,
         volScalarField& Sh2Temp
     );
 
     void calcSh2
     (
-        const surfaceScalarField &flux
+        const surfaceScalarField& phi
     );
     
 
@@ -345,7 +347,8 @@ public:
     //- Correct components consumption rate
     void correct
     (
-        const surfaceScalarField &flux,
+        const volScalarField& actCells,
+        const surfaceScalarField& phi,
         const volScalarField& T
     );
 
@@ -374,6 +377,7 @@ public:
     {1.1032e-5, 1.6535, 13.5};
 
     // Averaged concentrations of gaseous species (perfect mixture)
+    // TODO: use ScalarList?
     PtrList<dimensionedScalar> GPtrs_test;
     // PtrList<dimensionedScalar> GRPtrs_test;
 
@@ -398,34 +402,34 @@ public:
     //- Calculate derivative of species dY
     void dYUpdate
     (
-        const surfaceScalarField &flux,
+        const surfaceScalarField& phi,
         const volScalarField& alphaLiq
     );
 
     //- Calculate Sh2 (iteratively)
     volScalarField::Internal fSh2
     (
-        const surfaceScalarField &flux,
+        const surfaceScalarField& phi,
         const volScalarField& alphaLiq,
         volScalarField& Sh2Temp
     );
 
     volScalarField::Internal dfSh2
     (
-        const surfaceScalarField &flux,
+        const surfaceScalarField& phi,
         const volScalarField& alphaLiq,
         volScalarField& Sh2Temp
     );
 
     void calcSh2
     (
-        const surfaceScalarField &flux,
+        const surfaceScalarField& phi,
         const volScalarField& alphaLiq
     );
 
     void correct
     (
-        const surfaceScalarField &flux,
+        const surfaceScalarField& phi,
         const volScalarField& alphaLiq,
         const volScalarField& alphaGas, 
         const volScalarField& T,

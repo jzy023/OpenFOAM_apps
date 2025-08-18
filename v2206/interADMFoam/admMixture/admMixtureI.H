@@ -32,6 +32,13 @@ Foam::admMixture::alpha() const
 }
 
 
+inline const Foam::volScalarField&
+Foam::admMixture::actCells() const
+{
+    return isCellsAct_;
+}
+
+
 inline const Foam::surfaceScalarField&
 Foam::admMixture::DalphaS() const
 {
@@ -81,17 +88,17 @@ Foam::admMixture::phiHS() const
 // }
 
 
-inline Foam::PtrList<Foam::volScalarField>&
-Foam::admMixture::Si()
+inline Foam::PtrList<Foam::volScalarField::Internal>&
+Foam::admMixture::dSi()
 {
-    return reaction_->Y();
+    return reaction_->dY();
 }
 
 
-inline Foam::PtrList<Foam::volScalarField>&
-Foam::admMixture::Gi()
+inline Foam::PtrList<Foam::volScalarField::Internal>&
+Foam::admMixture::dGi()
 {
-    return reaction_->G();
+    return reaction_->dG();
 }
 
 

@@ -1,23 +1,35 @@
 {
     Info<< "ADM convection-diffusion calculation" << endl;
+
+    volScalarField limitedAlpha1
+    (
+        min(max(alpha1, scalar(0)), scalar(1))
+    );
+
+    // volScalarField limitedAlpha2
+    // (
+    //     min(max(alpha2, scalar(0)), scalar(1))
+    // );
     
     // Soluables
-    forAll(Si, i)
+    forAll(SiAlpha, i)
     {
-        volScalarField& Yi = Si[i];
+        // TODO: simplify?
+        volScalarField& YiAlpha = SiAlpha[i];
 
-        volScalarField SpY = (Yi - Yi.oldTime()) / runTime.deltaT();
+        volScalarField SpY = (YiAlpha - YiAlpha.oldTime()) / runTime.deltaT();
 
         while (pimple.correctNonOrthogonal())
         {
             //compute Y equation
             fvScalarMatrix YiEqn
             (
-                fvm::ddt(Yi)
-              + fvm::div(mixture->phiHS(),Yi,"div(phiH,Yi)")
-              - fvm::laplacian(mixture->DalphaS(),Yi)
+                fvm::ddt(YiAlpha)
+              + fvm::div(mixture->phiHS(),YiAlpha,"div(phiH,Yi)")
+              - fvm::laplacian(mixture->DalphaS(),YiAlpha)
              ==
                 SpY
+              + limitedAlpha1*mixture->dSi()[i]
             );
 
             //solve equations
@@ -27,72 +39,25 @@
             }
             else
             {
-                YiEqn.solve(mesh.solver("Yi"));
+                YiEqn.solve(mesh.solver("YiAlpha"));
             }
         }
-
-        // Info<< "Species concentration = "
-        // << Yi.weightedAverage(mesh.V()).value()
-        Info<< "Species concentration (sum) = "
-        << gSum(Yi.internalField())
-        << "  Min(" << Yi.name() << ") = " << gMin(Yi.internalField())
-        << "  Max(" << Yi.name() << ") = " << gMax(Yi.internalField())
-        << endl;
     }
 
-    // testing ------------------------------------------------------------
-    // TODO: maybe make a function mixture->calcReactionGas(runTime.deltaT());
-    //                                                      dimensionedScalar
-    PtrList<volScalarField::Internal>& dG = mixture->reaction()->dG_test();
-    forAll(dG, i)
-    {
-        mixture->reaction()->G_test()[i] += 
-        (
-            dG[i].weightedAverage(mesh.V()).value() * runTime.deltaT()
-        );
-    }
+    // Gaseous
+    mixture->updateReactionGas(runTime.deltaT());
 
-    // //calculate mass transfer flux
-    // mixture->limit();
+    // DEBUG
+    // forAll(SiAlpha, i)
+    // {
+    //     // TODO: simplify?
+    //     volScalarField& YiAlpha = SiAlpha[i];
 
-    // // Gaseous
-    // // forAll(Gi, i)
-    // // {
-    //     label i = 0;
+    //     Info<< YiAlpha.name() << " concentration (sum) = "
+    //         << gSum(YiAlpha.internalField())
+    //         << "  Min = " << gMin(YiAlpha.internalField())
+    //         << "  Max = " << gMax(YiAlpha.internalField())
+    //         << endl;
+    // }
 
-    //     volScalarField& Yi = Gi[i];
-
-    //     volScalarField SpY = (Yi - Yi.oldTime()) / runTime.deltaT();
-
-    //     while (pimple.correctNonOrthogonal())
-    //     {
-    //         //compute Y equation
-    //         fvScalarMatrix YiEqn
-    //         (
-    //             fvm::ddt(Yi)
-    //           + fvm::div(mixture->phiHS(),Yi,"div(phiH,Yi)")
-    //           - fvm::laplacian(mixture->DalphaS(),Yi)
-    //          ==
-    //             SpY
-    //         );
-
-    //         //solve equations
-    //         if (pimple.finalNonOrthogonalIter())
-    //         {
-    //             YiEqn.solve(mesh.solver("YiFinal"));
-    //         }
-    //         else
-    //         {
-    //             YiEqn.solve(mesh.solver("Yi"));
-    //         }
-    //     }
-
-    //     // Info<< "Species concentratio n = "
-    //     // << Yi.weightedAverage(mesh.V()).value()
-    //     // Info<< "Species concentration (sum) = "
-    //     // << gSum(Yi.internalField())
-    //     // << "  Min(" << Yi.name() << ") = " << gMin(Yi.internalField())
-    //     // << "  Max(" << Yi.name() << ") = " << gMax(Yi.internalField())
-    //     // << endl;
-    // // }
 }

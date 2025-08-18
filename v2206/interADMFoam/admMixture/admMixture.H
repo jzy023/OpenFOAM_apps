@@ -70,6 +70,9 @@ protected:
 
     // Protected data
 
+        //- ADMno1 reaction
+        autoPtr<ADMno1> reaction_;
+
         // //- Keep a reference to the transportProperties dictionary
         // const dictionary& transportPropertiesDict_;
 
@@ -101,16 +104,9 @@ protected:
 
         // testing ------------------------------------------------------------
 
-        //- ADMno1 reaction
-        autoPtr<ADMno1> reaction_;
-
         //- Phase corrected concentration
         PtrList<volScalarField> SiAlpha_;
         PtrList<volScalarField> GiAlpha_;
-
-        //- Cells marked as mainly fluid
-        volScalarField isCellsFull_;
-        volScalarField isCellsEmpty_;
 
         //- Volume fraction threshold to activate inter-phase mass transfer
         dimensionedScalar alphaInterface_;
@@ -118,11 +114,18 @@ protected:
         //- Name of patches to activate inter-phase mass transfer
         wordList actPatch_;
 
+        //- Cells marked as mainly fluid
+        volScalarField isCellsFull_;
+        volScalarField isCellsEmpty_;
+
         //- Cells marked as activated for inter-phase mass transfer due to interface
         volScalarField isCellsInterface_;
 
         //- Cells marked as activated for inter-phase mass transfer due to solid surface
         volScalarField isCellsActWall_;
+
+        //- Cells marked as activated for overall inter-phase mass transfer 
+        volScalarField isCellsAct_;
 
         //- Phase change ADMno1 
         volScalarField mDot_;
@@ -147,8 +150,8 @@ protected:
         //- No copy assignment
         void operator=(const admMixture&) = delete;
 
-        //- Find isCellsInterface_
-        void findCellsInterface();
+        //- Find isCellsAct_
+        void findCellAct();
         
         //- Find isCellsActWall_
         void findCellsActWall();
@@ -272,20 +275,30 @@ public:
         void limitAlpha();
 
         //- Solve mixture 
-        void solve
+        void solvePhase
         (
             const interfaceProperties& interface
         );
 
         //- Solve ADM reactions
-        void reaction
+        void solveReaction
         (
-            const volScalarField& Top,
-            const volScalarField& p
+            const surfaceScalarField &flux,
+            const volScalarField& Top
+            // const volScalarField& Top,
+            // const volScalarField& p
         );
 
-        //- Inline funcs
+        //- Update Gas Concentration
+        void updateReactionGas
+        (
+            const dimensionedScalar deltaT
+        );
+
+        //- Inline functions
         inline const volScalarField& alpha() const;
+
+        inline const volScalarField& actCells() const;
 
         inline const surfaceScalarField& DalphaS() const;
 
@@ -301,9 +314,9 @@ public:
 
         // inline const volScalarField& vDotAlphal() const;
 
-        inline PtrList<volScalarField>& Si();
+        inline PtrList<volScalarField::Internal>& dSi();
 
-        inline PtrList<volScalarField>& Gi();
+        inline PtrList<volScalarField::Internal>& dGi();
 
         inline PtrList<volScalarField>& SiAlpha();
 
@@ -395,15 +408,10 @@ public:
                 min(max(alpha1_, scalar(1e-16)), scalar(1))
             );
 
-            // forAll(SiAlpha_, i)
-            // {
-                // label i = 6;
-                // volScalarField& Yi = SiAlpha_[i];
-                // volScalarField& YiADM = reaction_->Y()[i];
-
-                label i = 0;
-                volScalarField& Yi = GiAlpha_[i];
-                volScalarField& YiADM = reaction_->G()[i];
+            forAll(SiAlpha_, i)
+            {
+                volScalarField& Yi = SiAlpha_[i];
+                volScalarField& YiADM = reaction_->Y()[i];
 
                 isCellsEmpty_ = min(zeroField(), limitedAlpha1 - alpha00)/(limitedAlpha1 - alpha00);
                 isCellsFull_ = max(zeroField(), limitedAlpha1 - (1.0 - alphaInterface_))/(limitedAlpha1 - (1.0 - alphaInterface_));
@@ -443,12 +451,12 @@ public:
                 volScalarField::Internal massFieldADMcorrected = YiADM.internalField()*0.75*isCellsFull_.mesh().V();
                 volScalarField::Internal volumeFieldADM = limitedAlpha1*isCellsFull_.mesh().V();
 
-                Info<< "DEBUG!!!" << endl;
-                volScalarField::Internal massFieldADM = YiADM.internalField();//*limitedAlpha1*isCellsFull_.mesh().V();
-                Info<<   ">>> Sac mass (* alpha): " << gSum(massFieldADMAlpha)
-                    << "\n>>> Sac mass (w/o alpha): " << gSum(massFieldADMcorrected)
-                    << "\n>>> phase volume: " << gSum(volumeFieldADM) << endl;
-            // }
+                // Info<< "DEBUG!!!" << endl;
+                // volScalarField::Internal massFieldADM = YiADM.internalField();//*limitedAlpha1*isCellsFull_.mesh().V();
+                // Info<<   ">>> Sac mass (* alpha): " << gSum(massFieldADMAlpha)
+                //     << "\n>>> Sac mass (w/o alpha): " << gSum(massFieldADMcorrected)
+                //     << "\n>>> phase volume: " << gSum(volumeFieldADM) << endl;
+            }
         }
 
 
@@ -466,7 +474,8 @@ public:
             // }
         }
 
-        autoPtr<ADMno1> reaction()
+        // autoPtr<ADMno1> reaction()
+        ADMno1* reaction()
         {
             return reaction_;
         }

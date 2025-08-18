@@ -83,9 +83,9 @@ volScalarField Deff =
         }
     }
 
-    // Info<< "Species concentration = "
+    // Info<< Yi.name() << " concentration" << " = "
     // << Yi.weightedAverage(mesh.V()).value()
-    Info<< "Species concentration (sum) = "
+    Info<< Yi.name() << " concentration (sum) = "
     << gSum(Yi.internalField())
     << "  Min(" << Yi.name() << ") = " << gMin(Yi.internalField())
     << "  Max(" << Yi.name() << ") = " << gMax(Yi.internalField())

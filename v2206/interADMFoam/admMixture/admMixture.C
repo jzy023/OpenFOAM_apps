@@ -43,7 +43,7 @@ namespace Foam
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
 //- Find isCellsInterface_
-void Foam::admMixture::findCellsInterface()
+void Foam::admMixture::findCellAct()
 {
     isCellsInterface_ = 
     (
@@ -52,6 +52,8 @@ void Foam::admMixture::findCellsInterface()
     );
 
     isCellsInterface_ = 1.0 - isCellsInterface_;
+
+    isCellsAct_ = isCellsInterface_ + (1/alphaW_)*isCellsActWall_;
 }
 
         
@@ -192,69 +194,12 @@ void Foam::admMixture::speciesMules
     surfaceScalarField phic(mag(phi_ / U_.mesh().magSf()));
 
     surfaceScalarField phir(phic * interface.nHatf());
-
-    // TODO: move this to general solve() function
-    alpha2_ = 1 - alpha1_;
-
-    PtrList<volScalarField>& Si = SiAlpha_;
-    PtrList<volScalarField>& Gi = GiAlpha_;
     
-    // // Soluables
-    // forAll(Si, i)
-	// {
+    // Soluables
+    forAll(SiAlpha_, i)
+	{
 
-    //     volScalarField& Yi = Si[i];
-        
-    //     scalar maxYi = max(gMax(Yi), gMax(Yi.boundaryField())) + 1e-30;
-
-    //     // normalizing
-    //     Yi.oldTime() == Yi.oldTime() / maxYi;
-    //     Yi == Yi / maxYi;
-
-	// 	surfaceScalarField phiComp = fvc::flux
-    //     (
-    //         -fvc::flux(-phir, alpha2_, alpharScheme),
-    //         alpha1_,
-    //         alpharScheme
-    //     );
-
-    //     tmp<surfaceScalarField> tYiPhi1Un
-    //     (
-    //         fvc::flux
-    //         (
-    //             phi_,
-    //             Yi,
-    //             YiScheme
-    //         )
-	// 	  + phiComp * compressionCoeff(Yi)
-    //     );
-
-    //     {
-    //         surfaceScalarField YiPhi10 = tYiPhi1Un;
-
-    //         MULES::explicitSolve
-    //         (
-    //             geometricOneField(),
-    //             Yi,
-    //             phi_,
-    //             YiPhi10,
-    //             zeroField(),
-    //             zeroField(),
-    //             oneField(),
-    //             zeroField()
-    //         );
-    //     }
-
-    //     Yi.oldTime() == Yi.oldTime() * maxYi;
-    //     Yi == Yi * maxYi;
-    // }
-
-    // Gaseous
-    // forAll(Gi, i)
-	// {
-        label i = 0;
-
-        volScalarField& Yi = Gi[i];
+        volScalarField& Yi = SiAlpha_[i];
         
         scalar maxYi = max(gMax(Yi), gMax(Yi.boundaryField())) + 1e-30;
 
@@ -298,7 +243,7 @@ void Foam::admMixture::speciesMules
 
         Yi.oldTime() == Yi.oldTime() * maxYi;
         Yi == Yi * maxYi;
-    // }
+    }
 }
 
 
@@ -312,6 +257,10 @@ Foam::admMixture::admMixture
 )
 :
     incompressibleTwoPhaseMixture(U, phi),
+    reaction_
+    (
+        ADMno1::New(Top, U_.mesh())
+    ),
     alphaW_
     (
         "alphaW",
@@ -409,9 +358,19 @@ Foam::admMixture::admMixture
             SMALL
         )
     ),
-    reaction_
+    alphaInterface_
     (
-        ADMno1::New(Top, U_.mesh())
+        "interfaceThreshold",
+        dimless,
+        this->subDict("degassing").lookupOrDefault
+        (
+            "alphaInterface",
+            0.1
+        )
+    ),
+    actPatch_
+    (
+        this->subDict("degassing").subDict("walls").toc()
     ),
     isCellsFull_
     (
@@ -466,20 +425,6 @@ Foam::admMixture::admMixture
         )
     ),
     // ---------------------------------------------------------------
-    alphaInterface_
-    (
-        "interfaceThreshold",
-        dimless,
-        this->subDict("degassing").lookupOrDefault
-        (
-            "alphaInterface",
-            0.1
-        )
-    ),
-    actPatch_
-    (
-        this->subDict("degassing").subDict("walls").toc()
-    ),
     isCellsActWall_
     (
         IOobject
@@ -488,7 +433,24 @@ Foam::admMixture::admMixture
             alpha1_.time().timeName(),
             U_.mesh(),
             IOobject::NO_READ,
-            IOobject::AUTO_WRITE
+            IOobject::NO_WRITE
+        ),
+        U_.mesh(),
+        dimensionedScalar
+        (
+            dimless,
+            Zero
+        )
+    ),
+    isCellsAct_
+    (
+        IOobject
+        (
+            "isCellsAct_",
+            alpha1_.time().timeName(),
+            U_.mesh(),
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
         ),
         U_.mesh(),
         dimensionedScalar
@@ -505,7 +467,7 @@ Foam::admMixture::admMixture
             alpha1_.time().timeName(),
 			U_.mesh(),
 			IOobject::NO_READ,
-			IOobject::AUTO_WRITE
+			IOobject::NO_WRITE
 		),
 		U_.mesh(),
 		dimensionedScalar
@@ -523,7 +485,8 @@ Foam::admMixture::admMixture
             alpha1_.time().timeName(),
 			U_.mesh(),
 			IOobject::NO_READ,
-			IOobject::AUTO_WRITE
+			IOobject::NO_WRITE
+            // IOobject::AUTO_WRITE
 		),
 		U_.mesh(),
 		dimensionedScalar
@@ -541,7 +504,8 @@ Foam::admMixture::admMixture
             alpha1_.time().timeName(),
 			U_.mesh(),
 			IOobject::NO_READ,
-			IOobject::AUTO_WRITE
+			IOobject::NO_WRITE
+            // IOobject::AUTO_WRITE
 		),
 		U_.mesh(),
 		dimensionedScalar
@@ -559,7 +523,8 @@ Foam::admMixture::admMixture
             alpha1_.time().timeName(),
 			U_.mesh(),
 			IOobject::NO_READ,
-			IOobject::AUTO_WRITE
+			IOobject::NO_WRITE
+            // IOobject::AUTO_WRITE
 		),
 		U_.mesh(),
 		dimensionedScalar
@@ -697,8 +662,8 @@ Foam::admMixture::admMixture
     // testing
     limitAlpha();
 
-    // // initializing Si and Gi for ADMno1
-    // speciesADMCorrect();
+    // initializing Si and Gi for ADMno1
+    speciesADMCorrect();
 
     // marking inter-phase mass transfer surfaces
     findCellsActWall();
@@ -713,94 +678,6 @@ Foam::admMixture::admMixture
 
 // * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * * //
 
-void Foam::admMixture::limit()
-{
-    // Calculate mass transfer flux ----------------------------------------------
-    // Info<< "correcting Yi" << endl;
-    // TODO:
-    label i = 6;
-    volScalarField& Yi = reaction_->Y()[i];
-
-    //calculate alpha downwind
-    surfaceScalarField fluxDir = fvc::snGrad(alpha1_)* U_.mesh().magSf();
-    surfaceScalarField alphaDown = downwind<scalar>(U_.mesh(),fluxDir).interpolate(alpha1_);
-
-    // Re-initialize transfer flux
-    phiD_ = 0 * phiD_;
-
-    // if (phiHScheme_ == "Gauss upwind")
-    // {
-    // 	forAll(species_, i)
-    // 	{
-    // 		phiD_+=Mw_[i]*
-    // 			 (
-    // 			 	DmY(i)*fvc::snGrad(Yi)*mesh.magSf()
-    // 	           -fvc::flux(phiHUp(i),Yi,"div(phiHS,Yi)")
-    // 	           -fvc::flux(phiHDown(i),Yi,"div(phiHS,Yi)")
-    // 			 );
-    // 	}
-    // }
-    // else if (phiHScheme_ == "Gauss linear")
-    // {
-    	// forAll(species_, i)
-    	// {
-            phiD_ += // Mw_*
-            (
-                D1Eff_ * fvc::snGrad(Yi) * U_.mesh().magSf()
-              - fvc::flux(phiHS_, Yi, "div(phiH,Yi)")
-            );
-    	// }
-    // }
-    // else
-    // {
-    //     Info<< "div(phiHS,Yi) should be equal to Gauss linear or Gauss upwind"
-    // 	<< endl
-    // 	<< abort(FatalError);
-    // }
-
-    // Compute flux
-    Mflux_ = fvc::div(phiD_ * alphaDown) - alpha1_ * fvc::div(phiD_);
-
-    // alpha2_ = 1 - alpha1_;
-
-    // compute Yi1 and Yi2
-    // forAll(species_, i)
-    // {
-    //     volScalarField& Yi = Yi;
-        // volScalarField& Y1i = phase1SpeciesMixture_.Y(i);
-        // volScalarField& Y2i = phase2SpeciesMixture_.Y(i);
-        // dimensionedScalar HYi = HY_[i];
-        volScalarField Y1i = Yi / (alpha1_ + H_*(1 - alpha1_));
-        volScalarField Y2i = H_ * Yi / (alpha1_ + H_*(1 - alpha1_));
-    // }
-
-    // // set saturation
-    // phase1SpeciesMixture_.setSaturation(alpha1);
-    // phase2SpeciesMixture_.setSaturation(alpha2);
-
-    // // correct each phase
-    // phase1SpeciesMixture_.correct();
-    // phase2SpeciesMixture_.correct();
-
-    // compute Yi from Y1i and Y2i
-    // forAll(species_, i)
-    // {
-        // volScalarField& Yi = Yi;
-        // volScalarField& Y1i = phase1SpeciesMixture_.Y(i);
-        // volScalarField& Y2i = phase2SpeciesMixture_.Y(i);
-        Yi = Y1i*alpha1_ + Y2i*(1 - alpha1_);
-    // }
-
-    // // DEBUG
-    // Info<< "Yi correction: max(Mflux) = "
-    //     << gMax(Mflux_.internalField())
-    //     << "  Min(" << Yi.name() << ") = " << gMin(Yi.internalField())
-    //     << "  Max(" << Yi.name() << ") = " << gMax(Yi.internalField())
-    //     << "  Species concentration (sum) = "<< gSum(Yi.internalField())
-    //     << endl;
-};
-
-
 // Use this to log phase volume corrected generation rate
 // TODO: make for Gh2, Gco2 and Gch4
 const Foam::volScalarField&
@@ -811,7 +688,8 @@ Foam::admMixture::mDot()
         min(max(alpha1_, scalar(0)), scalar(1))
     );
 
-    mDot_ = limitedAlpha1*(-mDotTest_)*(isCellsInterface_ + (1/alphaW_)*isCellsActWall_);
+    // mDot_ = limitedAlpha1*(-mDotTest_)*(isCellsInterface_ + (1/alphaW_)*isCellsActWall_);
+    mDot_ = limitedAlpha1*(-mDotTest_)*isCellsAct_;
 
     return mDot_;
 }
@@ -822,7 +700,8 @@ Foam::admMixture::mDot()
 const Foam::volScalarField&
 Foam::admMixture::mDotAlphal()
 {
-    mDotAlphal_ = (-mDotTest_)*(isCellsInterface_ + (1/alphaW_)*isCellsActWall_);
+    // mDotAlphal_ = (-mDotTest_)*(isCellsInterface_ + (1/alphaW_)*isCellsActWall_);
+    mDotAlphal_ = (-mDotTest_)*isCellsAct_;
      
     return mDotAlphal_;
 }
@@ -875,43 +754,76 @@ void Foam::admMixture::limitAlpha()
 }
 
 
-void Foam::admMixture::solve
+void Foam::admMixture::solvePhase
 (
     const interfaceProperties& interface
 )
 {
+    alpha2_ = 1 - alpha1_;
+
     // // DEBUG
     // Info<< ">>> testing admMixture::solve()" << endl;
-    findCellsInterface();
-    
-    // speciesAlphaCorrect();
 
+    findCellAct();
+    
     massTransferCoeffs();
 
     speciesMules(interface);
 
-    // speciesADMCorrect();
+    speciesADMCorrect();
+
+    // speciesAlphaCorrect();
 
     // printGasGenRate();
 }
 
 
-void Foam::admMixture::reaction
+void Foam::admMixture::solveReaction
 (
-    const volScalarField& Top,
-    const volScalarField& p
+    const surfaceScalarField& phi,
+    const volScalarField& Top
+    // const volScalarField& Top,
+    // const volScalarField& p
 )
 {
     reaction_->clear();
 
     reaction_->correct
     (
-        this->phi_,
-        this->alpha1_,
-        this->alpha2_,
-        Top,
-        p
+        isCellsAct_,
+        phi,
+        Top
     );
+
+    // reaction_->correct
+    // (
+    //     this->phi_,
+    //     this->alpha1_,
+    //     this->alpha2_,
+    //     Top,
+    //     p
+    // );
+}
+
+
+void Foam::admMixture::updateReactionGas
+(
+    const dimensionedScalar deltaT
+)
+{
+    PtrList<volScalarField::Internal>& dG = reaction_->dG_test();
+    forAll(dG, i)
+    {
+        reaction_->G_test()[i] += 
+        (
+            dG[i].weightedAverage(U_.mesh().V()) * deltaT
+        );
+
+        GiAlpha_[i] = this->alpha2() * reaction_->G_test()[i];
+
+        Info<< reaction_->G_test()[i].name() << " concentration = "
+            << reaction_->G_test()[i].value() << endl;
+    }
 }
 
 
@@ -954,5 +866,92 @@ void Foam::admMixture::reaction
 //     return false;
 // }
 
+
+// void Foam::admMixture::limit()
+// {
+//     // Calculate mass transfer flux ----------------------------------------------
+//     // Info<< "correcting Yi" << endl;
+//     // TODO:
+//     label i = 6;
+//     volScalarField& Yi = reaction_->Y()[i];
+
+//     //calculate alpha downwind
+//     surfaceScalarField fluxDir = fvc::snGrad(alpha1_)* U_.mesh().magSf();
+//     surfaceScalarField alphaDown = downwind<scalar>(U_.mesh(),fluxDir).interpolate(alpha1_);
+
+//     // Re-initialize transfer flux
+//     phiD_ = 0 * phiD_;
+
+//     // if (phiHScheme_ == "Gauss upwind")
+//     // {
+//     // 	forAll(species_, i)
+//     // 	{
+//     // 		phiD_+=Mw_[i]*
+//     // 			 (
+//     // 			 	DmY(i)*fvc::snGrad(Yi)*mesh.magSf()
+//     // 	           -fvc::flux(phiHUp(i),Yi,"div(phiHS,Yi)")
+//     // 	           -fvc::flux(phiHDown(i),Yi,"div(phiHS,Yi)")
+//     // 			 );
+//     // 	}
+//     // }
+//     // else if (phiHScheme_ == "Gauss linear")
+//     // {
+//     	// forAll(species_, i)
+//     	// {
+//             phiD_ += // Mw_*
+//             (
+//                 D1Eff_ * fvc::snGrad(Yi) * U_.mesh().magSf()
+//               - fvc::flux(phiHS_, Yi, "div(phiH,Yi)")
+//             );
+//     	// }
+//     // }
+//     // else
+//     // {
+//     //     Info<< "div(phiHS,Yi) should be equal to Gauss linear or Gauss upwind"
+//     // 	<< endl
+//     // 	<< abort(FatalError);
+//     // }
+
+//     // Compute flux
+//     Mflux_ = fvc::div(phiD_ * alphaDown) - alpha1_ * fvc::div(phiD_);
+
+//     // alpha2_ = 1 - alpha1_;
+
+//     // compute Yi1 and Yi2
+//     // forAll(species_, i)
+//     // {
+//     //     volScalarField& Yi = Yi;
+//         // volScalarField& Y1i = phase1SpeciesMixture_.Y(i);
+//         // volScalarField& Y2i = phase2SpeciesMixture_.Y(i);
+//         // dimensionedScalar HYi = HY_[i];
+//         volScalarField Y1i = Yi / (alpha1_ + H_*(1 - alpha1_));
+//         volScalarField Y2i = H_ * Yi / (alpha1_ + H_*(1 - alpha1_));
+//     // }
+
+//     // // set saturation
+//     // phase1SpeciesMixture_.setSaturation(alpha1);
+//     // phase2SpeciesMixture_.setSaturation(alpha2);
+
+//     // // correct each phase
+//     // phase1SpeciesMixture_.correct();
+//     // phase2SpeciesMixture_.correct();
+
+//     // compute Yi from Y1i and Y2i
+//     // forAll(species_, i)
+//     // {
+//         // volScalarField& Yi = Yi;
+//         // volScalarField& Y1i = phase1SpeciesMixture_.Y(i);
+//         // volScalarField& Y2i = phase2SpeciesMixture_.Y(i);
+//         Yi = Y1i*alpha1_ + Y2i*(1 - alpha1_);
+//     // }
+
+//     // // DEBUG
+//     // Info<< "Yi correction: max(Mflux) = "
+//     //     << gMax(Mflux_.internalField())
+//     //     << "  Min(" << Yi.name() << ") = " << gMin(Yi.internalField())
+//     //     << "  Max(" << Yi.name() << ") = " << gMax(Yi.internalField())
+//     //     << "  Species concentration (sum) = "<< gSum(Yi.internalField())
+//     //     << endl;
+// };
 
 // ************************************************************************* //

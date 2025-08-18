@@ -781,7 +781,10 @@ void Foam::ADMno1::gasPhaseRate()
 }
 
 
-void Foam::ADMno1::gasSourceRate()
+void Foam::ADMno1::gasSourceRate
+(
+    const volScalarField& actCells
+)
 {
     // field of cell volume for mesh 
     scalarField volMeshField = GPtrs_[0].mesh().V().field();            
@@ -849,19 +852,19 @@ void Foam::ADMno1::gasSourceRate()
 
     dGPtrs_[0].field() = 
     (
-        (GRPtrs_[0].field() * volLiq / volGas)               // <-- multiphase mass transfer
+        (GRPtrs_[0].field() * actCells * volLiq / volGas)    // <-- multiphase mass transfer
       - (GPtrs_test[0].value() * qGasLocal.field() / volGas) // <-- gas released from chamber
     );
 
     dGPtrs_[1].field() = 
     (
-        (GRPtrs_[1].field() * volLiq / volGas)               // <-- multiphase mass transfer
+        (GRPtrs_[1].field() * actCells * volLiq / volGas)    // <-- multiphase mass transfer
       - (GPtrs_test[1].value() * qGasLocal.field() / volGas) // <-- gas released from chamber
     );
 
     dGPtrs_[2].field() = 
     (
-        (GRPtrs_[2].field() * volLiq / volGas)               // <-- multiphase mass transfer
+        (GRPtrs_[2].field() * actCells * volLiq / volGas)    // <-- multiphase mass transfer
       - (GPtrs_test[2].value() * qGasLocal.field() / volGas) // <-- gas released from chamber
     );
 };
@@ -870,7 +873,7 @@ void Foam::ADMno1::gasSourceRate()
 //- Functions for Sh2 calculations
 volScalarField::Internal Foam::ADMno1::fSh2
 (
-    const surfaceScalarField &flux,
+    const surfaceScalarField& phi,
     volScalarField& Sh2Temp
 )
 {
@@ -908,7 +911,7 @@ volScalarField::Internal Foam::ADMno1::fSh2
         IPtrs_[2] * IPtrs_[3] // Iphh2*IIN
     );
 
-    // volScalarField conv(fvc::div(flux, Sh2Temp));
+    // volScalarField conv(fvc::div(phi, Sh2Temp));
     volScalarField conv = para_.DTOS() * (Qin_/Vliq_) * (para_.INFLOW(7) - Sh2Temp);
     volScalarField::Internal GRSh2Temp = 
     (
@@ -923,7 +926,7 @@ volScalarField::Internal Foam::ADMno1::fSh2
 
 volScalarField::Internal Foam::ADMno1::dfSh2
 (
-    const surfaceScalarField &flux,
+    const surfaceScalarField& phi,
     volScalarField& Sh2Temp
 )
 {
@@ -962,7 +965,7 @@ volScalarField::Internal Foam::ADMno1::dfSh2
       / ((para_.KS().h2 + Sh2Temp.internalField()) * (para_.KS().h2 + Sh2Temp.internalField()))
     );
 
-    // volScalarField dConv(fvc::div(flux));
+    // volScalarField dConv(fvc::div(phi));
     dimensionedScalar dConv = - para_.DTOS() * (Qin_/Vliq_);
     dimensionedScalar dGRSh2Temp = para_.DTOS() * kLa_;
 
@@ -973,7 +976,7 @@ volScalarField::Internal Foam::ADMno1::dfSh2
 
 void Foam::ADMno1::calcSh2
 (
-    const surfaceScalarField &flux
+    const surfaceScalarField& phi
 )
 {
     //TODO: IO dictionary for these parameters
@@ -988,8 +991,8 @@ void Foam::ADMno1::calcSh2
 
     do
     {
-        E.field() = fSh2(flux, x).field();
-        dE.field() = dfSh2(flux, x).field();
+        E.field() = fSh2(phi, x).field();
+        dE.field() = dfSh2(phi, x).field();
         x.field() = x.field() - E.field()/dE.field();
         // false check
         // if( min(x.field()) < 0 )
@@ -1230,7 +1233,7 @@ void Foam::ADMno1::kineticRate()
 
 void Foam::ADMno1::dYUpdate
 (
-    const surfaceScalarField &flux
+    const surfaceScalarField& phi
 )
 {
     for (label j = 0; j < 7; j++)
@@ -1451,7 +1454,8 @@ void Foam::ADMno1::clear()
 
 void Foam::ADMno1::correct
 (
-    const surfaceScalarField &flux,
+    const volScalarField& actCells,
+    const surfaceScalarField& phi,
     const volScalarField& T
 )
 {
@@ -1471,16 +1475,16 @@ void Foam::ADMno1::correct
     gasPhaseRate();
 
     //- calculate dY with STOI
-    dYUpdate(flux);
+    dYUpdate(phi);
 
     //- calculate gas exit rates
-    gasSourceRate();
+    gasSourceRate(actCells);
 
     //- Acid-base calculations
     calcShp();
 
     //- Sh2 calculations
-    calcSh2(flux);
+    calcSh2(phi);
 }
 
 
