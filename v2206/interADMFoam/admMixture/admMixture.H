@@ -115,6 +115,7 @@ protected:
         wordList actPatch_;
 
         //- Cells marked as mainly fluid
+        // TODO: use Internal? and .ref()
         volScalarField isCellsFull_;
         volScalarField isCellsEmpty_;
 

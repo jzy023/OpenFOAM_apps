@@ -1,6 +1,6 @@
 ADMno1Parameter.C
 ADMno1Helpers.C
 ADMno1.C
-ADMno1_tests.C
+# ADMno1_tests.C
 
 LIB = $(FOAM_USER_LIBBIN)/libADMulti

@@ -662,8 +662,11 @@ Foam::admMixture::admMixture
     // testing
     limitAlpha();
 
-    // initializing Si and Gi for ADMno1
+    // initializing Si and Gi for ADMno1 reaction
     speciesADMCorrect();
+
+    // initializing ADMno1 reaction
+    reaction_->init(Top);
 
     // marking inter-phase mass transfer surfaces
     findCellsActWall();
@@ -811,18 +814,18 @@ void Foam::admMixture::updateReactionGas
     const dimensionedScalar deltaT
 )
 {
-    PtrList<volScalarField::Internal>& dG = reaction_->dG_test();
+    PtrList<volScalarField::Internal>& dG = reaction_->dG();
     forAll(dG, i)
     {
-        reaction_->G_test()[i] += 
+        reaction_->GiAve()[i] += 
         (
             dG[i].weightedAverage(U_.mesh().V()) * deltaT
         );
 
-        GiAlpha_[i] = this->alpha2() * reaction_->G_test()[i];
+        GiAlpha_[i] = this->alpha2() * reaction_->GiAve()[i];
 
-        Info<< reaction_->G_test()[i].name() << " concentration = "
-            << reaction_->G_test()[i].value() << endl;
+        Info<< reaction_->GiAve()[i].name() << " concentration = "
+            << reaction_->GiAve()[i].value() << endl;
     }
 }
 

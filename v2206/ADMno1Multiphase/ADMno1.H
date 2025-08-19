@@ -309,6 +309,20 @@ public:
     ~ADMno1() = default;
 
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+    
+    //- Initialization
+    void init(const volScalarField& T);
+    
+    //- Clear derivative pointer lists
+    void clear();
+
+    //- Correct components consumption rate
+    void correct
+    (
+        const volScalarField& actCells,
+        const surfaceScalarField& phi,
+        const volScalarField& T
+    );
 
     //- Inline Member Functions
     //- Return Schmidt number
@@ -327,6 +341,7 @@ public:
     inline PtrList<volScalarField::Internal>& dY();
 
     //- Return GPtrs_
+    // TODO: fix with GiAve()
     inline PtrList<volScalarField>& G();
 
     //- Return dGPtrs_
@@ -340,17 +355,6 @@ public:
 
     //- Return dIOPtrs_
     inline PtrList<volScalarField::Internal>& dIO();
-
-    //- Clear derivative pointer lists
-    void clear();
-
-    //- Correct components consumption rate
-    void correct
-    (
-        const volScalarField& actCells,
-        const surfaceScalarField& phi,
-        const volScalarField& T
-    );
 
     //- Return components consumption rate matrix, i.e. source term.
     tmp<fvScalarMatrix> R(label i) const;
@@ -378,88 +382,13 @@ public:
 
     // Averaged concentrations of gaseous species (perfect mixture)
     // TODO: use ScalarList?
-    PtrList<dimensionedScalar> GPtrs_test;
-    // PtrList<dimensionedScalar> GRPtrs_test;
+    PtrList<dimensionedScalar> GiAvePtrs_;
 
-    // PtrList<volScalarField> GPtrs_test;
-    // PtrList<volScalarField::Internal> GRPtrs_test;
-
-    volScalarField rhoGas_test;
-
-    volScalarField Ptotal_incell;
-
-    volScalarField Vfrac_test;
-
-    volScalarField Vgas_test;
-
-    PtrListDictionary<volScalarField::Internal> vDotList_test;
-    // PtrList<volScalarField::Internal> vDotPtrs_test;
-
-    volScalarField vDotGas_test;
-
-    scalar amplifier;
-
-    //- Calculate derivative of species dY
-    void dYUpdate
-    (
-        const surfaceScalarField& phi,
-        const volScalarField& alphaLiq
-    );
-
-    //- Calculate Sh2 (iteratively)
-    volScalarField::Internal fSh2
-    (
-        const surfaceScalarField& phi,
-        const volScalarField& alphaLiq,
-        volScalarField& Sh2Temp
-    );
-
-    volScalarField::Internal dfSh2
-    (
-        const surfaceScalarField& phi,
-        const volScalarField& alphaLiq,
-        volScalarField& Sh2Temp
-    );
-
-    void calcSh2
-    (
-        const surfaceScalarField& phi,
-        const volScalarField& alphaLiq
-    );
-
-    void correct
-    (
-        const surfaceScalarField& phi,
-        const volScalarField& alphaLiq,
-        const volScalarField& alphaGas, 
-        const volScalarField& T,
-        const volScalarField& Ptotal
-    );
-
-    void gasTest
-    (
-        const volScalarField& T, // DEBUG
-        const volScalarField& alphaLiq,
-        const volScalarField& alphaGas,
-        const volScalarField& Ptotal
-    );
-
-    // //- Return GPtrs_test
-    // PtrList<volScalarField>& G_test();
-    PtrList<dimensionedScalar>& G_test()
+    // //- Return GiAvePtrs_
+    PtrList<dimensionedScalar>& GiAve()
     {
-        return GPtrs_test;
+        return GiAvePtrs_;
     };
-
-    // //- Return dGPtrs_test
-    // PtrList<volScalarField::Internal>& dG_test();
-    PtrList<volScalarField::Internal>& dG_test()
-    {
-        return dGPtrs_;
-    };
-
-    // //- Return components consumption rate matrix, i.e. source term.
-    // tmp<fvScalarMatrix> RG_test(label i) const;
 
     //- Return Henry's constant
     // TODO: maybe return PtrList<scalar> instead?
@@ -477,6 +406,68 @@ public:
     {
         return KHco2_;
     };
+
+
+    // -------------------------- (ADMno1_test.C) -------------------------
+    // testing ------------------------------------------------------------ 
+    // PtrList<volScalarField> GPtrs_test;
+    // PtrList<volScalarField::Internal> GRPtrs_test;
+    // volScalarField rhoGas_test;
+    // volScalarField Ptotal_incell;
+    // volScalarField Vfrac_test;
+    // volScalarField Vgas_test;
+    // PtrListDictionary<volScalarField::Internal> vDotList_test;
+    // // PtrList<volScalarField::Internal> vDotPtrs_test;
+    // volScalarField vDotGas_test;
+    // scalar amplifier;
+
+    // PtrList<volScalarField>& G_test();
+    // PtrList<volScalarField::Internal>& dG_test();
+
+    // //- Calculate derivative of species dY
+    // void dYUpdate
+    // (
+    //     const surfaceScalarField& phi,
+    //     const volScalarField& alphaLiq
+    // );
+
+    // //- Calculate Sh2 (iteratively)
+    // volScalarField::Internal fSh2
+    // (
+    //     const surfaceScalarField& phi,
+    //     const volScalarField& alphaLiq,
+    //     volScalarField& Sh2Temp
+    // );
+
+    // volScalarField::Internal dfSh2
+    // (
+    //     const surfaceScalarField& phi,
+    //     const volScalarField& alphaLiq,
+    //     volScalarField& Sh2Temp
+    // );
+
+    // void calcSh2
+    // (
+    //     const surfaceScalarField& phi,
+    //     const volScalarField& alphaLiq
+    // );
+
+    // void correct
+    // (
+    //     const surfaceScalarField& phi,
+    //     const volScalarField& alphaLiq,
+    //     const volScalarField& alphaGas, 
+    //     const volScalarField& T,
+    //     const volScalarField& Ptotal
+    // );
+
+    // void gasTest
+    // (
+    //     const volScalarField& T, // DEBUG
+    //     const volScalarField& alphaLiq,
+    //     const volScalarField& alphaGas,
+    //     const volScalarField& Ptotal
+    // );
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
