@@ -33,9 +33,9 @@ Foam::admMixture::alpha() const
 
 
 inline const Foam::volScalarField&
-Foam::admMixture::actCells() const
+Foam::admMixture::kLaCells() const
 {
-    return isCellsAct_;
+    return kLaCells_;
 }
 
 

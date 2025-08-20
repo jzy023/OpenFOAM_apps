@@ -144,6 +144,7 @@ private:
     PtrList<volScalarField::Internal> KRPtrs_;
 
     //- List of pointers to gas trasfer rate
+    // TODO: chagne this to GRAve
     PtrList<volScalarField::Internal> GRPtrs_;
 
     //- Species names for electrolytes
@@ -181,11 +182,12 @@ private:
     void gasPressure();
 
     //- Gas phase transfer rate
-    void gasPhaseRate();
+    // void gasPhaseRate();
+    void gasPhaseRate(const volScalarField& kLaCells);
 
     //- Gas exit rates dG
-    // void gasSourceRate();
-    void gasSourceRate(const volScalarField& actCells);
+    void gasSourceRate();
+    // void gasSourceRate(const volScalarField& actCells);
 
     //- Calculate inhibition rates
     void inhibitions();
@@ -319,7 +321,9 @@ public:
     //- Correct components consumption rate
     void correct
     (
-        const volScalarField& actCells,
+        // const volScalarField& actCells,
+        // const dimensionedScalar& kLa,
+        const volScalarField& kLaCells,
         const surfaceScalarField& phi,
         const volScalarField& T
     );
@@ -341,7 +345,7 @@ public:
     inline PtrList<volScalarField::Internal>& dY();
 
     //- Return GPtrs_
-    // TODO: fix with GiAve()
+    // TODO: fix with GAve()
     inline PtrList<volScalarField>& G();
 
     //- Return dGPtrs_
@@ -381,13 +385,15 @@ public:
     {1.1032e-5, 1.6535, 13.5};
 
     // Averaged concentrations of gaseous species (perfect mixture)
-    // TODO: use ScalarList?
-    PtrList<dimensionedScalar> GiAvePtrs_;
+    PtrList<dimensionedScalar> GAvePtrs_;
 
-    // //- Return GiAvePtrs_
-    PtrList<dimensionedScalar>& GiAve()
+    // Averaged volumetric mass transfer rate of gaseous species (perfect mixture)
+    PtrList<dimensionedScalar> GRAvePtrs_;
+
+    // //- Return GAvePtrs_
+    PtrList<dimensionedScalar>& GAve()
     {
-        return GiAvePtrs_;
+        return GAvePtrs_;
     };
 
     //- Return Henry's constant
@@ -407,6 +413,10 @@ public:
         return KHco2_;
     };
 
+    inline const dimensionedScalar PgasAve()
+    {
+        return Pgas_.weightedAverage(Pgas_.mesh().V());
+    }
 
     // -------------------------- (ADMno1_test.C) -------------------------
     // testing ------------------------------------------------------------ 

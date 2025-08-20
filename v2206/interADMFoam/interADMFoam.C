@@ -125,6 +125,8 @@ int main(int argc, char *argv[])
 
     // testing ------------------------------------------------------------
         mixture->solveReaction(phi, Top);
+        // Info<< ">>> p_rgh: " << p_rgh.weightedAverage(p.mesh().V()) << "\n"
+        //     << ">>> p: "     << p.weightedAverage(p.mesh().V())     << endl;
     // --------------------------------------------------------------------
 
         // --- Pressure-velocity PIMPLE corrector loop

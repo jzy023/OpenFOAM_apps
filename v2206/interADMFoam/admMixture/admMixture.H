@@ -129,6 +129,8 @@ protected:
         volScalarField isCellsAct_;
 
         //- Phase change ADMno1 
+        volScalarField kLaCells_;
+
         volScalarField mDot_;
         volScalarField mDotAlphal_;
         volScalarField vDot_;
@@ -152,7 +154,7 @@ protected:
         void operator=(const admMixture&) = delete;
 
         //- Find isCellsAct_
-        void findCellAct();
+        void findCellActInterface();
         
         //- Find isCellsActWall_
         void findCellsActWall();
@@ -299,7 +301,7 @@ public:
         //- Inline functions
         inline const volScalarField& alpha() const;
 
-        inline const volScalarField& actCells() const;
+        inline const volScalarField& kLaCells() const;
 
         inline const surfaceScalarField& DalphaS() const;
 
