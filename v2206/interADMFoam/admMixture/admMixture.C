@@ -55,6 +55,7 @@ void Foam::admMixture::findCellActInterface()
 
     isCellsAct_ = isCellsInterface_ + isCellsActWall_;
     
+    // TODO: fix kLa for benchmark case? 
     // TODO: define a dictionary entry for alphaI
     scalar alphaI = 0.1;
     scalar alphaW = 0.1;
@@ -695,11 +696,11 @@ Foam::admMixture::admMixture
     // marking inter-phase mass transfer surfaces
     findCellsActWall();
 
-    // DEBUG
-    Info<< "H: "    << H_ 
-        << "\nDS: " << D1_
-        << "\nDG: " << D2_ 
-        << "\nmDotTest: " << mDotTest_ << endl;
+    // // DEBUG
+    // Info<< "H: "    << H_ 
+    //     << "\nDS: " << D1_
+    //     << "\nDG: " << D2_ 
+    //     << "\nmDotTest: " << mDotTest_ << endl;
 }
 
 

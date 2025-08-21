@@ -54,13 +54,11 @@ class ADMno1
 {
 
 private:
-    //- DEBUG
-    dimensionedScalar Qin_;
-    dimensionedScalar Vgas_;
-    dimensionedScalar Vliq_;
-
     //- ADM no1 parameters
     admPara para_;
+
+    //- Benchmark mode (Rosen and Jeppsson 2006)
+    bool isBenchmark_;
 
     //- Schmidt number
     scalar Sc_;
@@ -71,16 +69,21 @@ private:
     //- Gas constant
     scalar R_;
 
+    //- DEBUG
+    dimensionedScalar Qin_;  // benchmark purpose only
+    dimensionedScalar Vgas_; // dynamically calculated with alpha
+    dimensionedScalar Vliq_; // dynamically calculated with alpha
+    // TODO: this is only for benchmark case
+    //- Gas-Liquid volume fraction in tank 
+    dimensionedScalar Vfrac_;
+    //- Dimensionless gas outflow rate per pascal of presure difference
+    dimensionedScalar Qgas_;
+
     // Gas transfer rate coefficients [d-1]
     dimensionedScalar kLa_;
 
     //- Pipe resistance coefficient [m³d⁻¹Bar⁻¹]
-    // TODO: "pipe" DOES NOT EXIST in this case!!!
-    scalar KP_;
-
-    // TODO: this is only for benchmark case
-    //- Gas-Liquid volume fraction in tank 
-    scalar Vfrac_;
+    dimensionedScalar KP_;
 
     //- Vapour pressure of water [Pa]
     dimensionedScalar Pvap_; 
@@ -123,6 +126,7 @@ private:
 
     //- List of pointers to the field of gas concentrations 
     //  derivatives (source for local cell)
+    // TODO: remove, now we use uniform dimenedScalars
     PtrList<volScalarField::Internal> dGPtrs_;
 
     //- List of pointers to the field of medians concentrations
@@ -390,7 +394,10 @@ public:
     // Averaged volumetric mass transfer rate of gaseous species (perfect mixture)
     PtrList<dimensionedScalar> GRAvePtrs_;
 
-    // //- Return GAvePtrs_
+    //- List of pointers to the field of gas concentrations derivatives
+    PtrList<dimensionedScalar> dGAvePtrs_;
+
+    //- Return GAvePtrs_
     PtrList<dimensionedScalar>& GAve()
     {
         return GAvePtrs_;
@@ -416,6 +423,39 @@ public:
     inline const dimensionedScalar PgasAve()
     {
         return Pgas_.weightedAverage(Pgas_.mesh().V());
+    }
+
+    void isBenchmark()
+    {
+        // if benchmark case
+        if (isBenchmark_)
+        {
+            Info<< ">>> Benchmark case [Rose and Jeppsson, 2006]\n"<< endl;
+
+            Qin_.value() = 178.4674;
+            Vgas_.value() = 300;
+            Vliq_.value() = 3400;
+            Vfrac_ = Vgas_.value()/Vliq_.value();
+
+            // KP -> dimVolume/dimTime/dimPressure
+            KP_.value() = 5e4 / para_.BTOP();
+            Qgas_ = para_.DTOS() * KP_ / Vgas_;
+
+            return;
+        }
+
+        // if not benchmark case
+        Qin_.value() = 0.0;
+
+        // calculate with alpha
+        // Vfrac_ = Vgas_.value()/Vliq_.value();
+        // Vgas_.value() = 0.0;
+        // Vliq_.value() = 0.0;
+
+        // KP -> dimVolume/dimTime/dimPressure
+        KP_.value() = this->get<scalar>("Kpip");
+        // Qgas_ = para_.DTOS() * KP_ / Vgas_;
+        
     }
 
     // -------------------------- (ADMno1_test.C) -------------------------
