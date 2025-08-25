@@ -6,10 +6,6 @@
 
     tmp<surfaceScalarField> talphaPhi;
 
-    // const volScalarField vDotcAlphal = 0.0*mixture->vDotAlphal();
-    // const volScalarField vDotvAlphal = mixture->vDotAlphal();
-    // const volScalarField vDotvmcAlphal(vDotvAlphal - vDotcAlphal);
-
     const volScalarField& vDotAlphal = mixture->vDotAlphal();
 
     if (MULESCorr)
@@ -26,8 +22,6 @@
           - fvm::Sp(divU, alpha1)
           ==
             fvm::Sp(vDotAlphal, alpha1)
-        //     fvm::Sp(vDotvmcAlphal, alpha1)
-        //   + vDotcAlphal
         );
 
         alpha1Eqn.solve();
@@ -79,11 +73,6 @@
                     divU*(alpha10 - alpha100)
                   - vDotAlphal*alpha10
                 )(),
-                // vDotvmcAlphal,
-                // (
-                //     divU*(alpha10 - alpha100)
-                //   - vDotvmcAlphal*alpha10
-                // )(),
                 oneField(),
                 zeroField()
             );
@@ -109,8 +98,6 @@
                 talphaPhiCorr.ref(),
                 vDotAlphal,
                 (divU*alpha1)(),
-                // vDotvmcAlphal,
-                // (divU*alpha1 + vDotcAlphal)(),
                 oneField(),
                 zeroField()
             );
@@ -125,11 +112,6 @@
 
     // Cache alphaPhi
     alphaPhi10 = talphaPhi();
-
-    // testing
-    // limit alphas
-    // mixture->limitAlpha();
-
 
     Info<< "Liquid phase volume fraction = "
         << alpha1.weightedAverage(mesh.V()).value()

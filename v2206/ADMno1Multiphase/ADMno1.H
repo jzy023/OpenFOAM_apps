@@ -120,14 +120,14 @@ private:
     //  derivatives (source for local cell)
     PtrList<volScalarField::Internal> dYPtrs_;
 
-    //- List of pointers to the field of gas concentrations
-    // TODO: remove, now we use uniform dimenedScalars
-    PtrList<volScalarField> GPtrs_;
+    // Averaged concentrations of gaseous species (perfect mixture)
+    PtrList<dimensionedScalar> GAvePtrs_;
 
-    //- List of pointers to the field of gas concentrations 
-    //  derivatives (source for local cell)
-    // TODO: remove, now we use uniform dimenedScalars
-    PtrList<volScalarField::Internal> dGPtrs_;
+    // Averaged volumetric mass transfer rate of gaseous species (perfect mixture)
+    PtrList<dimensionedScalar> GRAvePtrs_;
+
+    //- List of pointers to the field of gas concentrations derivatives
+    PtrList<dimensionedScalar> dGAvePtrs_;
 
     //- List of pointers to the field of medians concentrations
     PtrList<volScalarField> MPtrs_;
@@ -146,10 +146,6 @@ private:
 
     //- List of pointers to kinetic rate per specie [kg/m3/s] and [mol/m3/s]
     PtrList<volScalarField::Internal> KRPtrs_;
-
-    //- List of pointers to gas trasfer rate
-    // TODO: chagne this to GRAve
-    PtrList<volScalarField::Internal> GRPtrs_;
 
     //- Species names for electrolytes
     const wordList namesElectrolytes = 
@@ -281,6 +277,10 @@ public:
     const wordList namesGaseous = 
           {"Gh2", "Gch4", "Gco2"};
 
+    //- Default gas concentration [Rose and Jeppsson, 2006]
+    const scalarList benchmarkGaseous = 
+    {1.1032e-5, 1.6535, 13.5};
+
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
 
@@ -348,12 +348,14 @@ public:
     //- Return dYPtrs_
     inline PtrList<volScalarField::Internal>& dY();
 
-    //- Return GPtrs_
-    // TODO: fix with GAve()
-    inline PtrList<volScalarField>& G();
+    //- Return GAvePtrs_
+    inline PtrList<dimensionedScalar>& GAve();
 
-    //- Return dGPtrs_
-    inline PtrList<volScalarField::Internal>& dG();
+    //- Return GRAvePtrs_
+    inline PtrList<dimensionedScalar>& GRAve();
+
+    //- Return dGAvePtrs_
+    inline PtrList<dimensionedScalar>& dGAve();
 
     //- Return MPtrs_
     inline PtrList<volScalarField>& M();
@@ -364,14 +366,14 @@ public:
     //- Return dIOPtrs_
     inline PtrList<volScalarField::Internal>& dIO();
 
-    //- Return components consumption rate matrix, i.e. source term.
-    tmp<fvScalarMatrix> R(label i) const;
+    // //- Return components consumption rate matrix, i.e. source term.
+    // tmp<fvScalarMatrix> R(label i) const;
 
-    //- Return components consumption rate matrix, i.e. source term.
-    tmp<fvScalarMatrix> RG(label i) const;
+    // //- Return components consumption rate matrix, i.e. source term.
+    // tmp<fvScalarMatrix> RG(label i) const;
     
-    //- Return components consumption rate matrix, i.e. source term.
-    tmp<fvScalarMatrix> RIO(label i) const;
+    // //- Return components consumption rate matrix, i.e. source term.
+    // tmp<fvScalarMatrix> RIO(label i) const;
    
     //- Return const access to the chemical source terms for specie, i
     // inline const volScalarField::Internal& RR ( const label i ) const;
@@ -385,24 +387,6 @@ public:
                                   
 
     // testing ------------------------------------------------------------
-    const scalarList benchmarkGaseous = 
-    {1.1032e-5, 1.6535, 13.5};
-
-    // Averaged concentrations of gaseous species (perfect mixture)
-    PtrList<dimensionedScalar> GAvePtrs_;
-
-    // Averaged volumetric mass transfer rate of gaseous species (perfect mixture)
-    PtrList<dimensionedScalar> GRAvePtrs_;
-
-    //- List of pointers to the field of gas concentrations derivatives
-    PtrList<dimensionedScalar> dGAvePtrs_;
-
-    //- Return GAvePtrs_
-    PtrList<dimensionedScalar>& GAve()
-    {
-        return GAvePtrs_;
-    };
-
     //- Return Henry's constant
     // TODO: maybe return PtrList<scalar> instead?
     inline volScalarField::Internal& KHh2()
@@ -423,7 +407,7 @@ public:
     inline const dimensionedScalar PgasAve()
     {
         return Pgas_.weightedAverage(Pgas_.mesh().V());
-    }
+    };
 
     void isBenchmark()
     {
@@ -457,67 +441,6 @@ public:
         // Qgas_ = para_.DTOS() * KP_ / Vgas_;
         
     }
-
-    // -------------------------- (ADMno1_test.C) -------------------------
-    // testing ------------------------------------------------------------ 
-    // PtrList<volScalarField> GPtrs_test;
-    // PtrList<volScalarField::Internal> GRPtrs_test;
-    // volScalarField rhoGas_test;
-    // volScalarField Ptotal_incell;
-    // volScalarField Vfrac_test;
-    // volScalarField Vgas_test;
-    // PtrListDictionary<volScalarField::Internal> vDotList_test;
-    // // PtrList<volScalarField::Internal> vDotPtrs_test;
-    // volScalarField vDotGas_test;
-    // scalar amplifier;
-
-    // PtrList<volScalarField>& G_test();
-    // PtrList<volScalarField::Internal>& dG_test();
-
-    // //- Calculate derivative of species dY
-    // void dYUpdate
-    // (
-    //     const surfaceScalarField& phi,
-    //     const volScalarField& alphaLiq
-    // );
-
-    // //- Calculate Sh2 (iteratively)
-    // volScalarField::Internal fSh2
-    // (
-    //     const surfaceScalarField& phi,
-    //     const volScalarField& alphaLiq,
-    //     volScalarField& Sh2Temp
-    // );
-
-    // volScalarField::Internal dfSh2
-    // (
-    //     const surfaceScalarField& phi,
-    //     const volScalarField& alphaLiq,
-    //     volScalarField& Sh2Temp
-    // );
-
-    // void calcSh2
-    // (
-    //     const surfaceScalarField& phi,
-    //     const volScalarField& alphaLiq
-    // );
-
-    // void correct
-    // (
-    //     const surfaceScalarField& phi,
-    //     const volScalarField& alphaLiq,
-    //     const volScalarField& alphaGas, 
-    //     const volScalarField& T,
-    //     const volScalarField& Ptotal
-    // );
-
-    // void gasTest
-    // (
-    //     const volScalarField& T, // DEBUG
-    //     const volScalarField& alphaLiq,
-    //     const volScalarField& alphaGas,
-    //     const volScalarField& Ptotal
-    // );
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

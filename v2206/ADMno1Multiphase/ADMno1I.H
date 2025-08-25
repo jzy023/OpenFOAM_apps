@@ -25,52 +25,68 @@ License
  
 \*---------------------------------------------------------------------------*/
 
-inline scalar Foam::ADMno1::Sc()
+inline scalar 
+Foam::ADMno1::Sc()
 {
     return Sc_;
 }
 
-inline scalar Foam::ADMno1::Sct()
+inline scalar 
+Foam::ADMno1::Sct()
 {
     return Sct_;
 }
 
-inline admPara* Foam::ADMno1::paraPtr()
+inline admPara* 
+Foam::ADMno1::paraPtr()
 {
     return &para_;
 }
 
-inline Foam::PtrList<Foam::volScalarField>& Foam::ADMno1::Y()
+inline Foam::PtrList<Foam::volScalarField>& 
+Foam::ADMno1::Y()
 {
     return YPtrs_;
 }
 
-inline Foam::PtrList<Foam::volScalarField::Internal>& Foam::ADMno1::dY()
+inline Foam::PtrList<Foam::volScalarField::Internal>& 
+Foam::ADMno1::dY()
 {
     return dYPtrs_;
 }
 
-inline Foam::PtrList<Foam::volScalarField>& Foam::ADMno1::G()
+inline PtrList<dimensionedScalar>& 
+Foam::ADMno1::GAve()
 {
-    return GPtrs_;
+    return GAvePtrs_;
 }
 
-inline Foam::PtrList<Foam::volScalarField::Internal>& Foam::ADMno1::dG()
+inline PtrList<dimensionedScalar>& 
+Foam::ADMno1::GRAve()
 {
-    return dGPtrs_;
+    return GRAvePtrs_;
 }
 
-inline Foam::PtrList<Foam::volScalarField>& Foam::ADMno1::M()
+inline PtrList<dimensionedScalar>& 
+Foam::ADMno1::dGAve()
+{
+    return dGAvePtrs_;
+}
+
+inline Foam::PtrList<Foam::volScalarField>& 
+Foam::ADMno1::M()
 {
     return MPtrs_;
 }
 
-inline Foam::PtrList<Foam::volScalarField>& Foam::ADMno1::IO()
+inline Foam::PtrList<Foam::volScalarField>& 
+Foam::ADMno1::IO()
 {
     return IOPtrs_;
 }
 
-inline Foam::PtrList<Foam::volScalarField::Internal>& Foam::ADMno1::dIO()
+inline Foam::PtrList<Foam::volScalarField::Internal>& 
+Foam::ADMno1::dIO()
 {
     return dIOPtrs_;
 }

@@ -23,10 +23,6 @@
     // Update the pressure BCs to ensure flux consistency
     constrainPressure(p_rgh, U, phiHbyA, rAUf);
 
-    // Pair<tmp<volScalarField>> vDot = mixture->vDot();
-    // const volScalarField vDotv = mixture->vDot(); // vDot[0]();
-    // const volScalarField vDotc = 0.0*mixture->vDot(); // vDot[1]();
-
     while (pimple.correctNonOrthogonal())
     {
         fvScalarMatrix p_rghEqn
@@ -35,7 +31,6 @@
           - fvm::laplacian(rAUf, p_rgh)
           ==
             mixture->vDot()
-            // vDotv + vDotc
         );
 
         p_rghEqn.setReference(pRefCell, pRefValue);

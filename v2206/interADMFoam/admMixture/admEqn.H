@@ -5,11 +5,6 @@
     (
         min(max(alpha1, scalar(0)), scalar(1))
     );
-
-    // volScalarField limitedAlpha2
-    // (
-    //     min(max(alpha2, scalar(0)), scalar(1))
-    // );
     
     // Soluables
     forAll(SiAlpha, i)

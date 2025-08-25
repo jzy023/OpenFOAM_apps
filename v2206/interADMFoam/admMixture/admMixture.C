@@ -43,7 +43,7 @@ namespace Foam
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
 //- Find isCellsInterface_
-void Foam::admMixture::findCellActInterface()
+void Foam::admMixture::kLaCells()
 {
     isCellsInterface_ = 
     (
@@ -53,13 +53,19 @@ void Foam::admMixture::findCellActInterface()
 
     isCellsInterface_ = 1.0 - isCellsInterface_;
 
-    isCellsAct_ = isCellsInterface_ + isCellsActWall_;
+    volScalarField limitedAlpha1
+    (
+        min(max(alpha1_, scalar(0)), scalar(1))
+    );
     
     // TODO: fix kLa for benchmark case? 
     // TODO: define a dictionary entry for alphaI
-    scalar alphaI = 0.1;
-    scalar alphaW = 0.1;
-    kLaCells_.field() =  alphaI*isCellsInterface_.field() + alphaW*isCellsActWall_.field();
+    scalar alphaI = 0.000001;
+    scalar alphaW = 1;
+    kLaCells_.field() = limitedAlpha1 *
+    (
+        alphaI*isCellsInterface_.field() + alphaW*isCellsActWall_.field()
+    );
     // kLaCells_.field() =  alphaI*isCellsInterface_.field() + (1/alphaW_)*isCellsActWall_.field();
 }
 
@@ -205,7 +211,6 @@ void Foam::admMixture::speciesMules
     // Soluables
     forAll(SiAlpha_, i)
 	{
-
         volScalarField& Yi = SiAlpha_[i];
         
         scalar maxYi = max(gMax(Yi), gMax(Yi.boundaryField())) + 1e-30;
@@ -449,23 +454,6 @@ Foam::admMixture::admMixture
             Zero
         )
     ),
-    isCellsAct_
-    (
-        IOobject
-        (
-            "isCellsAct_",
-            alpha1_.time().timeName(),
-            U_.mesh(),
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        U_.mesh(),
-        dimensionedScalar
-        (
-            dimless,
-            Zero
-        )
-    ),
     kLaCells_
     (
         IOobject
@@ -498,7 +486,7 @@ Foam::admMixture::admMixture
         (
             "mDotdefault",
             dimDensity/dimTime,
-            SMALL
+            Zero
         )
     ),
     mDotAlphal_
@@ -509,15 +497,15 @@ Foam::admMixture::admMixture
             alpha1_.time().timeName(),
 			U_.mesh(),
 			IOobject::NO_READ,
-			IOobject::NO_WRITE
-            // IOobject::AUTO_WRITE
+			// IOobject::NO_WRITE
+            IOobject::AUTO_WRITE
 		),
 		U_.mesh(),
 		dimensionedScalar
         (
             "mDotAlphaldefault",
             dimDensity/dimTime,
-            SMALL
+            Zero
         )
     ),
     vDot_
@@ -529,14 +517,13 @@ Foam::admMixture::admMixture
 			U_.mesh(),
 			IOobject::NO_READ,
 			IOobject::NO_WRITE
-            // IOobject::AUTO_WRITE
 		),
 		U_.mesh(),
 		dimensionedScalar
         (
             "vDotdefault",
             dimless/dimTime,
-            SMALL
+            Zero
         )
     ),
     vDotAlphal_
@@ -548,22 +535,21 @@ Foam::admMixture::admMixture
 			U_.mesh(),
 			IOobject::NO_READ,
 			IOobject::NO_WRITE
-            // IOobject::AUTO_WRITE
 		),
 		U_.mesh(),
 		dimensionedScalar
         (
             "vDotAlphaldefault",
             dimless/dimTime,
-            SMALL
+            Zero
         )
     )
     // testing
     ,mDotTest_
     (
         "mDotTest",
-        // dimDensity/dimTime,
-        dimDensity,
+        dimDensity/dimTime,
+        // dimDensity,
         this->subDict("degassing").lookupOrDefault
         (
             "mDotTest",
@@ -662,7 +648,7 @@ Foam::admMixture::admMixture
 
     // Info<< "Reading ADM no1 initial concentrations for gaseuoses" << endl;
 
-    GiAlpha_.resize(reaction_->G().size());
+    GiAlpha_.resize(reaction_->GAve().size());
 
     forAll(reaction_->namesGaseous, i)
     {
@@ -716,12 +702,19 @@ Foam::admMixture::mDot()
         min(max(alpha1_, scalar(0)), scalar(1))
     );
 
-    // mDot_ = limitedAlpha1*(-mDotTest_)*(isCellsInterface_ + (1/alphaW_)*isCellsActWall_);
-    // mDot_ = limitedAlpha1*(-mDotTest_)*isCellsAct_;
-    
-    mDot_ = limitedAlpha1*(-mDotTest_)*kLaCells_;
+    // ----------------------------------------------------------------------------------
+    mDot_ = limitedAlpha1 * 
+    (
+      - reaction_->GRAve()[0] - reaction_->GRAve()[1]
+      -(reaction_->GRAve()[2] * 44 / 1000) 
+    );
 
     return mDot_;
+
+    // ----------------------------------------------------------------------------------
+    // mDot_ = limitedAlpha1 * (-mDotTest_)*(isCellsInterface_ + (1/alphaW_)*isCellsActWall_);
+
+    // return mDot_;
 }
 
 
@@ -730,13 +723,20 @@ Foam::admMixture::mDot()
 const Foam::volScalarField&
 Foam::admMixture::mDotAlphal()
 {
-    // mDotAlphal_ = (-mDotTest_)*(isCellsInterface_ + (1/alphaW_)*isCellsActWall_);
-    // mDotAlphal_ = (-mDotTest_)*isCellsAct_;
+    // ----------------------------------------------------------------------------------
+    mDotAlphal_ =
+    (
+      - reaction_->GRAve()[0] - reaction_->GRAve()[1]
+      -(reaction_->GRAve()[2] * 44 / 1000) 
+    );
 
-    // TODO: reaction_->[aveSi - R_ * aveTop * GAvePtrs_[i] * KHi] * kLaCells_;
-    mDotAlphal_ = (-mDotTest_)*kLaCells_;
-     
     return mDotAlphal_;
+
+    // ----------------------------------------------------------------------------------
+    // mDotAlphal_ = (-mDotTest_)*kLaCells_;
+    // mDotAlphal_ = (-mDotTest_)*(isCellsInterface_ + (1/alphaW_)*isCellsActWall_);
+
+    // return mDotAlphal_;
 }
 
 
@@ -794,18 +794,17 @@ void Foam::admMixture::solvePhase
 {
     alpha2_ = 1 - alpha1_;
 
-    // // DEBUG
-    // Info<< ">>> testing admMixture::solve()" << endl;
-
-    findCellActInterface();
+    // Classify cells
+    kLaCells();
     
+    // Calculate interface mass flux: phiHS_
     massTransferCoeffs();
 
+    // Solve MULES equations for each Yi
     speciesMules(interface);
 
+    // Convert mesh based Yi to phase based Yi for ADM calculation
     speciesADMCorrect();
-
-    // speciesAlphaCorrect();
 
     // printGasGenRate();
 }
@@ -815,8 +814,6 @@ void Foam::admMixture::solveReaction
 (
     const surfaceScalarField& phi,
     const volScalarField& Top
-    // const volScalarField& Top,
-    // const volScalarField& p
 )
 {
     // // DEBUG
@@ -826,20 +823,10 @@ void Foam::admMixture::solveReaction
 
     reaction_->correct
     (
-        // isCellsAct_,
         kLaCells_,
         phi,
         Top
     );
-
-    // reaction_->correct
-    // (
-    //     this->phi_,
-    //     this->alpha1_,
-    //     this->alpha2_,
-    //     Top,
-    //     p
-    // );
 }
 
 
@@ -848,18 +835,16 @@ void Foam::admMixture::updateReactionGas
     const dimensionedScalar deltaT
 )
 {
-    PtrList<volScalarField::Internal>& dG = reaction_->dG();
+    PtrList<dimensionedScalar>& G = reaction_->GAve();
+    PtrList<dimensionedScalar>& dG = reaction_->dGAve();
     forAll(dG, i)
     {
-        reaction_->GAve()[i] += 
-        (
-            dG[i].weightedAverage(U_.mesh().V()) * deltaT
-        );
+        G[i] += dG[i] * deltaT;
+        GiAlpha_[i] = this->alpha2() * G[i];
 
-        GiAlpha_[i] = this->alpha2() * reaction_->GAve()[i];
-
-        Info<< reaction_->GAve()[i].name() << " concentration = "
-            << reaction_->GAve()[i].value() << endl;
+        // DEBUG
+        Info<< G[i].name() << " concentration = "
+            << G[i].value() << endl;
     }
 }
 

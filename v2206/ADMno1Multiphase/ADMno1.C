@@ -329,29 +329,21 @@ Foam::ADMno1::ADMno1
 
     Info<< "Reading ADM no1 initial concentrations for gaseuoses" << endl;
 
-    GPtrs_.resize(namesGaseous.size());
+    GAvePtrs_.resize(namesGaseous.size());
 
     forAll(namesGaseous, i)
     {
-        GPtrs_.set
+        GAvePtrs_.set
         (
             i,
-            new volScalarField
+            new dimensionedScalar
             (
-                IOobject
+                namesGaseous[i], 
+                YPtrs_[0].dimensions(),
+                ADMno1Dict.lookupOrDefault
                 (
-                    IOobject::groupName(namesGaseous[i], "ADM"),
-                    mesh.time().timeName(),
-                    mesh,
-                    IOobject::READ_IF_PRESENT,
-                    IOobject::NO_WRITE
-                ),
-                mesh,
-                dimensionedScalar
-                (
-                    namesGaseous[i] + "Default", 
-                    YPtrs_[0].dimensions(),
-                    para_.Gini(i)
+                    namesGaseous[i],
+                    benchmarkGaseous[i]
                 )
             )
         );
@@ -359,33 +351,21 @@ Foam::ADMno1::ADMno1
     
     //- Initializing derivatives
 
-    dGPtrs_.resize(namesGaseous.size());
+    dGAvePtrs_.resize(namesGaseous.size());
 
     for (label i = 0; i < namesGaseous.size(); i++)
     {
-        dGPtrs_.set
+        dGAvePtrs_.set
         (
             i,
-            new volScalarField::Internal
+            new dimensionedScalar
             (
-                IOobject
-                (
-                    "d" + GPtrs_[i].name(),
-                    mesh.time().timeName(),
-                    mesh,
-                    IOobject::NO_READ,
-                    IOobject::NO_WRITE
-                ),
-                mesh,
-                dimensionedScalar
-                (
-                    GPtrs_[0].dimensions()/dimTime, 
-                    Zero
-                )
+                "d" + namesGaseous[i],
+                GAvePtrs_[0].dimensions()/dimTime, 
+                Zero
             )
         );
     }
-
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -602,57 +582,6 @@ Foam::ADMno1::ADMno1
 
     //- Gas trasfer rate initialization
     
-    GRPtrs_.resize(3);
-
-    for (int i = 0; i < 3; i++)
-    {
-        GRPtrs_.set
-        (
-            i,
-            new volScalarField::Internal
-            (
-                IOobject
-                (
-                    "GRs" + Foam::name(i),
-                    mesh.time().timeName(),
-                    mesh,
-                    IOobject::NO_READ,
-                    IOobject::NO_WRITE
-                ),
-                mesh,
-                dimensionedScalar
-                (
-                    dGPtrs_[0].dimensions(), 
-                    Zero
-                )
-            )
-        );
-    }
-
-    // testing ------------------------------------------------------------
-
-    iNames = namesSoluable.size();
-
-    GAvePtrs_.resize(namesGaseous.size());
-
-    forAll(namesGaseous, i)
-    {
-        GAvePtrs_.set
-        (
-            i,
-            new dimensionedScalar
-            (
-                namesGaseous[i], 
-                YPtrs_[0].dimensions(),
-                ADMno1Dict.lookupOrDefault
-                (
-                    namesGaseous[i],
-                    benchmarkGaseous[i]
-                )
-            )
-        );
-    }
-
     GRAvePtrs_.resize(namesGaseous.size());
 
     forAll(namesGaseous, i)
@@ -670,21 +599,6 @@ Foam::ADMno1::ADMno1
         );
     }
 
-    dGAvePtrs_.resize(namesGaseous.size());
-
-    for (label i = 0; i < namesGaseous.size(); i++)
-    {
-        dGAvePtrs_.set
-        (
-            i,
-            new dimensionedScalar
-            (
-                "d" + namesGaseous[i],
-                GAvePtrs_[0].dimensions()/dimTime, 
-                Zero
-            )
-        );
-    }
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -776,7 +690,7 @@ void Foam::ADMno1::gasPressure()
         dimensionedScalar
         (
            "Ph2oDefault", 
-            GPtrs_[0].dimensions(),
+            YPtrs_[0].dimensions(),
             Zero
         )
     );
@@ -826,64 +740,25 @@ void Foam::ADMno1::gasPhaseRate
     //      << ">>> average " << YPtrs_[8].name() << " concentration: " << aveSch4 << "\n"
     //      << ">>> average " << MPtrs_[0].name() << " concentration: " << aveSco2 << endl;
 
-    GRAvePtrs_[0] = // <-- kg COD m-3
-    (   
-        // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_ 
+    GRAvePtrs_[0] = // <-- kg COD m-3 s-1
+    (   // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_ 
         kLa * (aveSh2 - R_ * aveTop * GAvePtrs_[0] * KH0)
     );
 
-    GRAvePtrs_[1] = // <-- kg COD m-3
-    (   
-        // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_ 
+    GRAvePtrs_[1] = // <-- kg COD m-3 s-1
+    (   // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_ 
         kLa * (aveSch4 - R_ * aveTop * GAvePtrs_[1] * KH1)
     );
 
-    GRAvePtrs_[2] = // <-- mol COD m-3
+    GRAvePtrs_[2] = // <-- mol COD m-3 s-1
     (   // Sco2 instead of SIC
         // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_  
         kLa * (aveSco2 - R_ * aveTop * GAvePtrs_[2] * KH2)
     );
 
+    // DEBUG
     Info<< ">>> kLa [s^-1] ADMno1: " << (para_.DTOS() * kLa_).value() << "\n"
         << ">>> kLa [s^-1] ADMno1Multi: " << kLa.value() << endl;
-
-    // New method 2 ---------------------------------------------------------------------------     
-    // GRPtrs_[0] = 
-    // (   // <-- kg COD m-3
-    //     para_.DTOS() * kLa_ 
-    //   * (YPtrs_[7].internalField() - R_ * TopDummy_.internalField() * GAvePtrs_[0] * KHh2_)
-    // );
-
-    // GRPtrs_[1] = 
-    // (   // <-- kg COD m-3
-    //     para_.DTOS() * kLa_ 
-    //   * (YPtrs_[8].internalField() - R_ * TopDummy_.internalField() * GAvePtrs_[1] * KHch4_)
-    // );
-
-    // GRPtrs_[2] = 
-    // (   // <-- mol COD m-3
-    //     para_.DTOS() * kLa_ // Sco2 instead of SIC
-    //   * (MPtrs_[0].internalField() - R_ * TopDummy_.internalField() * GAvePtrs_[2] * KHco2_)
-    // );
-
-    // LEGACY ---------------------------------------------------------------------------------
-    // GRPtrs_[0] = 
-    // (   // <-- kg COD m-3
-    //     para_.DTOS() * kLa_ 
-    //   * (YPtrs_[7].internalField() - R_ * TopDummy_.internalField() * GPtrs_[0].internalField() * KHh2_)
-    // );
-
-    // GRPtrs_[1] = 
-    // (   // <-- kg COD m-3
-    //     para_.DTOS() * kLa_ 
-    //   * (YPtrs_[8].internalField() - R_ * TopDummy_.internalField() * GPtrs_[1].internalField() * KHch4_)
-    // );
-
-    // GRPtrs_[2] = 
-    // (   // <-- mol COD m-3
-    //     para_.DTOS() * kLa_ // Sco2 instead of SIC
-    //   * (MPtrs_[0].internalField() - R_ * TopDummy_.internalField() * GPtrs_[2].internalField() * KHco2_)
-    // );
 }
 
 
@@ -910,112 +785,6 @@ void Foam::ADMno1::gasSourceRate()
         (GRAvePtrs_[2] * (1. / Vfrac_))    // <-- multiphase mass transfer
       - (GAvePtrs_[2] * qGasAve) // <-- gas released from chamber
     );
-
-    // dGPtrs_[0].field() = 
-    // (
-    //     (GRAvePtrs_[0].value() * volLiq.value() / volGas.value())    // <-- multiphase mass transfer
-    //   - (GAvePtrs_[0].value() * qGasLocal.field() / volGas.value()) // <-- gas released from chamber
-    // );
-
-    // dGPtrs_[1].field() = 
-    // (
-    //     (GRAvePtrs_[1].value() * volLiq.value() / volGas.value())    // <-- multiphase mass transfer
-    //   - (GAvePtrs_[1].value() * qGasLocal.field() / volGas.value()) // <-- gas released from chamber
-    // );
-
-    // dGPtrs_[2].field() = 
-    // (
-    //     (GRAvePtrs_[2].value() * volLiq.value() / volGas.value())    // <-- multiphase mass transfer
-    //   - (GAvePtrs_[2].value() * qGasLocal.field() / volGas.value()) // <-- gas released from chamber
-    // );
-
-    // New method 2 ---------------------------------------------------------------------------
-    // dGPtrs_[0].field() = 
-    // (
-    //     (GRPtrs_[0].field() * volLiq.value() / volGas.value())    // <-- multiphase mass transfer
-    //   - (GAvePtrs_[0].value() * qGasLocal.field() / volGas) // <-- gas released from chamber
-    // );
-
-    // dGPtrs_[1].field() = 
-    // (
-    //     (GRPtrs_[1].field() * volLiq.value() / volGas.value())    // <-- multiphase mass transfer
-    //   - (GAvePtrs_[1].value() * qGasLocal.field() / volGas) // <-- gas released from chamber
-    // );
-
-    // dGPtrs_[2].field() = 
-    // (
-    //     (GRPtrs_[2].field() * volLiq.value() / volGas.value())    // <-- multiphase mass transfer
-    //   - (GAvePtrs_[2].value() * qGasLocal.field() / volGas) // <-- gas released from chamber
-    // );
-
-    // LEGACY ---------------------------------------------------------------------------------
-    // // field of cell volume for mesh 
-    // volScalarField::Internal volMeshField = GPtrs_[0].mesh().V();            
-    
-    // // particle scaled gas volume
-    // volScalarField::Internal volGas = volMeshField / (1.0 + (1.0/Vfrac_));
-
-    // // particle scaled liquid volume
-    // volScalarField::Internal volLiq = volMeshField / (1.0 + Vfrac_);
-
-    // // particle scaled pipe resistance
-    // volScalarField kp
-    // (
-    //     IOobject
-    //     (
-    //         "kp",
-    //         fac_.mesh().time().timeName(),
-    //         fac_.mesh(),
-    //         IOobject::NO_READ,
-    //         IOobject::NO_WRITE
-    //     ),
-    //     fac_.mesh(),
-    //     dimensionedScalar
-    //     (
-    //        "kp_Default", 
-    //         // dimless,
-    //         dimVolume/dimTime/dimPressure,
-    //         Zero
-    //     )
-    // );
-
-    // // // TODO: might lead to error if Gas dimension is different
-    // // kp.dimensions().reset(dimVolume/dimTime/dimPressure);
-
-    // // TODO: actual volume would have effect on normalized kp
-    // // (Vgas_ + Vliq_) <---- this would be calculated
-    // kp.ref() = para_.DTOS() * KP_ * (volMeshField / (Vgas_ + Vliq_));
-
-    // //  volScalarField qGasLocal = kp * (Pgas - Pext_) * (Pgas / Pext_); 
-    // volScalarField qGasLocal = kp * (Pgas_ - Pext_);
-    // forAll( qGasLocal.field(), i )
-    // {
-    //     if ( qGasLocal.field()[i] < 0.0 ) { qGasLocal.field()[i] = 1e-16; }
-    // }
-
-    // Info<< ">>> legacy rate: " << max(qGasLocal / volGas) << "\n"
-    //     << ">>> qGasAve    : " << qGasAve.value() << endl;
-
-    // Info<< "DEBUG: Pgas: " << max(Pgas_.field()) << endl;
-    // Info<< "DEBUG: qGas: " << max(qGasLocal.field() / (para_.DTOS() * (volMeshField / (Vgas_ + Vliq_).value()))) << endl;
-
-    // dGPtrs_[0].field() = 
-    // (
-    //     (GRPtrs_[0].field() * volLiq.value() / volGas.value()) 
-    //   - (GPtrs_[0].field() * qGasLocal.field() / volGas)
-    // );
-
-    // dGPtrs_[1].field() = 
-    // (
-    //     (GRPtrs_[1].field() * volLiq.value() / volGas.value()) 
-    //   - (GPtrs_[1].field() * qGasLocal.field() / volGas)
-    // );
-
-    // dGPtrs_[2].field() = 
-    // (
-    //     (GRPtrs_[2].field() * volLiq.value() / volGas.value()) 
-    //   - (GPtrs_[2].field() * qGasLocal.field() / volGas)
-    // );
 };
 
 
@@ -1419,9 +1188,6 @@ void Foam::ADMno1::dYUpdate
     dIOPtrs_[1] = para_.DTOS() * (Qin_/Vliq_) * (para_.INFLOW(25) - IOPtrs_[1]);  // San
 
     //- calculate with STOI and gas transer
-    // TODO: fix with (isCellsInterface_ + (1/alphaW_)*isCellsActWall_)?
-    // dYPtrs_[8] -= GRPtrs_[1]; // Sch4 - Gch4
-    // dYPtrs_[9] -= GRPtrs_[2]; // SIC - Gco2
     dYPtrs_[8] -= GRAvePtrs_[1]; // Sch4 - Gch4
     dYPtrs_[9] -= GRAvePtrs_[2]; // SIC - Gco2
 }
@@ -1622,9 +1388,9 @@ void Foam::ADMno1::clear()
         dYPtrs_[i] *= 0.0;
     }
 
-    forAll(dGPtrs_, i)
+    forAll(dGAvePtrs_, i)
     {
-        dGPtrs_[i] *= 0.0;
+        dGAvePtrs_[i] *= 0.0;
     }
 }
 
@@ -1667,80 +1433,80 @@ void Foam::ADMno1::correct
 }
 
 
-tmp<fvScalarMatrix> Foam::ADMno1::R
-(
-    label i
-) const
-{
-    DimensionedField<scalar, volMesh> dY = dYPtrs_[i];
+// tmp<fvScalarMatrix> Foam::ADMno1::R
+// (
+//     label i
+// ) const
+// {
+//     DimensionedField<scalar, volMesh> dY = dYPtrs_[i];
 
-        tmp<fvScalarMatrix> tSu
-        (
-            new fvScalarMatrix
-            (
-                YPtrs_[i],
-                dY.dimensions()*dimVolume
-                // dimMass/dimTime // <- for compressible flow and uses fvm::ddt(rho, Yi)
-            )
-        );
+//         tmp<fvScalarMatrix> tSu
+//         (
+//             new fvScalarMatrix
+//             (
+//                 YPtrs_[i],
+//                 dY.dimensions()*dimVolume
+//                 // dimMass/dimTime // <- for compressible flow and uses fvm::ddt(rho, Yi)
+//             )
+//         );
 
-    fvScalarMatrix& Su = tSu.ref();
+//     fvScalarMatrix& Su = tSu.ref();
     
-    // https:// /documentation/guides/latest/api/fvMatrix_8C_source.html#l01708
-    Su += dY; 
+//     // https:// /documentation/guides/latest/api/fvMatrix_8C_source.html#l01708
+//     Su += dY; 
 
-    return tSu;
-}; 
+//     return tSu;
+// }; 
 
 
-tmp<fvScalarMatrix> Foam::ADMno1::RG
-(
-    label i
-) const
-{
-    DimensionedField<scalar, volMesh> dG = dGPtrs_[i];
+// tmp<fvScalarMatrix> Foam::ADMno1::RG
+// (
+//     label i
+// ) const
+// {
+//     DimensionedField<scalar, volMesh> dG = dGPtrs_[i];
 
-        tmp<fvScalarMatrix> tSu
-        (
-            new fvScalarMatrix
-            (
-                GPtrs_[i],
-                dG.dimensions()*dimVolume
-                // dimMass/dimTime // <- for compressible flow and uses fvm::ddt(rho, Yi)
-            )
-        );
+//         tmp<fvScalarMatrix> tSu
+//         (
+//             new fvScalarMatrix
+//             (
+//                 GPtrs_[i],
+//                 dG.dimensions()*dimVolume
+//                 // dimMass/dimTime // <- for compressible flow and uses fvm::ddt(rho, Yi)
+//             )
+//         );
 
-    fvScalarMatrix& Su = tSu.ref();
+//     fvScalarMatrix& Su = tSu.ref();
     
-    // https:// /documentation/guides/latest/api/fvMatrix_8C_source.html#l01708
-    Su += dG; 
+//     // https:// /documentation/guides/latest/api/fvMatrix_8C_source.html#l01708
+//     Su += dG; 
 
-    return tSu;
-};
+//     return tSu;
+// };
 
-tmp<fvScalarMatrix> Foam::ADMno1::RIO
-(
-    label i
-) const
-{
-    DimensionedField<scalar, volMesh> dIO = dIOPtrs_[i];
+// tmp<fvScalarMatrix> Foam::ADMno1::RIO
+// (
+//     label i
+// ) const
+// {
+//     DimensionedField<scalar, volMesh> dIO = dIOPtrs_[i];
 
-        tmp<fvScalarMatrix> tSu
-        (
-            new fvScalarMatrix
-            (
-                IOPtrs_[i],
-                dIO.dimensions()*dimVolume
-                // dimMass/dimTime // <- for compressible flow and uses fvm::ddt(rho, Yi)
-            )
-        );
+//         tmp<fvScalarMatrix> tSu
+//         (
+//             new fvScalarMatrix
+//             (
+//                 IOPtrs_[i],
+//                 dIO.dimensions()*dimVolume
+//                 // dimMass/dimTime // <- for compressible flow and uses fvm::ddt(rho, Yi)
+//             )
+//         );
 
-    fvScalarMatrix& Su = tSu.ref();
+//     fvScalarMatrix& Su = tSu.ref();
     
-    // https:// /documentation/guides/latest/api/fvMatrix_8C_source.html#l01708
-    Su += dIO; 
+//     // https:// /documentation/guides/latest/api/fvMatrix_8C_source.html#l01708
+//     Su += dIO; 
 
-    return tSu;
-}; 
+//     return tSu;
+// }; 
 
 // ************************************************************************* //

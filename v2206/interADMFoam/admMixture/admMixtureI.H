@@ -95,11 +95,11 @@ Foam::admMixture::dSi()
 }
 
 
-inline Foam::PtrList<Foam::volScalarField::Internal>&
-Foam::admMixture::dGi()
-{
-    return reaction_->dG();
-}
+// inline Foam::PtrList<Foam::volScalarField::Internal>&
+// Foam::admMixture::dGi()
+// {
+//     return reaction_->dG();
+// }
 
 
 inline Foam::PtrList<Foam::volScalarField>&

@@ -193,10 +193,6 @@ int main(int argc, char *argv[])
                 #include "admMixture/pEqn.H"
             }
 
-            // // // TODO: clean up and add reaction() too
-            // mixture->speciesADMCorrect();
-            // mixture->speciesAlphaCorrect();
-
             if (pimple.turbCorr())
             {
                 turbulence->correct();
@@ -205,7 +201,7 @@ int main(int argc, char *argv[])
 
         rho = alpha1*rho1 + alpha2*rho2;
 
-        #include "admMixture/admEqn.H"  
+        #include "admMixture/admEqn.H"
 
         runTime.write();
 
