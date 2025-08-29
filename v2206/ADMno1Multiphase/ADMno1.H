@@ -54,36 +54,34 @@ class ADMno1
 {
 
 private:
-    //- ADM no1 parameters
-    admPara para_;
+    //- Reference of VoF of liquid phase from mixture 
+    const volScalarField& alpha1_;
 
-    //- Benchmark mode (Rosen and Jeppsson 2006)
-    bool isBenchmark_;
+    //- Total reaction tank volume [m3]
+    const dimensionedScalar Vmesh_;
 
-    //- Schmidt number
-    scalar Sc_;
-
-    //- Turbulent Schmidt number
-    scalar Sct_;
-
-    //- Gas constant
-    scalar R_;
-
-    //- DEBUG
+    // ------------------------- Gas Phase Parameters ---------------------- //
+    //- Volume content [m3 s-1]
     dimensionedScalar Qin_;  // benchmark purpose only
+
+    //- Total gas phase volume [m3]
     dimensionedScalar Vgas_; // dynamically calculated with alpha
+
+    //- Total liquid phase volume [m3]
     dimensionedScalar Vliq_; // dynamically calculated with alpha
-    // TODO: this is only for benchmark case
+
     //- Gas-Liquid volume fraction in tank 
     dimensionedScalar Vfrac_;
+    
     //- Dimensionless gas outflow rate per pascal of presure difference
-    dimensionedScalar Qgas_;
+    dimensionedScalar qGas_;
 
+    //- Pipe resistance coefficient [m³s⁻¹Bar⁻¹]
+    dimensionedScalar KP_;
+
+    // TODO: [s-1]?
     // Gas transfer rate coefficients [d-1]
     dimensionedScalar kLa_;
-
-    //- Pipe resistance coefficient [m³d⁻¹Bar⁻¹]
-    dimensionedScalar KP_;
 
     //- Vapour pressure of water [Pa]
     dimensionedScalar Pvap_; 
@@ -94,8 +92,33 @@ private:
     //- Gas exit ambient pressure
     volScalarField Pgas_; 
 
+    //- Gas constant
+    // dimensionedScalar R_;
+    scalar R_;
+
+    // -------------------------- General Parameters ----------------------- //
+    //- Operating under benchmark mode or not
+    const bool isBenchmark_;
+
+    //- ADM no1 operation mode
+    const word runMode_;
+
+    //- ADM no1 parameters
+    admPara para_;
+
+    //- Schmidt number
+    scalar Sc_;
+
+    //- Turbulent Schmidt number
+    scalar Sct_;
+
+    // -------------------------- Thermal Parameters ----------------------- //
+    // TODO: fix dimension and move to [const volScalarField& Top]
     //- Dimensionless operating temperature field
     volScalarField TopDummy_;
+
+    //- Average Temperature for gaseous partial pressure
+    dimensionedScalar TopAve_;
 
     //- Thermal condition factor
     volScalarField::Internal fac_;
@@ -107,11 +130,12 @@ private:
     //- Ihibition factors
     dimensionedScalar nIaa_, nIac_, nIh2_;
 
-    //- pH value
-    volScalarField pH_;
-
+    // ------------------------ Species Concentrations --------------------- //
     //- Concentration of proton ions (H+)
     volScalarField::Internal ShP_;
+
+    //- pH value
+    volScalarField pH_;
 
     //- List of pointers to the field of specie concentrations
     PtrList<volScalarField> YPtrs_;
@@ -146,29 +170,14 @@ private:
 
     //- List of pointers to kinetic rate per specie [kg/m3/s] and [mol/m3/s]
     PtrList<volScalarField::Internal> KRPtrs_;
-
-    //- Species names for electrolytes
-    const wordList namesElectrolytes = 
-          {"SvaN", "SbuN", "SproN", "SacN", "Shco3N"};
-    //      0       1       2        3       4
-
-    //- Calculated by simple subtractions
-    const wordList namesMedians = 
-          {"Sco2", "Snh3"};
-
-    //- Ions substances
-    const wordList namesIons = 
-          {"Scat", "San"};
-
+    
     //- Cation concentration (inert)
     dimensionedScalar Scat_;
 
     //- Anion concentration (inert)
     dimensionedScalar San_;
 
-    //- Time Scale
-    dimensionedScalar tc_;
-
+    // --------------------------------------------------------------------- //
     //- Pirvate Helper Functions
     #include "ADMno1Helpers.H"
 
@@ -198,7 +207,7 @@ private:
     //- Calculate derivative of species dY
     void dYUpdate(const surfaceScalarField& phi);
 
-    //- Calculate acid-base reactions (iteratively)
+    //- Calculate acid-base reactions (Newton-Raphson)
     volScalarField::Internal fShp
     (
         volScalarField::Internal &ShpTemp
@@ -211,7 +220,7 @@ private:
 
     void calcShp();
 
-    //- Calculate Sh2 (iteratively)
+    //- Calculate Sh2 (Newton-Raphson)
     volScalarField::Internal fSh2
     (
         const surfaceScalarField& phi,
@@ -277,6 +286,19 @@ public:
     const wordList namesGaseous = 
           {"Gh2", "Gch4", "Gco2"};
 
+    //- Species names for electrolytes
+    const wordList namesElectrolytes = 
+          {"SvaN", "SbuN", "SproN", "SacN", "Shco3N"};
+    //      0       1       2        3       4
+
+    //- Calculated by simple subtractions
+    const wordList namesMedians = 
+          {"Sco2", "Snh3"};
+
+    //- Ions substances
+    const wordList namesIons = 
+          {"Scat", "San"};
+
     //- Default gas concentration [Rose and Jeppsson, 2006]
     const scalarList benchmarkGaseous = 
     {1.1032e-5, 1.6535, 13.5};
@@ -292,6 +314,7 @@ public:
 
     ADMno1
     ( 
+        const volScalarField& alpha1,
         const volScalarField& T,
         const fvMesh& mesh,
         const IOdictionary& ADMno1Dict
@@ -305,6 +328,7 @@ public:
 
     static autoPtr<ADMno1> New
     (
+        const volScalarField& alpha1,
         const volScalarField& T,
         const fvMesh&
     );
@@ -325,8 +349,6 @@ public:
     //- Correct components consumption rate
     void correct
     (
-        // const volScalarField& actCells,
-        // const dimensionedScalar& kLa,
         const volScalarField& kLaCells,
         const surfaceScalarField& phi,
         const volScalarField& T
@@ -409,9 +431,27 @@ public:
         return Pgas_.weightedAverage(Pgas_.mesh().V());
     };
 
-    void isBenchmark()
+    void calcGasParameters()
     {
-        // if benchmark case
+        // calculate with alpha1
+        dimensionedScalar alphaLiq = alpha1_.weightedAverage(alpha1_.mesh().V());
+        Vfrac_ = 1.0/alphaLiq - 1.0;
+        Vliq_ = alphaLiq * Vmesh_;
+        Vgas_ = Vmesh_ - Vliq_;
+        qGas_.value() = KP_.value() / Vgas_.value();
+    }
+
+    word checkBenchmark()
+    {
+        // initialize dimensions
+        Qin_.dimensions().reset(dimVolume/dimTime);
+        Vgas_.dimensions().reset(dimVolume);
+        Vliq_.dimensions().reset(dimVolume);
+        Vfrac_.dimensions().reset(dimless);
+        qGas_.dimensions().reset(dimless/dimPressure/dimTime);
+        KP_.dimensions().reset(dimVolume/dimPressure/dimTime);
+
+        // >>> if benchmark case
         if (isBenchmark_)
         {
             Info<< ">>> Benchmark case [Rose and Jeppsson, 2006]\n"<< endl;
@@ -419,28 +459,27 @@ public:
             Qin_.value() = 178.4674;
             Vgas_.value() = 300;
             Vliq_.value() = 3400;
-            Vfrac_ = Vgas_.value()/Vliq_.value();
+            Vfrac_ = Vgas_/Vliq_;
 
-            // KP -> dimVolume/dimTime/dimPressure
-            KP_.value() = 5e4 / para_.BTOP();
-            Qgas_ = para_.DTOS() * KP_ / Vgas_;
+            // KP: [m3 * s-1 * Pa-1]
+            // KP_.value() = para_.DTOS() * 5e4 / para_.BTOP();
+            KP_.value() = 5e4 / (1e5 * 86400.0);
+            qGas_ = KP_ / Vgas_;
 
-            return;
+            return "MesoSolid";
         }
 
-        // if not benchmark case
+        // >>> if not benchmark case
         Qin_.value() = 0.0;
-
-        // calculate with alpha
-        // Vfrac_ = Vgas_.value()/Vliq_.value();
-        // Vgas_.value() = 0.0;
-        // Vliq_.value() = 0.0;
-
-        // KP -> dimVolume/dimTime/dimPressure
         KP_.value() = this->get<scalar>("Kpip");
-        // Qgas_ = para_.DTOS() * KP_ / Vgas_;
-        
+
+        // calculate with alpha1
+        calcGasParameters();
+
+        return this->get<word>("mode");;
     }
+
+    
 };
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

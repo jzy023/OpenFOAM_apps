@@ -60,13 +60,13 @@ void Foam::admMixture::kLaCells()
     
     // TODO: fix kLa for benchmark case? 
     // TODO: define a dictionary entry for alphaI
-    scalar alphaI = 0.000001;
-    scalar alphaW = 1;
+    scalar alphaI = 0.5;
+    scalar alphaW = 0.13;
     kLaCells_.field() = limitedAlpha1 *
     (
         alphaI*isCellsInterface_.field() + alphaW*isCellsActWall_.field()
+        // alphaI*isCellsInterface_.field() + (1/alphaW_.value())*isCellsActWall_.field()
     );
-    // kLaCells_.field() =  alphaI*isCellsInterface_.field() + (1/alphaW_)*isCellsActWall_.field();
 }
 
         
@@ -271,7 +271,12 @@ Foam::admMixture::admMixture
     incompressibleTwoPhaseMixture(U, phi),
     reaction_
     (
-        ADMno1::New(Top, U_.mesh())
+        ADMno1::New
+        (
+            this->alpha1_,
+            Top, 
+            U_.mesh()
+        )
     ),
     alphaW_
     (
@@ -548,8 +553,8 @@ Foam::admMixture::admMixture
     ,mDotTest_
     (
         "mDotTest",
-        dimDensity/dimTime,
-        // dimDensity,
+        // dimDensity/dimTime,
+        dimDensity,
         this->subDict("degassing").lookupOrDefault
         (
             "mDotTest",
@@ -682,6 +687,9 @@ Foam::admMixture::admMixture
     // marking inter-phase mass transfer surfaces
     findCellsActWall();
 
+    // initializing inter phase mass transfer rate [s-1]
+    kLaCells();
+
     // // DEBUG
     // Info<< "H: "    << H_ 
     //     << "\nDS: " << D1_
@@ -713,6 +721,7 @@ Foam::admMixture::mDot()
 
     // ----------------------------------------------------------------------------------
     // mDot_ = limitedAlpha1 * (-mDotTest_)*(isCellsInterface_ + (1/alphaW_)*isCellsActWall_);
+    // mDot_ = limitedAlpha1 * (-mDotTest_)*kLaCells_;
 
     // return mDot_;
 }
@@ -735,6 +744,7 @@ Foam::admMixture::mDotAlphal()
     // ----------------------------------------------------------------------------------
     // mDotAlphal_ = (-mDotTest_)*kLaCells_;
     // mDotAlphal_ = (-mDotTest_)*(isCellsInterface_ + (1/alphaW_)*isCellsActWall_);
+    // mDotAlphal_ = (-mDotTest_)*kLaCells_;
 
     // return mDotAlphal_;
 }

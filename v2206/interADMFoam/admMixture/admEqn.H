@@ -7,6 +7,8 @@
     );
     
     // Soluables
+    PtrList<volScalarField>& SiAlpha = mixture->SiAlpha(); // <-- TODO: const?
+
     forAll(SiAlpha, i)
     {
         // TODO: simplify?

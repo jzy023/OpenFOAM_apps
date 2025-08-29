@@ -41,92 +41,84 @@ const Foam::word Foam::ADMno1::propertiesName("admno1Properties");
 
 Foam::ADMno1::ADMno1
 (
+    const volScalarField& alpha1,
     const volScalarField& T,
     const fvMesh& mesh,
     const IOdictionary& ADMno1Dict
 )
 :
     IOdictionary(ADMno1Dict),
-    isBenchmark_
+    alpha1_
     (
-        ADMno1Dict.lookupOrDefault("benchmark", false)
+        alpha1
     ),
-    para_
+    Vmesh_
     (
-        ADMno1Dict.get<word>("mode")
-    ),
-    Sc_
-    (
-        ADMno1Dict.lookupOrDefault("Sc", 1.0)
-    ),
-    Sct_
-    (
-        ADMno1Dict.lookupOrDefault("Sct", 0.2)
-    ),
-    R_
-    (
-        ADMno1Dict.lookupOrDefault("R", 0.083145 / para_.kTOK())
+        gSum(alpha1_.mesh().V())
     ),
     // DEBUG =======================================================
-    Qin_
-    (
-        "Qin", 
-        dimVolume/dimTime,
-        ADMno1Dict.lookupOrDefault("qin", 178.4674) // benchmark 
-    ),
-    Vgas_
-    (
-        "Vgas", 
-        dimVolume,
-        // 100 // <<< Rosen et al.
-        300
-    ),
-    Vliq_
-    (
-        "Vliq", 
-        dimVolume, 
-        3400
-    ),
-    Vfrac_
-    (
-        "Vfrac_", 
-        dimless,
-        Zero
-    ), 
-    Qgas_
-    (
-        "Qgas", 
-        dimless/dimPressure/dimTime,
-        Zero
-    ),
-    // =============================================================
+    // Qin_
+    // (
+    //     "Qin", 
+    //     dimVolume/dimTime,
+    //     Zero
+    //     // this->lookupOrDefault("qin", 178.4674) // benchmark 
+    // ),
+    // // TODO: remove
+    // Vgas_
+    // (
+    //     "Vgas", 
+    //     dimVolume,
+    //     Zero
+    //     // 300
+    // ),
+    // Vliq_
+    // (
+    //     "Vliq", 
+    //     dimVolume, 
+    //     Zero
+    //     // 3400
+    // ),
+    // Vfrac_
+    // (
+    //     "Vfrac_", 
+    //     dimless,
+    //     Zero
+    // ), 
+    // qGas_
+    // (
+    //     "qGas", 
+    //     dimless/dimPressure/dimTime,
+    //     Zero
+    // ),
+    // KP_
+    // (
+    //     "Kpip", 
+    //     dimVolume/dimPressure/dimTime,
+    //     Zero
+    // ),
     kLa_
     (
         "kLa",
         dimless/dimTime,
-        ADMno1Dict.lookupOrDefault
+        this->lookupOrDefault
         (
             "kLa",
             200
         ) 
     ),
-    KP_
-    (
-        "Kpip", 
-        dimVolume/dimPressure/dimTime,
-        Zero
-    ),
     Pvap_
     (
         "Pvap", 
         dimPressure,
-        ADMno1Dict.lookupOrDefault("Pvap", para_.BTOP() * 0.0313)
+        this->get<scalar>("Pvap")
     ),
     Pext_
     (
         "Pext", 
         dimPressure,
-        ADMno1Dict.lookupOrDefault("Pext", para_.BTOP() * 1.013)
+        this->lookupOrDefault
+        ("Pext", 1e5 * 1.013)
     ),
     Pgas_
     (
@@ -141,7 +133,33 @@ Foam::ADMno1::ADMno1
         mesh,
         Pext_
     ),
+    R_
+    (
+        this->lookupOrDefault("R", 8.3145)
+    ),
+    // =============================================================
+    isBenchmark_
+    (
+        this->lookupOrDefault("benchmark", false)
+    ),
+    runMode_
+    (
+        checkBenchmark()
+    ),
+    para_
+    (
+        runMode_
+    ),
+    Sc_
+    (
+        this->lookupOrDefault("Sc", 1.0)
+    ),
+    Sct_
+    (
+        this->lookupOrDefault("Sct", 0.2)
+    ),
     TopDummy_(T),
+    TopAve_(308.15),
     fac_
     (
         IOobject
@@ -157,7 +175,7 @@ Foam::ADMno1::ADMno1
         (
             "facDefault", 
             dimless, 
-            ADMno1Dict.lookupOrDefault("fac", 1)
+            this->lookupOrDefault("fac", 1)
         )
     ),
     KHh2_(fac_),
@@ -166,24 +184,6 @@ Foam::ADMno1::ADMno1
     KaW_(fac_),
     KaIN_(fac_),                    
     Kaco2_(fac_),
-    pH_
-    (
-        IOobject
-        (
-            "pH",
-            mesh.time().timeName(),
-            mesh,
-            IOobject::READ_IF_PRESENT,
-            IOobject::AUTO_WRITE
-        ),
-        mesh,
-        dimensionedScalar
-        (
-            "pHDefault", 
-            dimless, 
-            ADMno1Dict.lookupOrDefault("pH", 7.26)
-        )
-    ),
     ShP_
     (
         IOobject
@@ -202,28 +202,39 @@ Foam::ADMno1::ADMno1
             para_.Pini()
         )
     ),
+    pH_
+    (
+        IOobject
+        (
+            "pH",
+            mesh.time().timeName(),
+            mesh,
+            IOobject::READ_IF_PRESENT,
+            IOobject::AUTO_WRITE
+        ),
+        mesh,
+        dimensionedScalar
+        (
+            "pHDefault", 
+            dimless, 
+            this->lookupOrDefault("pH", 7.26)
+        )
+    ),
     Scat_
     (
         "Scat",
         dimMass/dimVolume,
-        ADMno1Dict.lookupOrDefault("Scat", 0.00)
+        this->lookupOrDefault("Scat", 0.00)
     ),
     San_
     (
         "San",
         dimMass/dimVolume,
-        ADMno1Dict.lookupOrDefault("San", 0.0052 * para_.MTOm())
-    ),
-    tc_
-    (
-        "timeScale",
-        dimTime, //TODO
-        One
+        this->lookupOrDefault("San", 0.0052 * para_.MTOm())
     )
 {
 
-    Info<< "\nSelecting ADM no1 operation mode " << ADMno1Dict.get<word>("mode") << endl;
-    isBenchmark();
+    Info<< "\nSelecting ADM no1 operation mode " << this->get<word>("mode") << endl;
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -248,7 +259,6 @@ Foam::ADMno1::ADMno1
                     IOobject::groupName(namesParticulate[i], "ADM"),
                     mesh.time().timeName(),
                     mesh,
-                    // IOobject::MUST_READ,
                     IOobject::NO_READ,
                     IOobject::NO_WRITE
                 ),
@@ -280,7 +290,6 @@ Foam::ADMno1::ADMno1
                     IOobject::groupName(namesParticulate[i], "ADM"),
                     mesh.time().timeName(),
                     mesh,
-                    // IOobject::MUST_READ,
                     IOobject::NO_READ,
                     IOobject::NO_WRITE
                 ),
@@ -340,10 +349,10 @@ Foam::ADMno1::ADMno1
             (
                 namesGaseous[i], 
                 YPtrs_[0].dimensions(),
-                ADMno1Dict.lookupOrDefault
+                this->lookupOrDefault
                 (
                     namesGaseous[i],
-                    benchmarkGaseous[i]
+                    benchmarkGaseous[i] // TODO: move to checkBenchmark()
                 )
             )
         );
@@ -425,7 +434,7 @@ Foam::ADMno1::ADMno1
             (
                "Scat", 
                 YPtrs_[0].dimensions(),
-                ADMno1Dict.lookupOrDefault("Scat", 0.00)
+                this->lookupOrDefault("Scat", 0.00)
             )
         )
     );
@@ -448,7 +457,7 @@ Foam::ADMno1::ADMno1
             (
                "San", 
                 YPtrs_[0].dimensions(),
-                ADMno1Dict.lookupOrDefault("San", 0.0052)
+                this->lookupOrDefault("San", 0.0052)
             )
         )
     );
@@ -591,14 +600,12 @@ Foam::ADMno1::ADMno1
             i,
             new dimensionedScalar
             (
-                // IOobject::groupName(namesParticulate[i], "ADM"),
                 namesGaseous[i] + ".R",
                 GAvePtrs_[0].dimensions()/dimTime,
                 Zero
             )
         );
     }
-
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -618,7 +625,6 @@ Foam::ADMno1::ADMno1
     Kaco2_.dimensions().reset(para_.Ka().co2.dimensions());
     KaIN_.dimensions().reset(para_.Ka().IN.dimensions());
     KaW_.dimensions().reset(para_.Ka().W.dimensions());
-
 }
 
 
@@ -626,6 +632,7 @@ Foam::ADMno1::ADMno1
  
 Foam::autoPtr<Foam::ADMno1> Foam::ADMno1::New
 (
+    const volScalarField& alpha1,
     const volScalarField& T,
     const fvMesh& mesh
 )
@@ -645,7 +652,13 @@ Foam::autoPtr<Foam::ADMno1> Foam::ADMno1::New
 
     // TODO: do it properly!!! with virtual destructors and constructor hash tables 
     // new keywaord is not gonna last!
-    ADMno1* reactionPtr = new ADMno1(T, mesh, ADMno1Dict);
+    ADMno1* reactionPtr = new ADMno1
+    (
+        alpha1,
+        T,
+        mesh,
+        ADMno1Dict
+    );
     return autoPtr<ADMno1>(reactionPtr);
 }
 
@@ -702,20 +715,6 @@ void Foam::ADMno1::gasPressure()
         Ph2o + R_ * TopDummy_
      * (para_.MTOm() * GAvePtrs_[0] / 16.0 + para_.MTOm() * GAvePtrs_[1] / 64.0 + GAvePtrs_[2])
     );
-
-    // Info<< ">>> Pgas ADMno1: " << Pgas_.weightedAverage(Pgas_.mesh().V()) << "\n"
-    //     << ">>> Pgas field: "
-
-    // Pgas_.field() = 
-    // (
-    //     Ph2o + R_ * TopDummy_
-    //  * (para_.MTOm() * GPtrs_[0] / 16.0 + para_.MTOm() * GPtrs_[1] / 64.0 + GPtrs_[2])
-    // );
-
-    // in multiphase gas calculation: Ptotal is directly taken from the fluid calcualtion
-    //                                GPtrs_[i] (kg COD/m3) are used to find the mole of each gas
-    //                                with Ptotal and moles, vol of Gas can be found
-    //                                (since Gptrs are per m3 one can maybe use mesh.V to directly calc for the gas vol frac)
 }
 
 
@@ -725,35 +724,31 @@ void Foam::ADMno1::gasPhaseRate
 )
 {
     // New method 1 ---------------------------------------------------------------------------
-    dimensionedScalar aveSh2 = YPtrs_[7].weightedAverage(YPtrs_[0].mesh().V());
-    dimensionedScalar aveSch4 = YPtrs_[8].weightedAverage(YPtrs_[0].mesh().V());
-    dimensionedScalar aveSco2 = MPtrs_[0].weightedAverage(YPtrs_[0].mesh().V());
+    dimensionedScalar Sh2Ave = YPtrs_[7].weightedAverage(YPtrs_[0].mesh().V());
+    dimensionedScalar Sch4Ave = YPtrs_[8].weightedAverage(YPtrs_[0].mesh().V());
+    dimensionedScalar Sco2Ave = MPtrs_[0].weightedAverage(YPtrs_[0].mesh().V());
 
     // TODO: make these dimensionedScalar instead of volScalarField
-    dimensionedScalar aveTop = TopDummy_.weightedAverage(YPtrs_[0].mesh().V());
+    dimensionedScalar TopAve = TopDummy_.weightedAverage(YPtrs_[0].mesh().V());
     dimensionedScalar KH0 = KHh2_.weightedAverage(KHh2_.mesh().V());
     dimensionedScalar KH1 = KHch4_.weightedAverage(KHh2_.mesh().V());
     dimensionedScalar KH2 = KHco2_.weightedAverage(KHh2_.mesh().V());
     dimensionedScalar kLa = kLaCells.weightedAverage(kLaCells.mesh().V());
 
-    // Info << ">>> average " << YPtrs_[7].name() << " concentration: " << aveSh2 << "\n"
-    //      << ">>> average " << YPtrs_[8].name() << " concentration: " << aveSch4 << "\n"
-    //      << ">>> average " << MPtrs_[0].name() << " concentration: " << aveSco2 << endl;
-
     GRAvePtrs_[0] = // <-- kg COD m-3 s-1
     (   // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_ 
-        kLa * (aveSh2 - R_ * aveTop * GAvePtrs_[0] * KH0)
+        kLa * (Sh2Ave - R_ * TopAve * GAvePtrs_[0] * KH0)
     );
 
     GRAvePtrs_[1] = // <-- kg COD m-3 s-1
     (   // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_ 
-        kLa * (aveSch4 - R_ * aveTop * GAvePtrs_[1] * KH1)
+        kLa * (Sch4Ave - R_ * TopAve * GAvePtrs_[1] * KH1)
     );
 
     GRAvePtrs_[2] = // <-- mol COD m-3 s-1
     (   // Sco2 instead of SIC
         // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_  
-        kLa * (aveSco2 - R_ * aveTop * GAvePtrs_[2] * KH2)
+        kLa * (Sco2Ave - R_ * TopAve * GAvePtrs_[2] * KH2)
     );
 
     // DEBUG
@@ -764,8 +759,8 @@ void Foam::ADMno1::gasPhaseRate
 
 void Foam::ADMno1::gasSourceRate()
 {
-    volScalarField qGas = Qgas_ * (Pgas_ - Pext_);
-    dimensionedScalar qGasAve = qGas.weightedAverage(qGas.mesh().V());
+    volScalarField qGasField = qGas_ * (Pgas_ - Pext_);
+    dimensionedScalar qGasAve = qGasField.weightedAverage(qGasField.mesh().V());
 
     // New method 1 ---------------------------------------------------------------------------
     dGAvePtrs_[0] = 
@@ -837,12 +832,12 @@ volScalarField::Internal Foam::ADMno1::fSh2
     //       the simulation would likely be very unstable 
     //       >>> Will try later
 
-    dimensionedScalar aveSh2 = Sh2Temp.weightedAverage(YPtrs_[0].mesh().V());
-    dimensionedScalar aveTop = TopDummy_.weightedAverage(YPtrs_[0].mesh().V());
+    dimensionedScalar Sh2Ave = Sh2Temp.weightedAverage(YPtrs_[0].mesh().V());
+    dimensionedScalar TopAve = TopDummy_.weightedAverage(YPtrs_[0].mesh().V());
     volScalarField::Internal GRSh2Temp = 
     (
         para_.DTOS() * kLa_ 
-      * (aveSh2 - R_ * aveTop * GAvePtrs_[0] * KHh2_)
+      * (Sh2Ave - R_ * TopAve * GAvePtrs_[0] * KHh2_)
     );
 
     // volScalarField::Internal GRSh2Temp = 
@@ -1397,13 +1392,17 @@ void Foam::ADMno1::clear()
 
 void Foam::ADMno1::correct
 (
-    // const volScalarField& actCells,
-    // const dimensionedScalar& kLa,
     const volScalarField& kLaCells,
     const surfaceScalarField& phi,
     const volScalarField& T
 )
 {
+    //- Calculate gas transport parameters
+    if (!isBenchmark_)
+    {
+        calcGasParameters();
+    }
+    
     //- Calculate thermal factor and adjust parameters
     calcThermal(T);
 

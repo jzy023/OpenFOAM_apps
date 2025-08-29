@@ -207,8 +207,4 @@ mesh.setFluxRequired(alpha1.name());
 // volScalarField& T = thermo->T();
 // ---------------------------------------------------------------------------------
 
-//
-PtrList<volScalarField>& SiAlpha = mixture->SiAlpha(); // <-- TODO: const?
-// PtrList<volScalarField>& GiAlpha = mixture->GiAlpha(); // <-- TODO: const?
-
 

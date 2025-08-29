@@ -43,7 +43,7 @@ class admPara
 private:
 
     //- Operation modes (thermal conditions for biomass)
-    const wordList namesOpMode = {"MesoSolid", "MesoSolid", "Thermo"}; 
+    const wordList namesOpMode = {"Meso", "MesoSolid", "Thermo"}; 
 
     //- Error message
     int errMessage;
