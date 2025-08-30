@@ -60,11 +60,11 @@ void Foam::admMixture::kLaCells()
     
     // TODO: fix kLa for benchmark case? 
     // TODO: define a dictionary entry for alphaI
-    scalar alphaI = 0.5;
-    scalar alphaW = 0.13;
+    // scalar alphaI_ = 0.5;
+    // scalar alphaW_ = 0.13;
     kLaCells_.field() = limitedAlpha1 *
     (
-        alphaI*isCellsInterface_.field() + alphaW*isCellsActWall_.field()
+        alphaI_*isCellsInterface_.field() + alphaW_*isCellsActWall_.field()
         // alphaI*isCellsInterface_.field() + (1/alphaW_.value())*isCellsActWall_.field()
     );
 }
@@ -278,11 +278,27 @@ Foam::admMixture::admMixture
             U_.mesh()
         )
     ),
+    // alphaW_
+    // (
+    //     "alphaW",
+    //     dimless,
+    //     this->subDict("degassing").get<scalar>("alphaW")
+    // ),
+    alphaI_
+    (
+        this->subDict("degassing").lookupOrDefault
+        (
+            "alphaI",
+            1.0
+        )
+    ),
     alphaW_
     (
-        "alphaW",
-        dimless,
-        this->subDict("degassing").get<scalar>("alphaW")
+        this->subDict("degassing").lookupOrDefault
+        (
+            "alphaW",
+            0.12
+        )
     ),
     R_
     (

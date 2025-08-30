@@ -78,7 +78,9 @@ protected:
 
         //- Surface wettability
         // higher alphaW means smaller contact angle (more wetting)
-        dimensionedScalar alphaW_;
+        // dimensionedScalar alphaW_;
+        scalar alphaI_;
+        scalar alphaW_;
 
         //- Ideal gas constant
         dimensionedScalar R_;
@@ -334,33 +336,6 @@ public:
         //         )
         //     );
         // }
-
-
-        void gasPartialPressure
-        (
-            const volScalarField& Top
-        )
-        {
-            
-            // Identifying region for averaging gaseous species for partial pressure calculation
-            volScalarField limitedAlpha2
-            (
-                min(max((1 - alpha1_), scalar(1e-16)), scalar(1))
-            );
-
-            volScalarField alphaGasRegion_ = max(zeroField(), limitedAlpha2 - 0.1)/(limitedAlpha2 - 0.1);
-            volScalarField::Internal GiAlphaTopKH = 
-            (
-                alphaGasRegion_.internalField()*GiAlpha_[0].internalField()
-              * Top.internalField()*reaction_->KHh2()
-            );
-
-            dimensionedScalar GiAlphaTopKHAve = GiAlphaTopKH.weightedAverage(alpha1_.mesh().V());
-            dimensionedScalar Ph2 = R_ * GiAlphaTopKHAve;
-
-            // // DEBUG
-            // Info<< ">>> " << Ph2.dimensions() << endl;
-        }
 
 
         void speciesAlphaCorrect()

@@ -172,13 +172,15 @@ int main(int argc, char *argv[])
             }
 
             #include "alphaControls.H"
-            
-            // solve alphaEqns
-            #include "admMixture/alphaEqnSubCycle.H"
-            
+
             // >>> position changed
             // solve YiMules
             mixture->solvePhase(interface);
+
+            // solve alphaEqns
+            #include "admMixture/alphaEqnSubCycle.H"
+            
+
 
             // correct interface properties
             interface.correct();

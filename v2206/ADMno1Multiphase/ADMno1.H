@@ -62,13 +62,14 @@ private:
 
     // ------------------------- Gas Phase Parameters ---------------------- //
     //- Volume content [m3 s-1]
-    dimensionedScalar Qin_;  // benchmark purpose only
+    //  benchmark purpose only
+    dimensionedScalar Qin_; 
 
     //- Total gas phase volume [m3]
-    dimensionedScalar Vgas_; // dynamically calculated with alpha
+    dimensionedScalar Vgas_;
 
     //- Total liquid phase volume [m3]
-    dimensionedScalar Vliq_; // dynamically calculated with alpha
+    dimensionedScalar Vliq_;
 
     //- Gas-Liquid volume fraction in tank 
     dimensionedScalar Vfrac_;
@@ -106,11 +107,8 @@ private:
     //- ADM no1 parameters
     admPara para_;
 
-    //- Schmidt number
-    scalar Sc_;
-
-    //- Turbulent Schmidt number
-    scalar Sct_;
+    //- Schmidt and turbulent Schmidt number
+    scalar Sc_, Sct_;
 
     // -------------------------- Thermal Parameters ----------------------- //
     // TODO: fix dimension and move to [const volScalarField& Top]
@@ -124,8 +122,8 @@ private:
     volScalarField::Internal fac_;
 
     //- Thermally adjusted parameters
-    volScalarField::Internal KHh2_, KHch4_, KHco2_,
-                             KaW_,  KaIN_,  Kaco2_;                    
+    volScalarField::Internal KaW_,  KaIN_,  Kaco2_;                    
+    dimensionedScalar        KHh2_, KHch4_, KHco2_;
 
     //- Ihibition factors
     dimensionedScalar nIaa_, nIac_, nIh2_;
@@ -171,11 +169,8 @@ private:
     //- List of pointers to kinetic rate per specie [kg/m3/s] and [mol/m3/s]
     PtrList<volScalarField::Internal> KRPtrs_;
     
-    //- Cation concentration (inert)
-    dimensionedScalar Scat_;
-
-    //- Anion concentration (inert)
-    dimensionedScalar San_;
+    //- Cation and Anion concentration (inert)
+    dimensionedScalar Scat_, San_;
 
     // --------------------------------------------------------------------- //
     //- Pirvate Helper Functions
@@ -223,18 +218,21 @@ private:
     //- Calculate Sh2 (Newton-Raphson)
     volScalarField::Internal fSh2
     (
+        const volScalarField& kLaCells,
         const surfaceScalarField& phi,
         volScalarField& Sh2Temp
     );
 
     volScalarField::Internal dfSh2
     (
+        const volScalarField& kLaCells,
         const surfaceScalarField& phi,
         volScalarField& Sh2Temp
     );
 
     void calcSh2
     (
+        const volScalarField& kLaCells,
         const surfaceScalarField& phi
     );
     
@@ -411,25 +409,25 @@ public:
     // testing ------------------------------------------------------------
     //- Return Henry's constant
     // TODO: maybe return PtrList<scalar> instead?
-    inline volScalarField::Internal& KHh2()
-    {
-        return KHh2_;
-    };
+    // inline volScalarField::Internal& KHh2()
+    // {
+    //     return KHh2_;
+    // };
 
-    inline volScalarField::Internal& KHch4()
-    {
-        return KHch4_;
-    };
+    // inline volScalarField::Internal& KHch4()
+    // {
+    //     return KHch4_;
+    // };
 
-    inline volScalarField::Internal& KHco2()
-    {
-        return KHco2_;
-    };
+    // inline volScalarField::Internal& KHco2()
+    // {
+    //     return KHco2_;
+    // };
 
-    inline const dimensionedScalar PgasAve()
-    {
-        return Pgas_.weightedAverage(Pgas_.mesh().V());
-    };
+    // inline const dimensionedScalar PgasAve()
+    // {
+    //     return Pgas_.weightedAverage(Pgas_.mesh().V());
+    // };
 
     void calcGasParameters()
     {
