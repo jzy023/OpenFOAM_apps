@@ -83,6 +83,7 @@ private:
     // TODO: [s-1]?
     // Gas transfer rate coefficients [d-1]
     dimensionedScalar kLa_;
+    dimensionedScalar kLaCellsAve_;
 
     //- Vapour pressure of water [Pa]
     dimensionedScalar Pvap_; 
@@ -145,6 +146,9 @@ private:
     // Averaged concentrations of gaseous species (perfect mixture)
     PtrList<dimensionedScalar> GAvePtrs_;
 
+    // Volumetric mass transfer rate of gaseous species (for gas bubbles)
+    PtrList<volScalarField> GRPtrs_;
+    
     // Averaged volumetric mass transfer rate of gaseous species (perfect mixture)
     PtrList<dimensionedScalar> GRAvePtrs_;
 
@@ -218,21 +222,18 @@ private:
     //- Calculate Sh2 (Newton-Raphson)
     volScalarField::Internal fSh2
     (
-        const volScalarField& kLaCells,
         const surfaceScalarField& phi,
         volScalarField& Sh2Temp
     );
 
     volScalarField::Internal dfSh2
     (
-        const volScalarField& kLaCells,
         const surfaceScalarField& phi,
         volScalarField& Sh2Temp
     );
 
     void calcSh2
     (
-        const volScalarField& kLaCells,
         const surfaceScalarField& phi
     );
     
@@ -371,6 +372,9 @@ public:
     //- Return GAvePtrs_
     inline PtrList<dimensionedScalar>& GAve();
 
+    //- Return GRPtrs_
+    inline PtrList<volScalarField>& GR();
+    
     //- Return GRAvePtrs_
     inline PtrList<dimensionedScalar>& GRAve();
 

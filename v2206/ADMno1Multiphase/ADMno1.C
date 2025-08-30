@@ -66,6 +66,12 @@ Foam::ADMno1::ADMno1
             200
         ) 
     ),
+    kLaCellsAve_
+    (
+        "kLaCellsAve",
+        dimless/dimTime,
+        Zero
+    ),
     Pvap_
     (
         "Pvap", 
@@ -356,7 +362,7 @@ Foam::ADMno1::ADMno1
                     mesh.time().timeName(),
                     mesh,
                     IOobject::READ_IF_PRESENT,
-                    IOobject::AUTO_WRITE
+                    IOobject::NO_WRITE
                 ),
                 mesh,
                 dimensionedScalar
@@ -549,6 +555,33 @@ Foam::ADMno1::ADMno1
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
     //- Gas trasfer rate initialization
+
+    GRPtrs_.resize(namesGaseous.size());
+
+    forAll(namesGaseous, i)
+    {
+        GRPtrs_.set
+        (
+            i,
+            new volScalarField
+            (
+                IOobject
+                (
+                    namesGaseous[i] + ".R",
+                    mesh.time().timeName(),
+                    mesh,
+                    IOobject::NO_READ,
+                    IOobject::NO_WRITE
+                ),
+                mesh,
+                dimensionedScalar
+                (
+                    GAvePtrs_[0].dimensions()/dimTime,
+                    Zero
+                )
+            )
+        );
+    }
     
     GRAvePtrs_.resize(namesGaseous.size());
 
@@ -559,7 +592,7 @@ Foam::ADMno1::ADMno1
             i,
             new dimensionedScalar
             (
-                namesGaseous[i] + ".R",
+                namesGaseous[i] + "Ave.R",
                 GAvePtrs_[0].dimensions()/dimTime,
                 Zero
             )
@@ -640,9 +673,9 @@ void Foam::ADMno1::calcThermal
     KaW_ = para_.Ka().W * exp(55900.0 * fac_);
 
     // Average of field for gas transport
-    dimensionedScalar facAve = 
+    dimensionedScalar facAve =
     (
-        fac_.weightedAverage(fac_.mesh().V())
+        (1.0 / para_.Tbase().value() - 1.0 / TopAve_.value()) / R_
     );
     
     KHh2_ = para_.KH().h2 * exp(-4180.0 * facAve);
@@ -693,27 +726,54 @@ void Foam::ADMno1::gasPhaseRate
     dimensionedScalar Sh2Ave = YPtrs_[7].weightedAverage(YPtrs_[0].mesh().V());
     dimensionedScalar Sch4Ave = YPtrs_[8].weightedAverage(YPtrs_[0].mesh().V());
     dimensionedScalar Sco2Ave = MPtrs_[0].weightedAverage(YPtrs_[0].mesh().V());
-    dimensionedScalar kLa = kLaCells.weightedAverage(kLaCells.mesh().V());
-
-    GRAvePtrs_[0] = // <-- kg COD m-3 s-1
-    (   // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_ 
-        kLa * (Sh2Ave - R_ * TopAve_ * GAvePtrs_[0] * KHh2_)
+    
+    GRPtrs_[0] = // <-- kg COD m-3 s-1
+    (   // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_
+        kLaCells * (Sh2Ave - R_ * TopAve_ * GAvePtrs_[0] * KHh2_)
     );
 
-    GRAvePtrs_[1] = // <-- kg COD m-3 s-1
-    (   // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_ 
-        kLa * (Sch4Ave - R_ * TopAve_ * GAvePtrs_[1] * KHch4_)
+    GRPtrs_[1] = // <-- kg COD m-3 s-1
+    (   // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_
+        kLaCells * (Sch4Ave - R_ * TopAve_ * GAvePtrs_[1] * KHch4_)
     );
 
-    GRAvePtrs_[2] = // <-- mol COD m-3 s-1
+    GRPtrs_[2] = // <-- mol COD m-3 s-1
     (   // Sco2 instead of SIC
-        // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_  
-        kLa * (Sco2Ave - R_ * TopAve_ * GAvePtrs_[2] * KHco2_)
+        // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_ 
+        kLaCells * (Sco2Ave - R_ * TopAve_ * GAvePtrs_[2] * KHco2_)
     );
+
+    GRAvePtrs_[0] = GRPtrs_[0].weightedAverage(GRPtrs_[0].mesh().V());
+    GRAvePtrs_[1] = GRPtrs_[1].weightedAverage(GRPtrs_[1].mesh().V());
+    GRAvePtrs_[2] = GRPtrs_[2].weightedAverage(GRPtrs_[2].mesh().V());
+    kLaCellsAve_ = kLaCells.weightedAverage(kLaCells.mesh().V());
+
+    // GRAvePtrs_[0] = // <-- kg COD m-3 s-1
+    // (   // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_ 
+    //     // kLaCellsAve_ * (Sh2Ave - R_ * TopAve_ * GAvePtrs_[0] * KHh2_)
+    // );
+
+    // GRAvePtrs_[1] = // <-- kg COD m-3 s-1
+    // (   // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_ 
+    //     // kLaCellsAve_ * (Sch4Ave - R_ * TopAve_ * GAvePtrs_[1] * KHch4_)
+    // );
+
+    // GRAvePtrs_[2] = // <-- mol COD m-3 s-1
+    // (   // Sco2 instead of SIC
+    //     // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_  
+    //     // kLaCellsAve_ * (Sco2Ave - R_ * TopAve_ * GAvePtrs_[2] * KHco2_)
+    // );
 
     // DEBUG
     Info<< ">>> kLa [s^-1] ADMno1: " << (para_.DTOS() * kLa_).value() << "\n"
-        << ">>> kLa [s^-1] ADMno1Multi: " << kLa.value() << endl;
+        << ">>> kLa [s^-1] ADMno1Multi: " << kLaCellsAve_.value() << endl;
+
+    forAll(GAvePtrs_, i)
+    {
+        Info<< ">>> "                 << GAvePtrs_[i].name()
+            << " concentration = "    << GAvePtrs_[i].value()
+            << ", generation rate = " << GRAvePtrs_[i].value() << endl;
+    }
 }
 
 
@@ -721,6 +781,8 @@ void Foam::ADMno1::gasSourceRate()
 {
     volScalarField qGasField = qGas_ * (Pgas_ - Pext_);
     dimensionedScalar qGasAve = qGasField.weightedAverage(qGasField.mesh().V());
+
+
 
     // New method 1 ---------------------------------------------------------------------------
     dGAvePtrs_[0] = 
@@ -746,7 +808,6 @@ void Foam::ADMno1::gasSourceRate()
 //- Functions for Sh2 calculations
 volScalarField::Internal Foam::ADMno1::fSh2
 (
-    const volScalarField& kLaCells,
     const surfaceScalarField& phi,
     volScalarField& Sh2Temp
 )
@@ -808,18 +869,21 @@ volScalarField::Internal Foam::ADMno1::fSh2
         conv = 
         (
             para_.DTOS() * (Qin_/Vliq_) * (para_.INFLOW(7) - Sh2Temp)
-        //   + fvc::div(phi, Sh2Temp) // ?
+        // + fvc::div(phi, Sh2Temp) // ?
         );
     }
     else
     {
-        conv = fvc::div(phi, Sh2Temp);
+        // TODO: this div needs to be changed from admMixture->div() 
+        //       to account for interface-corrected mass flux
+        // conv = fvc::div(phi, Sh2Temp);
     }
 
     dimensionedScalar Sh2Ave = Sh2Temp.weightedAverage(YPtrs_[0].mesh().V());
-    volScalarField::Internal GRSh2Temp = 
+
+    dimensionedScalar GRSh2Temp = 
     (
-        kLaCells
+        kLaCellsAve_
       * (Sh2Ave - R_ * TopAve_ * GAvePtrs_[0] * KHh2_)
     );
 
@@ -830,7 +894,6 @@ volScalarField::Internal Foam::ADMno1::fSh2
 
 volScalarField::Internal Foam::ADMno1::dfSh2
 (
-    const volScalarField& kLaCells,
     const surfaceScalarField& phi,
     volScalarField& Sh2Temp
 )
@@ -893,16 +956,19 @@ volScalarField::Internal Foam::ADMno1::dfSh2
         dConv = 
         (
            - para_.DTOS() * (Qin_/Vliq_)
-        //    + fvc::div(phi)
+        // + fvc::div(phi)
         );
     }
     else
     {
-        dConv = fvc::div(phi);
+        // TODO: this div needs to be changed from admMixture->div() 
+        //       to account for interface-corrected mass flux
+        // dConv = fvc::div(phi);
     }
     
-    // dimensionedScalar dGRSh2Temp = para_.DTOS() * kLa_;
-    volScalarField dGRSh2Temp = kLaCells;
+    dimensionedScalar dGRSh2Temp = para_.DTOS() * kLa_;
+    // volScalarField& dGRSh2Temp = kLaCellsAve_;
+    // dimensionedScalar dGRSh2Temp = kLaCellsAve_;
 
     //     dReaction + dConvection - dfGasRhoH2(paraPtr, Sh2);
     return concPerComponent(7, dKRPtrs_temp) + dConv - dGRSh2Temp;
@@ -911,7 +977,6 @@ volScalarField::Internal Foam::ADMno1::dfSh2
 
 void Foam::ADMno1::calcSh2
 (
-    const volScalarField& kLaCells,
     const surfaceScalarField& phi
 )
 {
@@ -927,8 +992,8 @@ void Foam::ADMno1::calcSh2
 
     do
     {
-        E.field() = fSh2(kLaCells, phi, x).field();
-        dE.field() = dfSh2(kLaCells, phi, x).field();
+        E.field() = fSh2(phi, x).field();
+        dE.field() = dfSh2(phi, x).field();
         x.field() = x.field() - E.field()/dE.field();
         // false check
         // if( min(x.field()) < 0 )
@@ -1437,7 +1502,7 @@ void Foam::ADMno1::correct
     calcShp();
 
     //- Sh2 calculations
-    calcSh2(kLaCells, phi);
+    calcSh2(phi);
 }
 
 

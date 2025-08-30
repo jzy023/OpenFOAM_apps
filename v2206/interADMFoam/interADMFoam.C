@@ -123,11 +123,11 @@ int main(int argc, char *argv[])
 
         Info<< "Time = " << runTime.timeName() << nl << endl;
 
-    // testing ------------------------------------------------------------
+        // testing ------------------------------------------------------------
         mixture->solveReaction(phi, Top);
         // Info<< ">>> p_rgh: " << p_rgh.weightedAverage(p.mesh().V()) << "\n"
         //     << ">>> p: "     << p.weightedAverage(p.mesh().V())     << endl;
-    // --------------------------------------------------------------------
+        // --------------------------------------------------------------------
 
         // --- Pressure-velocity PIMPLE corrector loop
         while (pimple.loop())
@@ -173,15 +173,13 @@ int main(int argc, char *argv[])
 
             #include "alphaControls.H"
 
+            // solve alphaEqns
+            #include "admMixture/alphaEqnSubCycle.H"
+
             // >>> position changed
             // solve YiMules
             mixture->solvePhase(interface);
-
-            // solve alphaEqns
-            #include "admMixture/alphaEqnSubCycle.H"
             
-
-
             // correct interface properties
             interface.correct();
             
@@ -203,6 +201,12 @@ int main(int argc, char *argv[])
         }
 
         rho = alpha1*rho1 + alpha2*rho2;
+
+        // // testing ------------------------------------------------------------
+        // mixture->solveReaction(phi, Top);
+        // // Info<< ">>> p_rgh: " << p_rgh.weightedAverage(p.mesh().V()) << "\n"
+        // //     << ">>> p: "     << p.weightedAverage(p.mesh().V())     << endl;
+        // // --------------------------------------------------------------------
 
         #include "admMixture/admEqn.H"
 

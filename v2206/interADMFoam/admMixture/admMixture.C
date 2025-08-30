@@ -58,10 +58,7 @@ void Foam::admMixture::kLaCells()
         min(max(alpha1_, scalar(0)), scalar(1))
     );
     
-    // TODO: fix kLa for benchmark case? 
-    // TODO: define a dictionary entry for alphaI
-    // scalar alphaI_ = 0.5;
-    // scalar alphaW_ = 0.13;
+    // TODO: fix kLa for benchmark case?
     kLaCells_.field() = limitedAlpha1 *
     (
         alphaI_*isCellsInterface_.field() + alphaW_*isCellsActWall_.field()
@@ -289,7 +286,7 @@ Foam::admMixture::admMixture
         this->subDict("degassing").lookupOrDefault
         (
             "alphaI",
-            1.0
+            0.1
         )
     ),
     alphaW_
@@ -729,8 +726,10 @@ Foam::admMixture::mDot()
     // ----------------------------------------------------------------------------------
     mDot_ = limitedAlpha1 * 
     (
-      - reaction_->GRAve()[0] - reaction_->GRAve()[1]
-      -(reaction_->GRAve()[2] * 44 / 1000) 
+    //   - reaction_->GRAve()[0] - reaction_->GRAve()[1]
+    //   -(reaction_->GRAve()[2] * 44 / 1000) 
+      - reaction_->GR()[0] - reaction_->GR()[1]
+      -(reaction_->GR()[2] * 44 / 1000) 
     );
 
     return mDot_;
@@ -751,8 +750,10 @@ Foam::admMixture::mDotAlphal()
     // ----------------------------------------------------------------------------------
     mDotAlphal_ =
     (
-      - reaction_->GRAve()[0] - reaction_->GRAve()[1]
-      -(reaction_->GRAve()[2] * 44 / 1000) 
+    //   - reaction_->GRAve()[0] - reaction_->GRAve()[1]
+    //   -(reaction_->GRAve()[2] * 44 / 1000) 
+      - reaction_->GR()[0] - reaction_->GR()[1]
+      -(reaction_->GR()[2] * 44 / 1000) 
     );
 
     return mDotAlphal_;
@@ -869,8 +870,9 @@ void Foam::admMixture::updateReactionGas
         GiAlpha_[i] = this->alpha2() * G[i];
 
         // DEBUG
-        Info<< G[i].name() << " concentration = "
-            << G[i].value() << endl;
+        // Info<< G[i].name()  << " concentration = "
+        //     << G[i].value() << ", generation rate =  "
+        //     << reaction_->GRAve().value() << endl;
     }
 }
 

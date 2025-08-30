@@ -61,6 +61,12 @@ Foam::ADMno1::GAve()
     return GAvePtrs_;
 }
 
+inline PtrList<volScalarField>& 
+Foam::ADMno1::GR()
+{
+    return GRPtrs_;
+}
+
 inline PtrList<dimensionedScalar>& 
 Foam::ADMno1::GRAve()
 {
