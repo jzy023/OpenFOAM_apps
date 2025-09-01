@@ -79,7 +79,19 @@
         "cinttypes": "cpp",
         "typeindex": "cpp",
         "typeinfo": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "__functional_base": "cpp",
+        "semaphore": "cpp",
+        "__node_handle": "cpp",
+        "codecvt": "cpp",
+        "compare": "cpp",
+        "concepts": "cpp",
+        "condition_variable": "cpp",
+        "mutex": "cpp",
+        "numbers": "cpp",
+        "shared_mutex": "cpp",
+        "stop_token": "cpp",
+        "__nullptr": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

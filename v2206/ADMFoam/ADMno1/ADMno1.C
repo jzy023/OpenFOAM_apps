@@ -97,7 +97,7 @@ Foam::ADMno1::ADMno1
         ADMno1Dict.lookupOrDefault
         (
             "kLa",
-            200
+            200.0
         ) 
     ),
     KP_
@@ -805,6 +805,19 @@ void Foam::ADMno1::gasSourceRate()
     {
         if ( qGasLocal.field()[i] < 0.0 ) { qGasLocal.field()[i] = 1e-16; }
     }
+
+    // test -------------------------------------------------------------
+    forAll(GPtrs_, i)
+    {
+        dimensionedScalar GiAve = GPtrs_[i].weightedAverage(GPtrs_[i].mesh().V());
+        dimensionedScalar GRiAve = GRPtrs_[i].weightedAverage(GPtrs_[i].mesh().V());
+
+        Info<< ">>> "                 << GPtrs_[i].name()
+            << " concentration = "    << GiAve.value()
+            << ", generation rate = " << GRiAve.value() << endl;
+    }
+
+    // ------------------------------------------------------------------
 
     dGPtrs_[0].field() = 
     (

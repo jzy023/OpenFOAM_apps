@@ -59,7 +59,7 @@ void Foam::admMixture::kLaCells()
     );
     
     // TODO: fix kLa for benchmark case?
-    kLaCells_.field() = limitedAlpha1 *
+    kLaCells_.field() = // limitedAlpha1 * // <- chech this?
     (
         alphaI_*isCellsInterface_.field() + alphaW_*isCellsActWall_.field()
         // alphaI*isCellsInterface_.field() + (1/alphaW_.value())*isCellsActWall_.field()
@@ -821,15 +821,19 @@ void Foam::admMixture::solvePhase
 {
     alpha2_ = 1 - alpha1_;
 
+    Info<< ">>> calling kLaCells()\n";
     // Classify cells
     kLaCells();
     
+    Info<< ">>> calling massTransferCoeffs()\n";
     // Calculate interface mass flux: phiHS_
     massTransferCoeffs();
 
+    Info<< ">>> calling speciesMules()\n";
     // Solve MULES equations for each Yi
     speciesMules(interface);
 
+    Info<< ">>> calling speciesADMCorrect()\n";
     // Convert mesh based Yi to phase based Yi for ADM calculation
     speciesADMCorrect();
 
