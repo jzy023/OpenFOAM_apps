@@ -221,11 +221,12 @@ Foam::ADMno1::ADMno1
             (
                 IOobject
                 (
-                    IOobject::groupName(namesParticulate[i], "ADM"),
+                    IOobject::groupName(namesSoluable[i], "ADM"),
                     mesh.time().timeName(),
                     mesh,
                     IOobject::NO_READ,
-                    IOobject::NO_WRITE
+                    // IOobject::NO_WRITE
+                    IOobject::AUTO_WRITE
                 ),
                 mesh,
                 dimensionedScalar
@@ -617,6 +618,8 @@ Foam::ADMno1::ADMno1
     Kaco2_.dimensions().reset(para_.Ka().co2.dimensions());
     KaIN_.dimensions().reset(para_.Ka().IN.dimensions());
     KaW_.dimensions().reset(para_.Ka().W.dimensions());
+
+    YPtrs_[7].field() = 2.5055e-7;
 }
 
 
@@ -781,9 +784,7 @@ void Foam::ADMno1::gasSourceRate()
 {
     volScalarField qGasField = qGas_ * (Pgas_ - Pext_);
     dimensionedScalar qGasAve = qGasField.weightedAverage(qGasField.mesh().V());
-
-
-
+    
     // New method 1 ---------------------------------------------------------------------------
     dGAvePtrs_[0] = 
     (
@@ -851,12 +852,12 @@ volScalarField::Internal Foam::ADMno1::fSh2
         IOobject
         (
             "convSh2",
-            phi.mesh().time().timeName(),
-            phi.mesh(),
+            alpha1_.mesh().time().timeName(),
+            alpha1_.mesh(),
             IOobject::NO_READ,
             IOobject::NO_WRITE
         ),
-        phi.mesh(),
+        alpha1_.mesh(),
         dimensionedScalar
         (
             dimDensity/dimTime, 
@@ -869,7 +870,7 @@ volScalarField::Internal Foam::ADMno1::fSh2
         conv = 
         (
             para_.DTOS() * (Qin_/Vliq_) * (para_.INFLOW(7) - Sh2Temp)
-        // + fvc::div(phi, Sh2Temp) // ?
+        //   + fvc::div(phi, Sh2Temp, "div(phi,Yi)") // ?
         );
     }
     else
@@ -938,12 +939,12 @@ volScalarField::Internal Foam::ADMno1::dfSh2
         IOobject
         (
             "dConvSh2",
-            phi.mesh().time().timeName(),
-            phi.mesh(),
+            alpha1_.mesh().time().timeName(),
+            alpha1_.mesh(),
             IOobject::NO_READ,
             IOobject::NO_WRITE
         ),
-        phi.mesh(),
+        alpha1_.mesh(),
         dimensionedScalar
         (
             dimless/dimTime, 
@@ -956,7 +957,7 @@ volScalarField::Internal Foam::ADMno1::dfSh2
         dConv = 
         (
            - para_.DTOS() * (Qin_/Vliq_)
-        // + fvc::div(phi)
+        //    + fvc::div(phi)
         );
     }
     else
@@ -992,9 +993,15 @@ void Foam::ADMno1::calcSh2
 
     do
     {
+        // E.field() = fSh2(x).field();
+        // dE.field() = dfSh2(x).field();
+        // x.field() = x.field() - E.field()/dE.field();
+
         E.field() = fSh2(phi, x).field();
         dE.field() = dfSh2(phi, x).field();
         x.field() = x.field() - E.field()/dE.field();
+        // x.correctBoundaryConditions();
+
         // false check
         // if( min(x.field()) < 0 )
         // {
@@ -1008,11 +1015,12 @@ void Foam::ADMno1::calcSh2
     }
     while
     (
-        max(mag(E.field())) > tol &&
+        // max(mag(E.field())) > tol &&
+        gMax(mag(E.field())) > tol &&
         i < nIter
     );
 
-    if( min(x.field()) < 0 )
+    if( gMin(x.field()) < 0 )
     {
         x.field() = 0.0*x.field() + 1e-16;
     }
@@ -1409,11 +1417,11 @@ void Foam::ADMno1::calcShp()
     }
     while
     (
-        max(mag(E.field())) > tol &&
+        gMax(mag(E.field())) > tol &&
         i < nIter
     );
 
-    if( min(x.field()) < 0 )
+    if( gMin(x.field()) < 0 )
     {
         x.field() = 0.0*x.field() + 1e-16;
     }
@@ -1502,6 +1510,7 @@ void Foam::ADMno1::correct
     calcShp();
 
     //- Sh2 calculations
+    // calcSh2();
     calcSh2(phi);
 }
 

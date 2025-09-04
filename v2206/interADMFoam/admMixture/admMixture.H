@@ -139,6 +139,9 @@ protected:
         dimensionedScalar mDotTest_;
         surfaceScalarField phiD_;
         volScalarField Mflux_;
+
+        volScalarField divPhi;
+        volScalarField divPhiSh2;
         
 
     // Private Member Functions
@@ -338,26 +341,27 @@ public:
         // }
 
 
-        void speciesAlphaCorrect()
-        {
-            forAll(SiAlpha_, i)
-            {
-                SiAlpha_[i] = reaction_->Y()[i]*alpha1_;
-            }
+        // void speciesAlphaCorrect()
+        // {
+        //     forAll(SiAlpha_, i)
+        //     {
+        //         SiAlpha_[i] = reaction_->Y()[i]*alpha1_;
+        //     }
 
-            forAll(GiAlpha_, i)
-            {
-                GiAlpha_[i] = reaction_->GAve()[i]*alpha2_;
-            }
+        //     forAll(GiAlpha_, i)
+        //     {
+        //         GiAlpha_[i] = reaction_->GAve()[i]*alpha2_;
+        //     }
 
-            // TODO: for source terms dS and dG too
-        }
+        //     // TODO: for source terms dS and dG too
+        // }
 
 
         void speciesADMCorrect()
         {
             //- threshold volume fraction alpha0, to avoid error introduced by interface correction
             scalar alpha00 = 1e-2;
+            // scalar alpha00 = 0.1;
 
             dimensionedScalar YiAlphaAverage
             (
@@ -378,6 +382,11 @@ public:
 
             forAll(SiAlpha_, i)
             {
+                if (i == 7)
+                {
+                    continue;
+                }
+
                 volScalarField& Yi = SiAlpha_[i];
                 volScalarField& YiADM = reaction_->Y()[i];
 
@@ -394,6 +403,7 @@ public:
                 // Mass and volume field at interface cells
                 volScalarField::Internal massFieldInterface = isCellsInterface_*Yi.internalField()*U_.mesh().V();
                 volScalarField::Internal volumeFieldInterface = isCellsInterface_*limitedAlpha1.internalField()*U_.mesh().V();
+                YiAlphaAverageInterface.value() = YiAlphaAverage.value();
                 if (gSum(isCellsInterface_) < 1)
                 {
                     YiAlphaAverageInterface.value() = YiAlphaAverage.value();

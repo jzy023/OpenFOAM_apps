@@ -208,6 +208,13 @@ void Foam::admMixture::speciesMules
     // Soluables
     forAll(SiAlpha_, i)
 	{
+        if (i == 7)
+        {
+            // divPhi = fvc::div(phiHS_);
+            // divPhiSh2 = fvc::div(phiHS_, Sh2);
+            continue;
+        }
+
         volScalarField& Yi = SiAlpha_[i];
         
         scalar maxYi = max(gMax(Yi), gMax(Yi.boundaryField())) + 1e-30;
@@ -395,7 +402,7 @@ Foam::admMixture::admMixture
         this->subDict("degassing").lookupOrDefault
         (
             "alphaInterface",
-            0.1
+            0.2
         )
     ),
     actPatch_
@@ -611,6 +618,42 @@ Foam::admMixture::admMixture
             SMALL
         )
     )
+    ,divPhi
+    (
+        IOobject
+        (
+            "divPhi",
+            alpha1_.time().timeName(),
+            U_.mesh(),
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        U_.mesh(),
+        dimensionedScalar
+        (
+            "MFlux",
+            dimless/dimTime,
+            Zero
+        )
+    ),
+    divPhiSh2
+    (
+        IOobject
+        (
+            "divPhiSh2",
+            alpha1_.time().timeName(),
+            U_.mesh(),
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        U_.mesh(),
+        dimensionedScalar
+        (
+            "MFlux",
+            dimDensity/dimTime,
+            Zero
+        )
+    )
 {
     //- Main substances concentration initialization
 
@@ -819,21 +862,29 @@ void Foam::admMixture::solvePhase
     const interfaceProperties& interface
 )
 {
+    // volScalarField limitedAlpha1
+    // (
+    //     min(max(alpha1_, scalar(0)), scalar(1))
+    // );
+    // SiAlpha_[7] = limitedAlpha1*reaction_->Y()[7];
+    // SiAlpha_[7].correctBoundaryConditions();
+
+    // scalar maxYiInternal = gMax(SiAlpha_[7]) + 1e-30;
+    // scalar maxYiAll = max(gMax(SiAlpha_[7]), gMax(SiAlpha_[7].boundaryField())) + 1e-30;
+    // Info<< ">>> Sh2 internal = " << maxYiInternal 
+    //     << " , Sh2 all = " << maxYiAll << endl;
+
     alpha2_ = 1 - alpha1_;
 
-    Info<< ">>> calling kLaCells()\n";
     // Classify cells
     kLaCells();
     
-    Info<< ">>> calling massTransferCoeffs()\n";
     // Calculate interface mass flux: phiHS_
     massTransferCoeffs();
 
-    Info<< ">>> calling speciesMules()\n";
     // Solve MULES equations for each Yi
     speciesMules(interface);
 
-    Info<< ">>> calling speciesADMCorrect()\n";
     // Convert mesh based Yi to phase based Yi for ADM calculation
     speciesADMCorrect();
 

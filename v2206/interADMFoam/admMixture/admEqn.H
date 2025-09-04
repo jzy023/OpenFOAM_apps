@@ -14,6 +14,13 @@
         // TODO: simplify?
         volScalarField& YiAlpha = SiAlpha[i];
 
+        if (i == 7)
+        {   // TODO: maybe clean up? 
+            YiAlpha = limitedAlpha1*mixture->reaction()->Y()[i];
+            YiAlpha.correctBoundaryConditions();
+            continue;
+        }
+
         volScalarField SpY = (YiAlpha - YiAlpha.oldTime()) / runTime.deltaT();
 
         while (pimple.correctNonOrthogonal())

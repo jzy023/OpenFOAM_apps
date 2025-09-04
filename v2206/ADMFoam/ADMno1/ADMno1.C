@@ -976,11 +976,11 @@ void Foam::ADMno1::calcSh2
     }
     while
     (
-        max(mag(E.field())) > tol &&
+        gMax(mag(E.field())) > tol &&
         i < nIter
     );
 
-    if( min(x.field()) < 0 )
+    if( gMin(x.field()) < 0 )
     {
         x.field() = 0.0*x.field() + 1e-16;
     }
@@ -1393,11 +1393,11 @@ void Foam::ADMno1::calcShp()
     }
     while
     (
-        max(mag(E.field())) > tol &&
+        gMax(mag(E.field())) > tol &&
         i < nIter
     );
 
-    if( min(x.field()) < 0 )
+    if( gMin(x.field()) < 0 )
     {
         x.field() = 0.0*x.field() + 1e-16;
     }
