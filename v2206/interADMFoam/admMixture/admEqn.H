@@ -32,8 +32,8 @@
               + fvm::div(mixture->phiHS(),YiAlpha,"div(phiH,Yi)")
               - fvm::laplacian(mixture->DalphaS(),YiAlpha)
              ==
-                SpY
-              + limitedAlpha1*mixture->dSi()[i]
+                limitedAlpha1*mixture->dSi()[i]
+              + SpY
             );
 
             //solve equations

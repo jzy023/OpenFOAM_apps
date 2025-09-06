@@ -202,19 +202,7 @@ int main(int argc, char *argv[])
 
         rho = alpha1*rho1 + alpha2*rho2;
 
-        // // testing ------------------------------------------------------------
-        // mixture->solveReaction(phi, Top);
-        // // Info<< ">>> p_rgh: " << p_rgh.weightedAverage(p.mesh().V()) << "\n"
-        // //     << ">>> p: "     << p.weightedAverage(p.mesh().V())     << endl;
-        // // --------------------------------------------------------------------
-
         #include "admMixture/admEqn.H"
-
-        // // testing ------------------------------------------------------------
-        // mixture->solveReaction(phi, Top);
-        // // Info<< ">>> p_rgh: " << p_rgh.weightedAverage(p.mesh().V()) << "\n"
-        // //     << ">>> p: "     << p.weightedAverage(p.mesh().V())     << endl;
-        // // --------------------------------------------------------------------
 
         runTime.write();
 

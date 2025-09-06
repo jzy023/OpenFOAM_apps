@@ -357,19 +357,129 @@ public:
         // }
 
 
+        // void speciesADMCorrect()
+        // {
+        //     //- threshold volume fraction alpha0, to avoid error introduced by interface correction
+        //     // scalar alpha00 = 1e-2;
+        //     scalar alpha00 = 0.1;
+
+        //     dimensionedScalar YiAlphaAverage
+        //     (
+        //         dimMass/dimVolume,
+        //         Zero
+        //     );
+
+        //     dimensionedScalar YiAlphaAverageInterface
+        //     (
+        //         dimMass/dimVolume,
+        //         Zero
+        //     );
+
+        //     volScalarField limitedAlpha1
+        //     (
+        //         min(max(alpha1_, scalar(1e-16)), scalar(1))
+        //     );
+
+        //     forAll(SiAlpha_, i)
+        //     {
+        //         if (i == 7)
+        //         {
+        //             continue;
+        //         }
+
+        //         volScalarField& Yi = SiAlpha_[i];
+        //         volScalarField& YiADM = reaction_->Y()[i];
+
+        //         // Classify cells
+        //         isCellsEmpty_ = 
+        //         (
+        //             min(zeroField(), limitedAlpha1 - alpha00)
+        //           / (limitedAlpha1 - alpha00)
+        //         );
+
+        //         isCellsFull_ =
+        //         (
+        //             max(zeroField(), limitedAlpha1 - (1.0 - alphaInterface_))
+        //           / (limitedAlpha1 - (1.0 - alphaInterface_))
+        //         );
+
+        //         isCellsInterface_ = 1 - isCellsEmpty_ - isCellsFull_;
+
+        //         // Total mass and volume field
+        //         volScalarField::Internal massField = Yi.internalField()*U_.mesh().V();
+        //         volScalarField::Internal volumeField = limitedAlpha1*isCellsFull_.mesh().V();
+        //         YiAlphaAverage.value() = gSum(massField) / gSum(volumeField);
+
+        //         // Mass and volume field at interface cells
+        //         volScalarField::Internal massFieldInterface = isCellsInterface_*massField;
+        //         volScalarField::Internal volumeFieldInterface = isCellsInterface_*volumeField;             
+        //         YiAlphaAverageInterface.value() = YiAlphaAverage.value();
+        //         // TODO: fix this
+        //         if (gSum(isCellsInterface_) < 1)
+        //         {
+        //             YiAlphaAverageInterface.value() = YiAlphaAverage.value();
+        //         }
+        //         else
+        //         {
+        //             YiAlphaAverageInterface.value() = gSum(massFieldInterface) / gSum(volumeFieldInterface);   
+        //         }
+
+        //         // Recreate ADM Yi fields
+        //         // YiADM = YiAlphaAverage;
+        //         YiADM = 
+        //         (
+        //             Yi/limitedAlpha1*isCellsFull_ 
+        //         //   + YiAlphaAverage*(isCellsEmpty_ + isCellsInterface_)
+        //           + YiAlphaAverage*isCellsEmpty_
+        //           + YiAlphaAverageInterface*isCellsInterface_
+        //         );
+
+        //         // // DEBUG ----------------------------------------------------------------------------------------
+        //         // Info<< "DEBUG!!!" << endl;
+
+        //         // volScalarField::Internal massFieldADMAlpha = YiADM.internalField()*limitedAlpha1*isCellsFull_.mesh().V();
+        //         // volScalarField::Internal massFieldADMcorrected = YiADM.internalField()*0.75*isCellsFull_.mesh().V();
+        //         // volScalarField::Internal volumeFieldADM = limitedAlpha1*isCellsFull_.mesh().V();
+
+        //         // volScalarField::Internal massFieldADM = YiADM.internalField();//*limitedAlpha1*isCellsFull_.mesh().V();
+        //         // Info<<   ">>> Sac mass (* alpha): " << gSum(massFieldADMAlpha)
+        //         //     << "\n>>> Sac mass (w/o alpha): " << gSum(massFieldADMcorrected)
+        //         //     << "\n>>> phase volume: " << gSum(volumeFieldADM) << endl;
+        //     }
+        // }
+
+
+        void printGasGenRate()
+        {
+            // total gas generation rate
+            // dimensionedScalar sumGasGen = - gSum(mDot_);
+            // sumGasGen.dimensions().reset(mDot_.dimensions());
+            Info<< "total gas generation rate [mol * m-3]: " << - mDot_.weightedAverage(alpha1_.mesh().V()).value() << endl;
+
+            // forAll(mDot_, i)
+            // {
+            //     dimensionedScalar sumGasGen = gSum(mDot_[i]);
+            //     Info<< "total gas generation rate [mol * m-3]: " << sumGasGen << endl;
+            // }
+        }
+
+
+        // autoPtr<ADMno1> reaction()
+        ADMno1* reaction()
+        {
+            return reaction_;
+        }
+
+
         void speciesADMCorrect()
         {
-            //- threshold volume fraction alpha0, to avoid error introduced by interface correction
-            scalar alpha00 = 1e-2;
-            // scalar alpha00 = 0.1;
-
             dimensionedScalar YiAlphaAverage
             (
                 dimMass/dimVolume,
                 Zero
             );
 
-            dimensionedScalar YiAlphaAverageInterface
+            dimensionedScalar YiAlphaAverageEmpty
             (
                 dimMass/dimVolume,
                 Zero
@@ -391,9 +501,13 @@ public:
                 volScalarField& YiADM = reaction_->Y()[i];
 
                 // Classify cells
-                isCellsEmpty_ = min(zeroField(), limitedAlpha1 - alpha00)/(limitedAlpha1 - alpha00);
-                isCellsFull_ = max(zeroField(), limitedAlpha1 - (1.0 - alphaInterface_))/(limitedAlpha1 - (1.0 - alphaInterface_));
-                isCellsInterface_ = 1 - isCellsEmpty_ - isCellsFull_;
+                isCellsEmpty_ = 
+                (
+                    min(zeroField(), limitedAlpha1 - alphaInterface_)
+                  / (limitedAlpha1 - alphaInterface_)
+                );
+
+                isCellsFull_ = 1 - isCellsEmpty_ ;
 
                 // Total mass and volume field
                 volScalarField::Internal massField = Yi.internalField()*U_.mesh().V();
@@ -401,59 +515,37 @@ public:
                 YiAlphaAverage.value() = gSum(massField) / gSum(volumeField);
 
                 // Mass and volume field at interface cells
-                volScalarField::Internal massFieldInterface = isCellsInterface_*Yi.internalField()*U_.mesh().V();
-                volScalarField::Internal volumeFieldInterface = isCellsInterface_*limitedAlpha1.internalField()*U_.mesh().V();
-                YiAlphaAverageInterface.value() = YiAlphaAverage.value();
+                volScalarField::Internal massFieldEmpty = isCellsEmpty_*massField;
+                volScalarField::Internal volumeFieldEmpty = isCellsEmpty_*volumeField;             
+                YiAlphaAverageEmpty.value() = YiAlphaAverage.value();
+                // TODO: fix this
                 if (gSum(isCellsInterface_) < 1)
                 {
-                    YiAlphaAverageInterface.value() = YiAlphaAverage.value();
+                    YiAlphaAverageEmpty.value() = YiAlphaAverage.value();
                 }
                 else
                 {
-                    YiAlphaAverageInterface.value() = gSum(massFieldInterface) / gSum(volumeFieldInterface);   
+                    YiAlphaAverageEmpty.value() = gSum(massFieldEmpty) / gSum(volumeFieldEmpty);   
                 }
 
                 // Recreate ADM Yi fields
                 YiADM = 
                 (
-                    Yi/limitedAlpha1*isCellsFull_ 
-                  + YiAlphaAverage*isCellsEmpty_
-                  + YiAlphaAverageInterface*isCellsInterface_
+                    Yi/limitedAlpha1*isCellsFull_
+                  + YiAlphaAverageEmpty*isCellsEmpty_
                 );
-
-                // // DEBUG ----------------------------------------------------------------------------------------
-                // Info<< "DEBUG!!!" << endl;
-
-                // volScalarField::Internal massFieldADMAlpha = YiADM.internalField()*limitedAlpha1*isCellsFull_.mesh().V();
-                // volScalarField::Internal massFieldADMcorrected = YiADM.internalField()*0.75*isCellsFull_.mesh().V();
-                // volScalarField::Internal volumeFieldADM = limitedAlpha1*isCellsFull_.mesh().V();
-
-                // volScalarField::Internal massFieldADM = YiADM.internalField();//*limitedAlpha1*isCellsFull_.mesh().V();
-                // Info<<   ">>> Sac mass (* alpha): " << gSum(massFieldADMAlpha)
-                //     << "\n>>> Sac mass (w/o alpha): " << gSum(massFieldADMcorrected)
-                //     << "\n>>> phase volume: " << gSum(volumeFieldADM) << endl;
             }
-        }
 
+            // DEBUG ----------------------------------------------------------------------------------------
+            // Info<< "DEBUG!!!" << endl;
 
-        void printGasGenRate()
-        {
-            // total gas generation rate
-            // dimensionedScalar sumGasGen = - gSum(mDot_);
-            // sumGasGen.dimensions().reset(mDot_.dimensions());
-            Info<< "total gas generation rate [mol * m-3]: " << - mDot_.weightedAverage(alpha1_.mesh().V()).value() << endl;
+            // volScalarField::Internal massFieldADMAlpha = reaction_->Y()[7].internalField()*limitedAlpha1*isCellsFull_.mesh().V();
+            // volScalarField::Internal massFieldADMcorrected = reaction_->Y()[7].internalField()*0.75*isCellsFull_.mesh().V();
+            // volScalarField::Internal volumeFieldADM = limitedAlpha1*isCellsFull_.mesh().V();
 
-            // forAll(mDot_, i)
-            // {
-            //     dimensionedScalar sumGasGen = gSum(mDot_[i]);
-            //     Info<< "total gas generation rate [mol * m-3]: " << sumGasGen << endl;
-            // }
-        }
-
-        // autoPtr<ADMno1> reaction()
-        ADMno1* reaction()
-        {
-            return reaction_;
+            // volScalarField::Internal massFieldADM = reaction_->Y()[7].internalField();//*limitedAlpha1*isCellsFull_.mesh().V();
+            // Info<<   ">>> Sac mass (* alpha): " << gSum(massFieldADMAlpha)
+            //     << ", Sac mass (w/o alpha): " << gSum(massFieldADMcorrected) << endl;
         }
 };
 

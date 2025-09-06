@@ -729,6 +729,10 @@ void Foam::ADMno1::gasPhaseRate
     dimensionedScalar Sh2Ave = YPtrs_[7].weightedAverage(YPtrs_[0].mesh().V());
     dimensionedScalar Sch4Ave = YPtrs_[8].weightedAverage(YPtrs_[0].mesh().V());
     dimensionedScalar Sco2Ave = MPtrs_[0].weightedAverage(YPtrs_[0].mesh().V());
+
+    Info<< ">>> Sh2Ave = " << Sh2Ave.value() << endl;
+    Info<< ">>> Sch4Ave = " << Sch4Ave.value() << endl;
+    Info<< ">>> Sco2Ave = " << Sco2Ave.value() << endl;
     
     GRPtrs_[0] = // <-- kg COD m-3 s-1
     (   // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_
@@ -749,27 +753,29 @@ void Foam::ADMno1::gasPhaseRate
     GRAvePtrs_[0] = GRPtrs_[0].weightedAverage(GRPtrs_[0].mesh().V());
     GRAvePtrs_[1] = GRPtrs_[1].weightedAverage(GRPtrs_[1].mesh().V());
     GRAvePtrs_[2] = GRPtrs_[2].weightedAverage(GRPtrs_[2].mesh().V());
-    kLaCellsAve_ = kLaCells.weightedAverage(kLaCells.mesh().V());
+
+    // kLaCellsAve_ = kLaCells.weightedAverage(kLaCells.mesh().V());
+    // kLaCellsAve_ = para_.DTOS() * kLa_;
 
     // GRAvePtrs_[0] = // <-- kg COD m-3 s-1
     // (   // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_ 
-    //     // kLaCellsAve_ * (Sh2Ave - R_ * TopAve_ * GAvePtrs_[0] * KHh2_)
+    //     kLaCellsAve_ * (Sh2Ave - R_ * TopAve_ * GAvePtrs_[0] * KHh2_)
     // );
 
     // GRAvePtrs_[1] = // <-- kg COD m-3 s-1
     // (   // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_ 
-    //     // kLaCellsAve_ * (Sch4Ave - R_ * TopAve_ * GAvePtrs_[1] * KHch4_)
+    //     kLaCellsAve_ * (Sch4Ave - R_ * TopAve_ * GAvePtrs_[1] * KHch4_)
     // );
 
     // GRAvePtrs_[2] = // <-- mol COD m-3 s-1
     // (   // Sco2 instead of SIC
     //     // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_  
-    //     // kLaCellsAve_ * (Sco2Ave - R_ * TopAve_ * GAvePtrs_[2] * KHco2_)
+    //     kLaCellsAve_ * (Sco2Ave - R_ * TopAve_ * GAvePtrs_[2] * KHco2_)
     // );
 
     // DEBUG
-    Info<< ">>> kLa [s^-1] ADMno1: " << (para_.DTOS() * kLa_).value() << "\n"
-        << ">>> kLa [s^-1] ADMno1Multi: " << kLaCellsAve_.value() << endl;
+    // Info<< ">>> kLa [s^-1] ADMno1: " << (para_.DTOS() * kLa_).value() << "\n"
+    //     << ">>> kLa [s^-1] ADMno1Multi: " << kLaCellsAve_.value() << endl;
 
     forAll(GAvePtrs_, i)
     {
@@ -784,7 +790,7 @@ void Foam::ADMno1::gasSourceRate()
 {
     volScalarField qGasField = qGas_ * (Pgas_ - Pext_);
     dimensionedScalar qGasAve = qGasField.weightedAverage(qGasField.mesh().V());
-    
+
     // New method 1 ---------------------------------------------------------------------------
     dGAvePtrs_[0] = 
     (
@@ -1020,10 +1026,15 @@ void Foam::ADMno1::calcSh2
         i < nIter
     );
 
-    if( gMin(x.field()) < 0 )
-    {
-        x.field() = 0.0*x.field() + 1e-16;
-    }
+    x.field() = min(max(x.field(), scalar(1e-16)), x.field());
+
+    // if
+    // (
+    //     min(x.field()) < 0
+    // )
+    // {
+    //     x.field() = 0.0*x.field() + 1e-16;
+    // }
 
     Info<< "Newton-Raphson:\tSolving for Sh2" 
         << ", min Sh2: " << min(x.field()) 
@@ -1417,14 +1428,20 @@ void Foam::ADMno1::calcShp()
     }
     while
     (
-        gMax(mag(E.field())) > tol &&
+        // gMax(mag(E.field())) > tol &&
+        max(mag(E.field())) > tol &&
         i < nIter
     );
 
-    if( gMin(x.field()) < 0 )
-    {
-        x.field() = 0.0*x.field() + 1e-16;
-    }
+    x.field() = min(max(x.field(), scalar(1e-16)), x.field());
+
+    // if
+    // (
+    //     min(x.field()) < 0
+    // )
+    // {
+    //     x.field() = 0.0*x.field() + 1e-16;
+    // }
 
     Info<< "Newton-Raphson:\tSolving for Sh+" 
         << ", min Shp: " << min(x.field()) 

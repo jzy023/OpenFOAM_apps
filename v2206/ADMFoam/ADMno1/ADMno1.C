@@ -758,6 +758,26 @@ void Foam::ADMno1::gasPhaseRate()
         para_.DTOS() * kLa_// Sco2 instead of SIC
       * (MPtrs_[0].internalField() - R_ * TopDummy_.internalField() * GPtrs_[2].internalField() * KHco2_)
     );
+
+    // test -------------------------------------------------------------
+    dimensionedScalar Sh2Ave = YPtrs_[7].weightedAverage(YPtrs_[0].mesh().V());
+    dimensionedScalar Sch4Ave = YPtrs_[8].weightedAverage(YPtrs_[0].mesh().V());
+    dimensionedScalar Sco2Ave = MPtrs_[0].weightedAverage(YPtrs_[0].mesh().V());
+
+    Info<< ">>> Sh2Ave = " << Sh2Ave.value() << endl;
+    Info<< ">>> Sch4Ave = " << Sch4Ave.value() << endl;
+    Info<< ">>> Sco2Ave = " << Sco2Ave.value() << endl;
+
+    forAll(GPtrs_, i)
+    {
+        dimensionedScalar GiAve = GPtrs_[i].weightedAverage(GPtrs_[i].mesh().V());
+        dimensionedScalar GRiAve = GRPtrs_[i].weightedAverage(GPtrs_[i].mesh().V());
+
+        Info<< ">>> "                 << GPtrs_[i].name()
+            << " concentration = "    << GiAve.value()
+            << ", generation rate = " << GRiAve.value() << endl;
+    }
+    // ------------------------------------------------------------------
 }
 
 
@@ -805,19 +825,6 @@ void Foam::ADMno1::gasSourceRate()
     {
         if ( qGasLocal.field()[i] < 0.0 ) { qGasLocal.field()[i] = 1e-16; }
     }
-
-    // test -------------------------------------------------------------
-    forAll(GPtrs_, i)
-    {
-        dimensionedScalar GiAve = GPtrs_[i].weightedAverage(GPtrs_[i].mesh().V());
-        dimensionedScalar GRiAve = GRPtrs_[i].weightedAverage(GPtrs_[i].mesh().V());
-
-        Info<< ">>> "                 << GPtrs_[i].name()
-            << " concentration = "    << GiAve.value()
-            << ", generation rate = " << GRiAve.value() << endl;
-    }
-
-    // ------------------------------------------------------------------
 
     dGPtrs_[0].field() = 
     (
@@ -980,10 +987,15 @@ void Foam::ADMno1::calcSh2
         i < nIter
     );
 
-    if( gMin(x.field()) < 0 )
-    {
-        x.field() = 0.0*x.field() + 1e-16;
-    }
+    x.field() = min(max(x.field(), scalar(1e-16)), x.field());
+
+    // if
+    // (
+    //     min(x.field()) < 0
+    // )
+    // {
+    //     x.field() = 0.0*x.field() + 1e-16;
+    // }
 
     Info<< "Newton-Raphson:\tSolving for Sh2" 
         << ", min Sh2: " << min(x.field()) 
@@ -1393,14 +1405,20 @@ void Foam::ADMno1::calcShp()
     }
     while
     (
-        gMax(mag(E.field())) > tol &&
+        // gMax(mag(E.field())) > tol &&
+        max(mag(E.field())) > tol &&
         i < nIter
     );
 
-    if( gMin(x.field()) < 0 )
-    {
-        x.field() = 0.0*x.field() + 1e-16;
-    }
+    x.field() = min(max(x.field(), scalar(1e-16)), x.field());
+
+    // if
+    // (
+    //     min(x.field()) < 0
+    // )
+    // {
+    //     x.field() = 0.0*x.field() + 1e-16;
+    // }
 
     Info<< "Newton-Raphson:\tSolving for Sh+" 
         << ", min Shp: " << min(x.field()) 

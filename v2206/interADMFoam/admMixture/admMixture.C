@@ -778,7 +778,6 @@ Foam::admMixture::mDot()
     return mDot_;
 
     // ----------------------------------------------------------------------------------
-    // mDot_ = limitedAlpha1 * (-mDotTest_)*(isCellsInterface_ + (1/alphaW_)*isCellsActWall_);
     // mDot_ = limitedAlpha1 * (-mDotTest_)*kLaCells_;
 
     // return mDot_;
@@ -802,8 +801,6 @@ Foam::admMixture::mDotAlphal()
     return mDotAlphal_;
 
     // ----------------------------------------------------------------------------------
-    // mDotAlphal_ = (-mDotTest_)*kLaCells_;
-    // mDotAlphal_ = (-mDotTest_)*(isCellsInterface_ + (1/alphaW_)*isCellsActWall_);
     // mDotAlphal_ = (-mDotTest_)*kLaCells_;
 
     // return mDotAlphal_;
