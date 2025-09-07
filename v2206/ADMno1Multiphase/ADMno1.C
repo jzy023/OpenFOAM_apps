@@ -1433,6 +1433,7 @@ void Foam::ADMno1::calcShp()
         i < nIter
     );
 
+    // TODO: fix this to set negatives to average Sh2
     x.field() = min(max(x.field(), scalar(1e-16)), x.field());
 
     // if

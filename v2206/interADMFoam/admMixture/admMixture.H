@@ -140,8 +140,8 @@ protected:
         surfaceScalarField phiD_;
         volScalarField Mflux_;
 
-        volScalarField divPhi;
-        volScalarField divPhiSh2;
+        // volScalarField divPhi;
+        // volScalarField divPhiSh2;
         
 
     // Private Member Functions

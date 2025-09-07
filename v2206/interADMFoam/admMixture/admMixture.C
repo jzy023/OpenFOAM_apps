@@ -402,7 +402,7 @@ Foam::admMixture::admMixture
         this->subDict("degassing").lookupOrDefault
         (
             "alphaInterface",
-            0.2
+            0.75
         )
     ),
     actPatch_
@@ -522,8 +522,7 @@ Foam::admMixture::admMixture
             alpha1_.time().timeName(),
 			U_.mesh(),
 			IOobject::NO_READ,
-			// IOobject::NO_WRITE
-            IOobject::AUTO_WRITE
+			IOobject::NO_WRITE
 		),
 		U_.mesh(),
 		dimensionedScalar
@@ -618,42 +617,42 @@ Foam::admMixture::admMixture
             SMALL
         )
     )
-    ,divPhi
-    (
-        IOobject
-        (
-            "divPhi",
-            alpha1_.time().timeName(),
-            U_.mesh(),
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        U_.mesh(),
-        dimensionedScalar
-        (
-            "MFlux",
-            dimless/dimTime,
-            Zero
-        )
-    ),
-    divPhiSh2
-    (
-        IOobject
-        (
-            "divPhiSh2",
-            alpha1_.time().timeName(),
-            U_.mesh(),
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        U_.mesh(),
-        dimensionedScalar
-        (
-            "MFlux",
-            dimDensity/dimTime,
-            Zero
-        )
-    )
+    // ,divPhi
+    // (
+    //     IOobject
+    //     (
+    //         "divPhi",
+    //         alpha1_.time().timeName(),
+    //         U_.mesh(),
+    //         IOobject::NO_READ,
+    //         IOobject::NO_WRITE
+    //     ),
+    //     U_.mesh(),
+    //     dimensionedScalar
+    //     (
+    //         "MFlux",
+    //         dimless/dimTime,
+    //         Zero
+    //     )
+    // ),
+    // divPhiSh2
+    // (
+    //     IOobject
+    //     (
+    //         "divPhiSh2",
+    //         alpha1_.time().timeName(),
+    //         U_.mesh(),
+    //         IOobject::NO_READ,
+    //         IOobject::NO_WRITE
+    //     ),
+    //     U_.mesh(),
+    //     dimensionedScalar
+    //     (
+    //         "MFlux",
+    //         dimDensity/dimTime,
+    //         Zero
+    //     )
+    // )
 {
     //- Main substances concentration initialization
 
