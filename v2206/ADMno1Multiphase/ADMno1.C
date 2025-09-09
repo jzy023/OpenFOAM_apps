@@ -999,14 +999,9 @@ void Foam::ADMno1::calcSh2
 
     do
     {
-        // E.field() = fSh2(x).field();
-        // dE.field() = dfSh2(x).field();
-        // x.field() = x.field() - E.field()/dE.field();
-
         E.field() = fSh2(phi, x).field();
         dE.field() = dfSh2(phi, x).field();
         x.field() = x.field() - E.field()/dE.field();
-        // x.correctBoundaryConditions();
 
         // false check
         // if( min(x.field()) < 0 )
@@ -1026,15 +1021,17 @@ void Foam::ADMno1::calcSh2
         i < nIter
     );
 
-    x.field() = min(max(x.field(), scalar(1e-16)), x.field());
-
-    // if
+    x.field() = min(max(x.field(), scalar(1e-16)), x.field());    
+    // scalar range = 0.1;
+    // dimensionedScalar xAve = x.weightedAverage(x.mesh().V());
+    // x.field() = min
     // (
-    //     min(x.field()) < 0
-    // )
-    // {
-    //     x.field() = 0.0*x.field() + 1e-16;
-    // }
+    //     max
+    //     (
+    //         x.field(), xAve.value() * (1 - range)
+    //     ), 
+    //     xAve.value() * (1 + range)
+    // );
 
     Info<< "Newton-Raphson:\tSolving for Sh2" 
         << ", min Sh2: " << min(x.field()) 
@@ -1433,16 +1430,17 @@ void Foam::ADMno1::calcShp()
         i < nIter
     );
 
-    // TODO: fix this to set negatives to average Sh2
     x.field() = min(max(x.field(), scalar(1e-16)), x.field());
-
-    // if
+    // scalar range = 2.0;
+    // dimensionedScalar xAve = x.weightedAverage(x.mesh().V());
+    // x.field() = min
     // (
-    //     min(x.field()) < 0
-    // )
-    // {
-    //     x.field() = 0.0*x.field() + 1e-16;
-    // }
+    //     max
+    //     (
+    //         x.field(), xAve.value() / range
+    //     ), 
+    //     xAve.value() * range
+    // );
 
     Info<< "Newton-Raphson:\tSolving for Sh+" 
         << ", min Shp: " << min(x.field()) 

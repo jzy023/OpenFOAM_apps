@@ -204,6 +204,12 @@ int main(int argc, char *argv[])
 
         #include "admMixture/admEqn.H"
 
+        // // --------------------------------------------------------------------
+        // volScalarField& Sac = mixture->SiAlpha()[6];
+        // Sac.field() = min(max(Sac.field(), scalar(0.0)), scalar(0.09));
+        // Info<< mag(Sac.field()) << endl;
+        // // --------------------------------------------------------------------
+
         runTime.write();
 
         runTime.printExecutionTime(Info);

@@ -987,15 +987,17 @@ void Foam::ADMno1::calcSh2
         i < nIter
     );
 
-    x.field() = min(max(x.field(), scalar(1e-16)), x.field());
-
-    // if
-    // (
-    //     min(x.field()) < 0
-    // )
-    // {
-    //     x.field() = 0.0*x.field() + 1e-16;
-    // }
+    // x.field() = min(max(x.field(), scalar(1e-16)), x.field());
+    scalar range = 0.1;
+    dimensionedScalar xAve = x.weightedAverage(x.mesh().V());
+    x.field() = min
+    (
+        max
+        (
+            x.field(), xAve.value() * (1 - range)
+        ), 
+        xAve.value() * (1 + range)
+    );
 
     Info<< "Newton-Raphson:\tSolving for Sh2" 
         << ", min Sh2: " << min(x.field()) 
@@ -1390,6 +1392,7 @@ void Foam::ADMno1::calcShp()
     scalar tol = 1e-12;
     label nIter = 1e3;
     label i = 0;
+    label nCells = ShP_.mesh().globalData().nTotalCells();
 
     // initial value of x, E and dEdx
     volScalarField::Internal x = ShP_;   // x = Shp
@@ -1405,20 +1408,24 @@ void Foam::ADMno1::calcShp()
     }
     while
     (
+        // max(mag(E.field())) > tol &&
         // gMax(mag(E.field())) > tol &&
-        max(mag(E.field())) > tol &&
+        
+        sumMag(E.field()) / nCells > tol &&
         i < nIter
     );
 
-    x.field() = min(max(x.field(), scalar(1e-16)), x.field());
-
-    // if
-    // (
-    //     min(x.field()) < 0
-    // )
-    // {
-    //     x.field() = 0.0*x.field() + 1e-16;
-    // }
+    // x.field() = min(max(x.field(), scalar(1e-16)), x.field());
+    scalar range = 2.0;
+    dimensionedScalar xAve = x.weightedAverage(x.mesh().V());
+    x.field() = min
+    (
+        max
+        (
+            x.field(), xAve.value() / range
+        ), 
+        xAve.value() * range
+    );
 
     Info<< "Newton-Raphson:\tSolving for Sh+" 
         << ", min Shp: " << min(x.field()) 
