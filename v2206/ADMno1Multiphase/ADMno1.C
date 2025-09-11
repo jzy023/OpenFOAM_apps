@@ -1002,36 +1002,24 @@ void Foam::ADMno1::calcSh2
         E.field() = fSh2(phi, x).field();
         dE.field() = dfSh2(phi, x).field();
         x.field() = x.field() - E.field()/dE.field();
-
-        // false check
-        // if( min(x.field()) < 0 )
-        // {
-        //     std::cerr << nl << "--> FOAM FATAL IO ERROR:" << nl
-        //               << "Sh2 concentration below Zero\n";
-        //     std::exit(1);
-        //     break;
-        // }
-        // Info<< max(x.field()) << endl;
         i++;
     }
     while
     (
-        // max(mag(E.field())) > tol &&
         gMax(mag(E.field())) > tol &&
         i < nIter
     );
 
-    x.field() = min(max(x.field(), scalar(1e-16)), x.field());    
-    // scalar range = 0.1;
-    // dimensionedScalar xAve = x.weightedAverage(x.mesh().V());
-    // x.field() = min
-    // (
-    //     max
-    //     (
-    //         x.field(), xAve.value() * (1 - range)
-    //     ), 
-    //     xAve.value() * (1 + range)
-    // );
+    scalar range = 0.1;
+    dimensionedScalar xAve = x.weightedAverage(x.mesh().V());
+    x.field() = min
+    (
+        max
+        (
+            x.field(), xAve.value() * (1 - range)
+        ), 
+        xAve.value() * (1 + range)
+    );
 
     Info<< "Newton-Raphson:\tSolving for Sh2" 
         << ", min Sh2: " << min(x.field()) 
@@ -1425,22 +1413,20 @@ void Foam::ADMno1::calcShp()
     }
     while
     (
-        // gMax(mag(E.field())) > tol &&
-        max(mag(E.field())) > tol &&
+        gMax(mag(E.field())) > tol &&
         i < nIter
     );
 
-    x.field() = min(max(x.field(), scalar(1e-16)), x.field());
-    // scalar range = 2.0;
-    // dimensionedScalar xAve = x.weightedAverage(x.mesh().V());
-    // x.field() = min
-    // (
-    //     max
-    //     (
-    //         x.field(), xAve.value() / range
-    //     ), 
-    //     xAve.value() * range
-    // );
+    scalar range = 2.0;
+    dimensionedScalar xAve = x.weightedAverage(x.mesh().V());
+    x.field() = min
+    (
+        max
+        (
+            x.field(), xAve.value() / range
+        ), 
+        xAve.value() * range
+    );
 
     Info<< "Newton-Raphson:\tSolving for Sh+" 
         << ", min Shp: " << min(x.field()) 
@@ -1526,7 +1512,6 @@ void Foam::ADMno1::correct
     calcShp();
 
     //- Sh2 calculations
-    // calcSh2();
     calcSh2(phi);
 }
 

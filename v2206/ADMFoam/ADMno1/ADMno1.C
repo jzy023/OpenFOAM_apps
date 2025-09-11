@@ -970,15 +970,6 @@ void Foam::ADMno1::calcSh2
         E.field() = fSh2(flux, x).field();
         dE.field() = dfSh2(flux, x).field();
         x.field() = x.field() - E.field()/dE.field();
-        // false check
-        // if( min(x.field()) < 0 )
-        // {
-        //     std::cerr << nl << "--> FOAM FATAL IO ERROR:" << nl
-        //               << "Sh2 concentration below Zero\n";
-        //     std::exit(1);
-        //     break;
-        // }
-        // Info<< max(x.field()) << endl;
         i++;
     }
     while
@@ -987,7 +978,6 @@ void Foam::ADMno1::calcSh2
         i < nIter
     );
 
-    // x.field() = min(max(x.field(), scalar(1e-16)), x.field());
     scalar range = 0.1;
     dimensionedScalar xAve = x.weightedAverage(x.mesh().V());
     x.field() = min
@@ -1392,7 +1382,7 @@ void Foam::ADMno1::calcShp()
     scalar tol = 1e-12;
     label nIter = 1e3;
     label i = 0;
-    label nCells = ShP_.mesh().globalData().nTotalCells();
+    // label nCells = ShP_.mesh().globalData().nTotalCells();
 
     // initial value of x, E and dEdx
     volScalarField::Internal x = ShP_;   // x = Shp
@@ -1408,14 +1398,11 @@ void Foam::ADMno1::calcShp()
     }
     while
     (
-        // max(mag(E.field())) > tol &&
-        // gMax(mag(E.field())) > tol &&
-        
-        sumMag(E.field()) / nCells > tol &&
+        // sumMag(E.field()) / nCells > tol &&
+        gMax(mag(E.field())) > tol &&
         i < nIter
     );
 
-    // x.field() = min(max(x.field(), scalar(1e-16)), x.field());
     scalar range = 2.0;
     dimensionedScalar xAve = x.weightedAverage(x.mesh().V());
     x.field() = min
