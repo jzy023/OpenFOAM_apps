@@ -402,7 +402,7 @@ Foam::admMixture::admMixture
         this->subDict("degassing").lookupOrDefault
         (
             "alphaInterface",
-            0.75
+            0.8
         )
     ),
     actPatch_

@@ -1010,7 +1010,8 @@ void Foam::ADMno1::calcSh2
         i < nIter
     );
 
-    scalar range = 0.1;
+    // safe guard 
+    scalar range = 0.5;
     dimensionedScalar xAve = x.weightedAverage(x.mesh().V());
     x.field() = min
     (
@@ -1417,6 +1418,7 @@ void Foam::ADMno1::calcShp()
         i < nIter
     );
 
+    // safe guard 
     scalar range = 2.0;
     dimensionedScalar xAve = x.weightedAverage(x.mesh().V());
     x.field() = min
