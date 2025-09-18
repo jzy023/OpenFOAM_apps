@@ -53,33 +53,32 @@ class ADMno1
 {
 
 private:
-    //- DEBUG
-    dimensionedScalar Qin_;
+    // ------------------------- Gas Phase Parameters ---------------------- //
+    //- Volume content [m3 s-1]
+    //  benchmark purpose only
+    dimensionedScalar Qin_; 
+
+    //- Total gas phase volume [m3]
     dimensionedScalar Vgas_;
+
+    //- Total liquid phase volume [m3]
     dimensionedScalar Vliq_;
 
-    //- ADM no1 parameters
-    admPara para_;
+    //- Gas-Liquid volume fraction in tank 
+    dimensionedScalar Vfrac_;
 
-    //- Schmidt number
-    scalar Sc_;
+    //- Total reaction tank volume [m3]
+    const dimensionedScalar Vmesh_;
 
-    //- Turbulent Schmidt number
-    scalar Sct_;
+    //- Dimensionless gas outflow rate per pascal of presure difference
+    dimensionedScalar qGas_;
 
-    //- Gas constant
-    scalar R_;
+    //- Pipe resistance coefficient [m³s⁻¹Bar⁻¹]
+    dimensionedScalar KP_;
 
+    // TODO: [s-1]?
     // Gas transfer rate coefficients [d-1]
     dimensionedScalar kLa_;
-
-    //- Pipe resistance coefficient [m³d⁻¹Pa⁻¹] -> Rosen original [m³d⁻¹Bar⁻¹]
-    // TODO: "pipe" DOES NOT EXIST in this case!!!
-    scalar KP_;
-
-    // TODO: this is only for benchmark case
-    //- Gas-Liquid volume fraction in tank 
-    scalar Vfrac_;
 
     //- Vapour pressure of water [Pa]
     dimensionedScalar Pvap_; 
@@ -89,6 +88,26 @@ private:
 
     //- Gas exit ambient pressure
     volScalarField Pgas_; 
+
+    //- Gas constant
+    // dimensionedScalar R_;
+    scalar R_;
+
+    // -------------------------- General Parameters ----------------------- //
+    //- Operating under benchmark mode or not
+    const bool isBenchmark_;
+
+    //- ADM no1 operation mode
+    const word runMode_;
+
+    //- ADM no1 parameters
+    admPara para_;
+
+    //- Schmidt number
+    scalar Sc_;
+
+    //- Turbulent Schmidt number
+    scalar Sct_;
 
     //- Dimensionless operating temperature field
     volScalarField TopDummy_;
@@ -359,6 +378,59 @@ public:
     // combustionModels/laminar.C -> template<class ReactionThermo>
                                   // Foam::tmp<Foam::fvScalarMatrix>
                                   // Foam::combustionModels::laminar<ReactionThermo>::R(volScalarField& Y) const
+
+
+    void calcGasParameters()
+    {
+        // Vfrac_.value() = this->get<scalar>("Vfrac");
+        // Vgas_ = Vmesh_ * Vfrac_ / (1 + Vfrac_);
+        // Vliq_ = Vmesh_ - Vgas_;
+
+        // just a test too generate layers for case studies
+        Qin_.value() = 0.0;
+        Vgas_.value() = 300;
+        Vliq_.value() = 3400;
+        Vfrac_ = Vgas_/Vliq_;
+        qGas_.value() = KP_.value() / Vgas_.value();
+    }
+
+    word checkBenchmark()
+    {
+        // initialize dimensions
+        Qin_.dimensions().reset(dimVolume/dimTime);
+        Vgas_.dimensions().reset(dimVolume);
+        Vliq_.dimensions().reset(dimVolume);
+        Vfrac_.dimensions().reset(dimless);
+        qGas_.dimensions().reset(dimless/dimPressure/dimTime);
+        KP_.dimensions().reset(dimVolume/dimPressure/dimTime);
+
+        // >>> if benchmark case
+        if (isBenchmark_)
+        {
+            Info<< ">>> Benchmark case [Rose and Jeppsson, 2006]"<< endl;
+
+            Qin_.value() = 178.4674;
+            Vgas_.value() = 300;
+            Vliq_.value() = 3400;
+            Vfrac_ = Vgas_/Vliq_;
+
+            // KP: [m3 * s-1 * Pa-1]
+            // KP_.value() = para_.DTOS() * 5e4 / para_.BTOP();
+            KP_.value() = 5e4 / (1e5 * 86400.0);
+            qGas_ = KP_ / Vgas_;
+
+            return "MesoSolid";
+        }
+
+        // >>> if not benchmark case
+        Qin_.value() = 0.0;
+        KP_.value() = this->get<scalar>("Kpip") / 86400.0;
+        
+        // calculate with alpha1
+        calcGasParameters();
+
+        return this->get<word>("mode");;
+    }
 
 };
 

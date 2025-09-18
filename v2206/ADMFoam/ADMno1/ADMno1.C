@@ -48,93 +48,33 @@ Foam::ADMno1::ADMno1
 :
     IOdictionary(ADMno1Dict),
     // DEBUG =======================================================
-    Qin_
+    Vmesh_
     (
-        "Qin", 
-        dimVolume/dimTime,
-        // ADMno1Dict.lookupOrDefault("qin", 0.00)
-        ADMno1Dict.lookupOrDefault("qin", 178.4674) // benchmark 
-    ),
-    Vgas_
-    (
-        "Vgas", 
         dimVolume,
-        // 100 // <<< Rosen et al.
-        300
-    ),
-    Vliq_
-    (
-        "Vliq", 
-        dimVolume, 
-        3400
-    ),
-    // =============================================================
-    para_
-    (
-        ADMno1Dict.get<word>("mode")
-    ),
-    Sc_
-    (
-        ADMno1Dict.lookupOrDefault("Sc", 1.0)
-    ),
-    Sct_
-    (
-        ADMno1Dict.lookupOrDefault("Sct", 0.2)
-    ),
-    R_
-    (
-        ADMno1Dict.lookupOrDefault
-        (
-            "R", 
-            0.083145 / para_.kTOK()
-            // default digit number from Rosen paper with their dimensions
-        ) 
+        gSum(T.mesh().V())
     ),
     kLa_
     (
         "kLa",
         dimless/dimTime,
-        ADMno1Dict.lookupOrDefault
+        this->lookupOrDefault
         (
             "kLa",
-            200.0
+            200
         ) 
     ),
-    KP_
-    (
-        ADMno1Dict.lookupOrDefault
-        (
-            "Kpip", 
-            5e4 / para_.BTOP()
-            // default digit number from Rosen paper with their dimensions
-        ) 
-    ),
-    Vfrac_
-    (
-        // ADMno1Dict.lookupOrDefault("Vfrac", 0.0294118) // 100/3400
-        ADMno1Dict.lookupOrDefault("Vfrac", 0.0882353) // 300/3400
-    ), 
     Pvap_
     (
         "Pvap", 
         dimPressure,
-        ADMno1Dict.lookupOrDefault
-        (
-            "Pvap", 
-            para_.BTOP() * 0.0313
-            // default digit number from Rosen paper with their dimensions
-        ) 
+        this->get<scalar>("Pvap")
     ),
     Pext_
     (
         "Pext", 
         dimPressure,
-        ADMno1Dict.lookupOrDefault
-        (
-            "Pext", 
-            para_.BTOP() * 1.013
-            // default digit number from Rosen paper with their dimensions
-        ) 
+        this->lookupOrDefault
+        ("Pext", 1e5 * 1.013)
     ),
     Pgas_
     (
@@ -148,6 +88,31 @@ Foam::ADMno1::ADMno1
         ),
         mesh,
         Pext_
+    ),
+    R_
+    (
+        this->lookupOrDefault("R", 8.3145)
+    ),
+    // =============================================================
+    isBenchmark_
+    (
+        this->lookupOrDefault("benchmark", false)
+    ),
+    runMode_
+    (
+        checkBenchmark()
+    ),
+    para_
+    (
+        ADMno1Dict.get<word>("mode")
+    ),
+    Sc_
+    (
+        ADMno1Dict.lookupOrDefault("Sc", 1.0)
+    ),
+    Sct_
+    (
+        ADMno1Dict.lookupOrDefault("Sct", 0.2)
     ),
     TopDummy_(T),
     fac_
@@ -648,7 +613,12 @@ Foam::ADMno1::ADMno1
     nIh2_ = 3.0 / (para_.pHL().ULh2 - para_.pHL().LLh2);  // h2
 
     // DEBUG
-    Vfrac_ = (Vgas_/Vliq_).value();
+    Info<<   ">>> is benchmark case: " << isBenchmark_
+        << "\n>>> Qin_: "   << Qin_.value()
+        << "\n>>> Vgas_: "  << Vgas_.value()
+        << "\n>>> Vliq_: "  << Vliq_.value()
+        << "\n>>> Vfrac_: " << Vfrac_.value()
+        << "\n>>> qGas_: "  << qGas_.value() << endl;
 }
 
 
@@ -703,7 +673,6 @@ void Foam::ADMno1::calcThermal
     // Info<< "Kaco2: " << max(Kaco2_.field()) << endl;
     // Info<< "KaIN_: " << max(KaIN_.field()) << endl;
     // Info<< "KaW_: " << max(KaW_.field()) << endl;
-
 }
 
 
@@ -783,66 +752,87 @@ void Foam::ADMno1::gasPhaseRate()
 
 void Foam::ADMno1::gasSourceRate()
 {
-    // field of cell volume for mesh 
-    scalarField volMeshField = GPtrs_[0].mesh().V().field();            
+    volScalarField qGasField = qGas_ * (Pgas_ - Pext_);
 
-    // particle scaled gas volume
-    scalarField volGas = volMeshField / (1.0 + (1.0/Vfrac_));
-
-    // particle scaled liquid volume
-    scalarField volLiq = volMeshField / (1.0 + Vfrac_);
-
-    // particle scaled pipe resistance
-    volScalarField kp
+    dGPtrs_[0] = 
     (
-        IOobject
-        (
-            "kp",
-            fac_.mesh().time().timeName(),
-            fac_.mesh(),
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        fac_.mesh(),
-        dimensionedScalar
-        (
-           "kp_Default", 
-            dimless,
-            Zero
-        )
+        (GRPtrs_[0] * (1. / Vfrac_))    // <-- multiphase mass transfer
+      - (GPtrs_[0].internalField() * qGasField.internalField()) // <-- gas released from chamber
     );
 
-    // TODO: might lead to error if Gas dimension is different
-    kp.dimensions().reset(dimVolume/dimTime/dimPressure);
-
-    // TODO: actual volume would have effect on normalized kp
-    // (Vgas_ + Vliq_) <---- this would be calculated
-    kp.field() = para_.DTOS() * KP_ * (volMeshField / (Vgas_ + Vliq_).value());
-
-    //  volScalarField qGasLocal = kp * (Pgas - Pext_) * (Pgas / Pext_); 
-    volScalarField qGasLocal = kp * (Pgas_ - Pext_);
-    forAll( qGasLocal.field(), i )
-    {
-        if ( qGasLocal.field()[i] < 0.0 ) { qGasLocal.field()[i] = 1e-16; }
-    }
-
-    dGPtrs_[0].field() = 
+    dGPtrs_[1] = 
     (
-        (GRPtrs_[0].field() * volLiq / volGas) 
-      - (GPtrs_[0].field() * qGasLocal.field() / volGas)
+        (GRPtrs_[1] * (1. / Vfrac_))    // <-- multiphase mass transfer
+      - (GPtrs_[1].internalField() * qGasField.internalField()) // <-- gas released from chamber
     );
 
-    dGPtrs_[1].field() = 
+    dGPtrs_[2] = 
     (
-        (GRPtrs_[1].field() * volLiq / volGas) 
-      - (GPtrs_[1].field() * qGasLocal.field() / volGas)
+        (GRPtrs_[2] * (1. / Vfrac_))    // <-- multiphase mass transfer
+      - (GPtrs_[2].internalField() * qGasField.internalField()) // <-- gas released from chamber
     );
 
-    dGPtrs_[2].field() = 
-    (
-        (GRPtrs_[2].field() * volLiq / volGas) 
-      - (GPtrs_[2].field() * qGasLocal.field() / volGas)
-    );
+    // New method 1 ---------------------------------------------------------------------------
+    // // field of cell volume for mesh 
+    // scalarField volMeshField = GPtrs_[0].mesh().V().field();            
+
+    // // particle scaled gas volume
+    // scalarField volGas = volMeshField / (1.0 + (1.0/Vfrac_));
+
+    // // particle scaled liquid volume
+    // scalarField volLiq = volMeshField / (1.0 + Vfrac_);
+
+    // // particle scaled pipe resistance
+    // volScalarField kp
+    // (
+    //     IOobject
+    //     (
+    //         "kp",
+    //         fac_.mesh().time().timeName(),
+    //         fac_.mesh(),
+    //         IOobject::NO_READ,
+    //         IOobject::NO_WRITE
+    //     ),
+    //     fac_.mesh(),
+    //     dimensionedScalar
+    //     (
+    //        "kp_Default", 
+    //         dimless,
+    //         Zero
+    //     )
+    // );
+
+    // // TODO: might lead to error if Gas dimension is different
+    // kp.dimensions().reset(dimVolume/dimTime/dimPressure);
+
+    // // TODO: actual volume would have effect on normalized kp
+    // // (Vgas_ + Vliq_) <---- this would be calculated
+    // kp.field() = para_.DTOS() * KP_ * (volMeshField / (Vgas_ + Vliq_).value());
+
+    // //  volScalarField qGasLocal = kp * (Pgas - Pext_) * (Pgas / Pext_); 
+    // volScalarField qGasLocal = kp * (Pgas_ - Pext_);
+    // forAll( qGasLocal.field(), i )
+    // {
+    //     if ( qGasLocal.field()[i] < 0.0 ) { qGasLocal.field()[i] = 1e-16; }
+    // }
+
+    // dGPtrs_[0].field() = 
+    // (
+    //     (GRPtrs_[0].field() * volLiq / volGas) 
+    //   - (GPtrs_[0].field() * qGasLocal.field() / volGas)
+    // );
+
+    // dGPtrs_[1].field() = 
+    // (
+    //     (GRPtrs_[1].field() * volLiq / volGas) 
+    //   - (GPtrs_[1].field() * qGasLocal.field() / volGas)
+    // );
+
+    // dGPtrs_[2].field() = 
+    // (
+    //     (GRPtrs_[2].field() * volLiq / volGas) 
+    //   - (GPtrs_[2].field() * qGasLocal.field() / volGas)
+    // );
 };
 
 
@@ -1413,6 +1403,10 @@ void Foam::ADMno1::calcShp()
         ), 
         xAve.value() * range
     );
+
+    // DEBUG
+    Info<< ">>> ShpAve = " << x.weightedAverage(x.mesh().V()).value() << endl;
+    //
 
     Info<< "Newton-Raphson:\tSolving for Sh+" 
         << ", min Shp: " << min(x.field()) 

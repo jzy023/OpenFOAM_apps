@@ -619,7 +619,15 @@ Foam::ADMno1::ADMno1
     KaIN_.dimensions().reset(para_.Ka().IN.dimensions());
     KaW_.dimensions().reset(para_.Ka().W.dimensions());
 
-    YPtrs_[7].field() = 2.5055e-7;
+    // YPtrs_[7].field() = 2.5055e-7;
+
+    // DEBUG
+    Info<<   ">>> is benchmark case: " << isBenchmark_
+        << "\n>>> Qin_: "   << Qin_.value()
+        << "\n>>> Vgas_: "  << Vgas_.value()
+        << "\n>>> Vliq_: "  << Vliq_.value()
+        << "\n>>> Vfrac_: " << Vfrac_.value()
+        << "\n>>> qGas_: "  << qGas_.value() << endl;
 }
 
 
@@ -1429,6 +1437,10 @@ void Foam::ADMno1::calcShp()
         ), 
         xAve.value() * range
     );
+
+    // DEBUG
+    Info<< ">>> ShpAve = " << x.weightedAverage(x.mesh().V()).value() << endl;
+    //
 
     Info<< "Newton-Raphson:\tSolving for Sh+" 
         << ", min Shp: " << min(x.field()) 
