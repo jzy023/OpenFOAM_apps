@@ -54,6 +54,7 @@ Foam::ADMno1::ADMno1
     ),
     Vmesh_
     (
+        dimVolume,
         gSum(alpha1_.mesh().V())
     ),
     kLa_
@@ -793,6 +794,48 @@ void Foam::ADMno1::gasPhaseRate
     }
 }
 
+// Benchmark
+// force kLaCells to a fixed value regardless of the multiphase model
+void Foam::ADMno1::gasPhaseRateBenchmark()
+{
+    const dimensionedScalar kLaCells = para_.DTOS() * kLa_;
+
+    dimensionedScalar Sh2Ave = YPtrs_[7].weightedAverage(YPtrs_[0].mesh().V());
+    dimensionedScalar Sch4Ave = YPtrs_[8].weightedAverage(YPtrs_[0].mesh().V());
+    dimensionedScalar Sco2Ave = MPtrs_[0].weightedAverage(YPtrs_[0].mesh().V());
+
+    Info<< ">>> Sh2Ave = " << Sh2Ave.value() << endl;
+    Info<< ">>> Sch4Ave = " << Sch4Ave.value() << endl;
+    Info<< ">>> Sco2Ave = " << Sco2Ave.value() << endl;
+    
+    GRPtrs_[0] = // <-- kg COD m-3 s-1
+    (   // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_
+        kLaCells * (Sh2Ave - R_ * TopAve_ * GAvePtrs_[0] * KHh2_)
+    );
+
+    GRPtrs_[1] = // <-- kg COD m-3 s-1
+    (   // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_
+        kLaCells * (Sch4Ave - R_ * TopAve_ * GAvePtrs_[1] * KHch4_)
+    );
+
+    GRPtrs_[2] = // <-- mol COD m-3 s-1
+    (   // Sco2 instead of SIC
+        // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_ 
+        kLaCells * (Sco2Ave - R_ * TopAve_ * GAvePtrs_[2] * KHco2_)
+    );
+
+    GRAvePtrs_[0] = GRPtrs_[0].weightedAverage(GRPtrs_[0].mesh().V());
+    GRAvePtrs_[1] = GRPtrs_[1].weightedAverage(GRPtrs_[1].mesh().V());
+    GRAvePtrs_[2] = GRPtrs_[2].weightedAverage(GRPtrs_[2].mesh().V());
+
+    forAll(GAvePtrs_, i)
+    {
+        Info<< ">>> "                 << GAvePtrs_[i].name()
+            << " concentration = "    << GAvePtrs_[i].value()
+            << ", generation rate = " << GRAvePtrs_[i].value() << endl;
+    }
+}
+
 
 void Foam::ADMno1::gasSourceRate()
 {
@@ -1515,6 +1558,7 @@ void Foam::ADMno1::correct
 
     //- calculate gas phase transfer rates
     gasPhaseRate(kLaCells);
+    // gasPhaseRateBenchmark();
 
     //- calculate dY with STOI
     dYUpdate(phi);

@@ -193,6 +193,9 @@ private:
     // void gasPhaseRate();
     void gasPhaseRate(const volScalarField& kLaCells);
 
+    //- Gas phase transfer rate Benchmark
+    void gasPhaseRateBenchmark();
+
     //- Gas exit rates dG
     void gasSourceRate();
     // void gasSourceRate(const volScalarField& actCells);
@@ -437,9 +440,9 @@ public:
     {
         // // calculate with alpha1
         // dimensionedScalar alphaLiq = alpha1_.weightedAverage(alpha1_.mesh().V());
-        // Vfrac_ = 1.0/alphaLiq - 1.0;
         // Vliq_ = alphaLiq * Vmesh_;
         // Vgas_ = Vmesh_ - Vliq_;
+        // Vfrac_ = Vgas_/Vliq_;
         // qGas_.value() = KP_.value() / Vgas_.value();
 
         // just a test too generate layers for case studies
