@@ -763,35 +763,42 @@ void Foam::ADMno1::gasPhaseRate
     GRAvePtrs_[1] = GRPtrs_[1].weightedAverage(GRPtrs_[1].mesh().V());
     GRAvePtrs_[2] = GRPtrs_[2].weightedAverage(GRPtrs_[2].mesh().V());
 
-    // kLaCellsAve_ = kLaCells.weightedAverage(kLaCells.mesh().V());
-    // kLaCellsAve_ = para_.DTOS() * kLa_;
-
-    // GRAvePtrs_[0] = // <-- kg COD m-3 s-1
-    // (   // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_ 
-    //     kLaCellsAve_ * (Sh2Ave - R_ * TopAve_ * GAvePtrs_[0] * KHh2_)
-    // );
-
-    // GRAvePtrs_[1] = // <-- kg COD m-3 s-1
-    // (   // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_ 
-    //     kLaCellsAve_ * (Sch4Ave - R_ * TopAve_ * GAvePtrs_[1] * KHch4_)
-    // );
-
-    // GRAvePtrs_[2] = // <-- mol COD m-3 s-1
-    // (   // Sco2 instead of SIC
-    //     // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_  
-    //     kLaCellsAve_ * (Sco2Ave - R_ * TopAve_ * GAvePtrs_[2] * KHco2_)
-    // );
-
-    // DEBUG
-    // Info<< ">>> kLa [s^-1] ADMno1: " << (para_.DTOS() * kLa_).value() << "\n"
-    //     << ">>> kLa [s^-1] ADMno1Multi: " << kLaCellsAve_.value() << endl;
-
     forAll(GAvePtrs_, i)
     {
         Info<< ">>> "                 << GAvePtrs_[i].name()
             << " concentration = "    << GAvePtrs_[i].value()
             << ", generation rate = " << GRAvePtrs_[i].value() << endl;
     }
+
+    // // DEBUG ----------------------------------------------------------------------------------
+    // // kLaCellsAve_ = kLaCells.weightedAverage(kLaCells.mesh().V());
+    // // kLaCellsAve_ = para_.DTOS() * kLa_;
+    // const dimensionedScalar kLaCellsAve_ = para_.DTOS() * kLa_;
+
+    // const dimensionedScalar GRPtrs_0 = // <-- kg COD m-3 s-1
+    // (   // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_ 
+    //     kLaCellsAve_ * (Sh2Ave - R_ * TopAve_ * GAvePtrs_[0] * KHh2_)
+    // );
+
+    // const dimensionedScalar GRPtrs_1 = // <-- kg COD m-3 s-1
+    // (   // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_ 
+    //     kLaCellsAve_ * (Sch4Ave - R_ * TopAve_ * GAvePtrs_[1] * KHch4_)
+    // );
+
+    // const dimensionedScalar GRPtrs_2 = // <-- mol COD m-3 s-1
+    // (   // Sco2 instead of SIC
+    //     // kLa_new = [some correction factor] * isCellInterface_ + alphaW_ * isCellsWall_  
+    //     kLaCellsAve_ * (Sco2Ave - R_ * TopAve_ * GAvePtrs_[2] * KHco2_)
+    // );
+
+    // Info<< ">>> kLa [s^-1] ADMno1: " << kLaCellsAve_.value() << "\n"
+    //     << ">>> kLa [s^-1] ADMno1Multi: " << kLaCells.weightedAverage(kLaCells.mesh().V()).value() << endl;
+    // Info<< ">>> GR_h2 ADMno1: " << GRPtrs_0.value() 
+    //     << ", GR_h2 ADMno1Multi: " << GRAvePtrs_[0].value() << endl;
+    // Info<< ">>> GR_ch4 ADMno1: " << GRPtrs_1.value() 
+    //     << ", GR_ch4 ADMno1Multi: " << GRAvePtrs_[1].value() << endl;
+    // Info<< ">>> GR_co2 ADMno1: " << GRPtrs_2.value() 
+    //     << ", GR_co2 ADMno1Multi: " << GRAvePtrs_[2].value() << endl;
 }
 
 // Benchmark
@@ -1557,7 +1564,7 @@ void Foam::ADMno1::correct
     kineticRate();
 
     //- calculate gas phase transfer rates
-    gasPhaseRate(kLaCells);
+    gasPhaseRate(kLaCells); // <- works for /OF_ADM_multiphase/data/cases/_LEGACY data
     // gasPhaseRateBenchmark();
 
     //- calculate dY with STOI

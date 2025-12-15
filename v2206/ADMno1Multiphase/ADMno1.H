@@ -438,19 +438,21 @@ public:
 
     void calcGasParameters()
     {
-        // // calculate with alpha1
-        // dimensionedScalar alphaLiq = alpha1_.weightedAverage(alpha1_.mesh().V());
-        // Vliq_ = alphaLiq * Vmesh_;
-        // Vgas_ = Vmesh_ - Vliq_;
-        // Vfrac_ = Vgas_/Vliq_;
-        // qGas_.value() = KP_.value() / Vgas_.value();
-
-        // just a test too generate layers for case studies
-        Qin_.value() = 0.0;
-        Vgas_.value() = 300;
-        Vliq_.value() = 3400;
+        // No individual-cell-level virtual inflow rate Qin_
+        
+        // calculate with alpha1
+        dimensionedScalar alphaLiq = alpha1_.weightedAverage(alpha1_.mesh().V());
+        Vliq_ = alphaLiq * Vmesh_;
+        Vgas_ = Vmesh_ - Vliq_;
         Vfrac_ = Vgas_/Vliq_;
         qGas_.value() = KP_.value() / Vgas_.value();
+
+        // // just a test to generate layers for case studies
+        // Qin_.value() = 0.0;
+        // Vgas_.value() = 300;
+        // Vliq_.value() = 3400;
+        // Vfrac_ = Vgas_/Vliq_;
+        // qGas_.value() = KP_.value() / Vgas_.value();
     }
 
     word checkBenchmark()

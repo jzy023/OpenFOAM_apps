@@ -59,7 +59,7 @@ void Foam::admMixture::kLaCells()
     );
     
     // TODO: fix kLa for benchmark case?
-    kLaCells_.field() = // limitedAlpha1 * // <- chech this?
+    kLaCells_.field() = // limitedAlpha1 * // <- check this?
     (
         alphaI_*isCellsInterface_.field() + alphaW_*isCellsActWall_.field()
         // alphaI*isCellsInterface_.field() + (1/alphaW_.value())*isCellsActWall_.field()
@@ -765,21 +765,28 @@ Foam::admMixture::mDot()
         min(max(alpha1_, scalar(0)), scalar(1))
     );
 
-    // ----------------------------------------------------------------------------------
-    mDot_ = limitedAlpha1 * 
-    (
-    //   - reaction_->GRAve()[0] - reaction_->GRAve()[1]
-    //   -(reaction_->GRAve()[2] * 44 / 1000) 
-      - reaction_->GR()[0] - reaction_->GR()[1]
-      -(reaction_->GR()[2] * 44 / 1000) 
-    );
+    // // ----------------------------------------------------------------------------------
+    // mDot_ = limitedAlpha1 * 
+    // (
+    // //   - reaction_->GRAve()[0] - reaction_->GRAve()[1]
+    // //   -(reaction_->GRAve()[2] * 44 / 1000) 
+    //   - reaction_->GR()[0] - reaction_->GR()[1]
+    //   -(reaction_->GR()[2] * 44 / 1000) 
+    // );
 
-    return mDot_;
+    // // DEBUG
+    // // volScalarField mDotControlled = limitedAlpha1 * mDotTest_ * kLaCells_;
 
-    // ----------------------------------------------------------------------------------
-    // mDot_ = limitedAlpha1 * (-mDotTest_)*kLaCells_;
+    // // Info<< ">>> total gas generation rate [mol * m-3]: " << mDot_.weightedAverage(limitedAlpha1.mesh().V()).value() << " , "<< endl;
+    // // Info<< ">>> test gas generation rate [mol * m-3]: " << mDotControlled.weightedAverage(limitedAlpha1.mesh().V()).value() << endl;     
 
     // return mDot_;
+
+    // ----------------------------------------------------------------------------------
+    // !!! Case studying with user-forced mDotTest_
+    mDot_ = limitedAlpha1 * mDotTest_ * kLaCells_;
+
+    return mDot_;
 }
 
 
@@ -788,21 +795,22 @@ Foam::admMixture::mDot()
 const Foam::volScalarField&
 Foam::admMixture::mDotAlphal()
 {
-    // ----------------------------------------------------------------------------------
-    mDotAlphal_ =
-    (
-    //   - reaction_->GRAve()[0] - reaction_->GRAve()[1]
-    //   -(reaction_->GRAve()[2] * 44 / 1000) 
-      - reaction_->GR()[0] - reaction_->GR()[1]
-      -(reaction_->GR()[2] * 44 / 1000) 
-    );
-
-    return mDotAlphal_;
-
-    // ----------------------------------------------------------------------------------
-    // mDotAlphal_ = (-mDotTest_)*kLaCells_;
+    // // ----------------------------------------------------------------------------------
+    // mDotAlphal_ =
+    // (
+    // //   - reaction_->GRAve()[0] - reaction_->GRAve()[1]
+    // //   -(reaction_->GRAve()[2] * 44 / 1000) 
+    //   - reaction_->GR()[0] - reaction_->GR()[1]
+    //   -(reaction_->GR()[2] * 44 / 1000) 
+    // );
 
     // return mDotAlphal_;
+
+    // ----------------------------------------------------------------------------------
+    // !!! Case studying with user-forced mDotAlphal_
+    mDotAlphal_ = mDotTest_ * kLaCells_;
+
+    return mDotAlphal_;
 }
 
 
