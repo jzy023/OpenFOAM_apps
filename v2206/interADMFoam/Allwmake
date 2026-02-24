@@ -4,8 +4,8 @@ cd "${0%/*}" || exit                                # Run from this directory
 #------------------------------------------------------------------------------
 
 # wmake $targetType ../ADMno1
-# wmake $targetType admInterfaceProperties
 wmake $targetType ../ADMno1Multiphase
+wmake $targetType admInterfaceProperties
 wmake $targetType admMixture
 wmake $targetType
 

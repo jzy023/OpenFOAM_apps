@@ -784,7 +784,7 @@ Foam::admMixture::mDot()
 
     // ----------------------------------------------------------------------------------
     // !!! Case studying with user-forced mDotTest_
-    mDot_ = limitedAlpha1 * mDotTest_ * kLaCells_;
+    mDot_ = limitedAlpha1 * (-mDotTest_) * kLaCells_;
 
     return mDot_;
 }
@@ -808,7 +808,7 @@ Foam::admMixture::mDotAlphal()
 
     // ----------------------------------------------------------------------------------
     // !!! Case studying with user-forced mDotAlphal_
-    mDotAlphal_ = mDotTest_ * kLaCells_;
+    mDotAlphal_ = (-mDotTest_) * kLaCells_;
 
     return mDotAlphal_;
 }
