@@ -382,15 +382,15 @@ public:
 
     void calcGasParameters()
     {
-        Vfrac_.value() = this->get<scalar>("Vfrac");
-        Vgas_ = Vmesh_ * Vfrac_ / (1 + Vfrac_);
-        Vliq_ = Vmesh_ - Vgas_;
+        // Vfrac_.value() = this->get<scalar>("Vfrac");
+        // Vgas_ = Vmesh_ * Vfrac_ / (1 + Vfrac_);
+        // Vliq_ = Vmesh_ - Vgas_;
 
         // just a test too generate layers for case studies
-        // Qin_.value() = 0.0;
-        // Vgas_.value() = 300;
-        // Vliq_.value() = 3400;
-        // Vfrac_ = Vgas_/Vliq_;
+        Qin_.value() = 0.0;
+        Vgas_.value() = 300;
+        Vliq_.value() = 3400;
+        Vfrac_ = Vgas_/Vliq_;
 
         qGas_.value() = KP_.value() / Vgas_.value();
     }
