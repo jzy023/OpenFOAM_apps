@@ -735,10 +735,12 @@ void Foam::ADMno1::gasPhaseRate
 )
 {
     // New method 1 ---------------------------------------------------------------------------
+    dimensionedScalar SacAve = YPtrs_[6].weightedAverage(YPtrs_[0].mesh().V());
     dimensionedScalar Sh2Ave = YPtrs_[7].weightedAverage(YPtrs_[0].mesh().V());
     dimensionedScalar Sch4Ave = YPtrs_[8].weightedAverage(YPtrs_[0].mesh().V());
     dimensionedScalar Sco2Ave = MPtrs_[0].weightedAverage(YPtrs_[0].mesh().V());
 
+    Info<< ">>> SacAve = " << SacAve.value() << endl;
     Info<< ">>> Sh2Ave = " << Sh2Ave.value() << endl;
     Info<< ">>> Sch4Ave = " << Sch4Ave.value() << endl;
     Info<< ">>> Sco2Ave = " << Sco2Ave.value() << endl;
