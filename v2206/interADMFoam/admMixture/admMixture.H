@@ -136,7 +136,7 @@ protected:
         volScalarField vDotAlphal_;
 
         // DEBUG scalar
-        dimensionedScalar mDotTest_;
+        dimensionedScalar mDotCoeff_;
         surfaceScalarField phiD_;
         volScalarField Mflux_;
 

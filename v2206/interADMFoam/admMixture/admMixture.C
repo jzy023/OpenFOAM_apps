@@ -569,15 +569,15 @@ Foam::admMixture::admMixture
         )
     )
     // testing
-    ,mDotTest_
+    ,mDotCoeff_
     (
-        "mDotTest",
+        "mDotCoeff",
         // dimDensity/dimTime,
         // dimDensity,
         dimless,
         this->subDict("degassing").lookupOrDefault
         (
-            "mDotTest",
+            "mDotCoeff",
             1e-12
         )
     ),
@@ -750,7 +750,7 @@ Foam::admMixture::admMixture
     // Info<< "H: "    << H_ 
     //     << "\nDS: " << D1_
     //     << "\nDG: " << D2_ 
-    //     << "\nmDotTest: " << mDotTest_ << endl;
+    //     << "\nmDotCoeff: " << mDotCoeff_ << endl;
 }
 
 
@@ -767,7 +767,7 @@ Foam::admMixture::mDot()
     );
 
     // ----------------------------------------------------------------------------------
-    mDot_ = limitedAlpha1 * mDotTest_ *
+    mDot_ = limitedAlpha1 * mDotCoeff_ *
     (
     //   - reaction_->GRAve()[0] - reaction_->GRAve()[1]
     //   -(reaction_->GRAve()[2] * 44 / 1000) 
@@ -776,7 +776,7 @@ Foam::admMixture::mDot()
     );
 
     // // DEBUG
-    // volScalarField mDotControlled = limitedAlpha1 * mDotTest_ * kLaCells_;
+    // volScalarField mDotControlled = limitedAlpha1 * mDotCoeff_ * kLaCells_;
 
     // Info<< ">>> total gas generation rate [mol * m-3]: " << mDot_.weightedAverage(limitedAlpha1.mesh().V()).value() << " , "<< endl;
     // Info<< ">>> test gas generation rate [mol * m-3]: " << mDotControlled.weightedAverage(limitedAlpha1.mesh().V()).value() << endl;     
@@ -784,8 +784,8 @@ Foam::admMixture::mDot()
     return mDot_;
 
     // // ----------------------------------------------------------------------------------
-    // // !!! Case studying with user-forced mDotTest_
-    // mDot_ = limitedAlpha1 * (-mDotTest_) * kLaCells_;
+    // // !!! Case studying with user-forced mDotCoeff_
+    // mDot_ = limitedAlpha1 * (-mDotCoeff_) * kLaCells_;
 
     // return mDot_;
 }
@@ -797,7 +797,7 @@ const Foam::volScalarField&
 Foam::admMixture::mDotAlphal()
 {
     // ----------------------------------------------------------------------------------
-    mDotAlphal_ = mDotTest_ *
+    mDotAlphal_ = mDotCoeff_ *
     (
     //   - reaction_->GRAve()[0] - reaction_->GRAve()[1]
     //   -(reaction_->GRAve()[2] * 44 / 1000) 
@@ -809,7 +809,7 @@ Foam::admMixture::mDotAlphal()
 
     // // ----------------------------------------------------------------------------------
     // // !!! Case studying with user-forced mDotAlphal_
-    // mDotAlphal_ = (-mDotTest_) * kLaCells_;
+    // mDotAlphal_ = (-mDotCoeff_) * kLaCells_;
 
     // return mDotAlphal_;
 }
