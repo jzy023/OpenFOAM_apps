@@ -45,7 +45,7 @@ void Foam::admPhase::calcNu()
     const volScalarField limitedAlpha1
     (
         "limitedAlpha1",
-        min(max(alpha1_, scalar(0)), scalar(1))
+        min(max(alpha1_, scalar(1e-6)), scalar(1))
     );
 
     const volScalarField limitedAlpha2
@@ -159,7 +159,7 @@ Foam::admPhase::mu() const
 {
     const volScalarField limitedAlpha1
     (
-        min(max(alpha1_, scalar(0)), scalar(1))
+        min(max(alpha1_, scalar(1e-6)), scalar(1))
     );
 
     const volScalarField limitedAlpha2

@@ -807,6 +807,7 @@ void Foam::ADMno1::gasPhaseRate
 // force kLaCells to a fixed value regardless of the multiphase model
 void Foam::ADMno1::gasPhaseRateBenchmark()
 {
+    // const dimensionedScalar kLaCellsAve_ = kLaCells.weightedAverage(kLaCells.mesh().V());
     const dimensionedScalar kLaCells = para_.DTOS() * kLa_;
 
     dimensionedScalar Sh2Ave = YPtrs_[7].weightedAverage(YPtrs_[0].mesh().V());
@@ -1567,7 +1568,7 @@ void Foam::ADMno1::correct
 
     //- calculate gas phase transfer rates
     gasPhaseRate(kLaCells); // <- works for /OF_ADM_multiphase/data/cases/_LEGACY data
-    // gasPhaseRateBenchmark();
+    // gasPhaseRateBenchmark(); // <- maybe make it standard for all data with ( kLaCells )
 
     //- calculate dY with STOI
     dYUpdate(phi);

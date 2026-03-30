@@ -3,7 +3,7 @@
 
     volScalarField limitedAlpha1
     (
-        min(max(alpha1, scalar(0)), scalar(1))
+        min(max(alpha1, scalar(1e-8)), scalar(1))
     );
     
     // Soluables
@@ -17,6 +17,7 @@
         if (i == 7)
         {   // TODO: maybe clean up? 
             YiAlpha = limitedAlpha1*mixture->reaction()->Y()[i];
+            // YiAlpha = alpha1*mixture->reaction()->Y()[i];
             YiAlpha.correctBoundaryConditions();
             continue;
         }

@@ -311,7 +311,7 @@ public:
 
             volScalarField limitedAlpha1
             (
-                min(max(alpha1_, scalar(1e-16)), scalar(1))
+                min(max(alpha1_, scalar(1e-6)), scalar(1))
             );
 
             forAll(SiAlpha_, i)

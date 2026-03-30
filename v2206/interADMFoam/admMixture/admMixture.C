@@ -55,12 +55,13 @@ void Foam::admMixture::kLaCells()
 
     volScalarField limitedAlpha1
     (
-        min(max(alpha1_, scalar(0)), scalar(1))
+        min(max(alpha1_, scalar(1e-6)), scalar(1))
     );
     
     // TODO: fix kLa for benchmark case?
     kLaCells_.field() = // limitedAlpha1 * // <- check this?
     (
+        // TODO 05/03/2026: remove isCellsInterface_ mechanism all together
         alphaI_*isCellsInterface_.field() + alphaW_*isCellsActWall_.field()
         // alphaI*isCellsInterface_.field() + (1/alphaW_.value())*isCellsActWall_.field()
     );
@@ -101,33 +102,24 @@ void Foam::admMixture::massTransferCoeffs()
 {
     volScalarField limitedAlpha1
     (
-        min(max(alpha1_, scalar(0)), scalar(1))
-    );
-
-    volScalarField limitedAlpha2
-    (
-        min(max(alpha2_, scalar(0)), scalar(1))
+        min(max(alpha1_, scalar(1e-6)), scalar(1))
     );
             
     // calculate and return mean diffusion coefficient
-    // TODO: multispecies? add turbulent diffusivity too?
-    D2Eff_ = fvc::interpolate(D2_ * limitedAlpha2);
     D1Eff_ = 
     (
-        fvc::interpolate(D1_ * limitedAlpha1)
-        // fvc::interpolate(D1_ * limitedAlpha1 + H_ * DS2_ * limitedAlpha2) / fvc::interpolate(limitedAlpha1 + H_ * limitedAlpha2)
+        fvc::interpolate(D1_ * limitedAlpha1 + H_ * D2_ * (1 - limitedAlpha1)) 
+      / fvc::interpolate(limitedAlpha1 + H_ * (1 - limitedAlpha1))
     );
             
     //- Calculate interface mass transfer flux by Henry's Law
-    // TODO: check for gas [all 0 if H_ -> 0]
-    // surfaceScalarField phiHUp = speciesMixture.phiHUp(i);
-    // surfaceScalarField phiHDown = speciesMixture.phiHDown(i);
     phiHS_ = 
     (
         D1Eff_ * (1 - H_) / fvc::interpolate((limitedAlpha1 + H_ * (1 - limitedAlpha1)))
       * fvc::snGrad(limitedAlpha1) * U_.mesh().magSf()
     );
 }
+
 
 
 //- interface compreassion coefficient
@@ -138,7 +130,7 @@ surfaceScalarField Foam::admMixture::compressionCoeff
 {
     volScalarField limitedAlpha1
     (
-        min(max(alpha1_, scalar(0)), scalar(1))
+        min(max(alpha1_, scalar(1e-6)), scalar(1))
     );
 
     // Direction of interfacial flux
@@ -763,31 +755,30 @@ Foam::admMixture::mDot()
 {
     volScalarField limitedAlpha1
     (
-        min(max(alpha1_, scalar(0)), scalar(1))
+        min(max(alpha1_, scalar(1e-6)), scalar(1))
     );
 
-    // ----------------------------------------------------------------------------------
     mDot_ = limitedAlpha1 * mDotCoeff_ *
     (
-    //   - reaction_->GRAve()[0] - reaction_->GRAve()[1]
-    //   -(reaction_->GRAve()[2] * 44 / 1000) 
-      - reaction_->GR()[0] - reaction_->GR()[1]
+      - reaction_->GR()[0] / 8 - reaction_->GR()[1] / 4
       -(reaction_->GR()[2] * 44 / 1000) 
     );
 
-    // // DEBUG
-    // volScalarField mDotControlled = limitedAlpha1 * mDotCoeff_ * kLaCells_;
-
-    // Info<< ">>> total gas generation rate [mol * m-3]: " << mDot_.weightedAverage(limitedAlpha1.mesh().V()).value() << " , "<< endl;
-    // Info<< ">>> test gas generation rate [mol * m-3]: " << mDotControlled.weightedAverage(limitedAlpha1.mesh().V()).value() << endl;     
-
-    return mDot_;
-
     // // ----------------------------------------------------------------------------------
-    // // !!! Case studying with user-forced mDotCoeff_
-    // mDot_ = limitedAlpha1 * (-mDotCoeff_) * kLaCells_;
+    // mDot_ = limitedAlpha1 * mDotCoeff_ *
+    // (
+    //   - reaction_->GR()[0] - reaction_->GR()[1]
+    //   -(reaction_->GR()[2] * 44 / 1000) 
+    // );
 
-    // return mDot_;
+    // // // DEBUG
+    // // volScalarField mDotControlled = limitedAlpha1 * mDotCoeff_ * kLaCells_;
+    // // Info<< ">>> total gas generation rate [mol * m-3]: " << mDot_.weightedAverage(limitedAlpha1.mesh().V()).value() << " , "<< endl;
+    // // Info<< ">>> test gas generation rate [mol * m-3]: " << mDotControlled.weightedAverage(limitedAlpha1.mesh().V()).value() << endl;     
+
+    // ----------------------------------------------------------------------------------
+    Info<< ">>> total gas generation rate [mol * m-3]: " << mDot_.weightedAverage(alpha1_.mesh().V()).value() << endl;
+    return mDot_;
 }
 
 
@@ -799,19 +790,19 @@ Foam::admMixture::mDotAlphal()
     // ----------------------------------------------------------------------------------
     mDotAlphal_ = mDotCoeff_ *
     (
-    //   - reaction_->GRAve()[0] - reaction_->GRAve()[1]
-    //   -(reaction_->GRAve()[2] * 44 / 1000) 
-      - reaction_->GR()[0] - reaction_->GR()[1]
+      - reaction_->GR()[0] / 8 - reaction_->GR()[1] / 4
       -(reaction_->GR()[2] * 44 / 1000) 
     );
 
-    return mDotAlphal_;
-
     // // ----------------------------------------------------------------------------------
-    // // !!! Case studying with user-forced mDotAlphal_
-    // mDotAlphal_ = (-mDotCoeff_) * kLaCells_;
+    // mDotAlphal_ = mDotCoeff_ *
+    // (
+    //   - reaction_->GR()[0] - reaction_->GR()[1]
+    //   -(reaction_->GR()[2] * 44 / 1000) 
+    // );
 
-    // return mDotAlphal_;
+    // ----------------------------------------------------------------------------------
+    return mDotAlphal_;
 }
 
 
@@ -869,7 +860,7 @@ void Foam::admMixture::solvePhase
 {
     // volScalarField limitedAlpha1
     // (
-    //     min(max(alpha1_, scalar(0)), scalar(1))
+    //     min(max(alpha1_, scalar(1e-6)), scalar(1))
     // );
     // SiAlpha_[7] = limitedAlpha1*reaction_->Y()[7];
     // SiAlpha_[7].correctBoundaryConditions();
