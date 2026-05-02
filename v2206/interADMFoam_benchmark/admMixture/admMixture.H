@@ -1,0 +1,467 @@
+/*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
+     \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2016-2020 OpenCFD Ltd.
+-------------------------------------------------------------------------------
+License
+    This file is part of OpenFOAM.
+
+    OpenFOAM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+
+Class
+    Foam::admMixture
+
+Description
+
+SourceFiles
+    admMixture.C
+    newtemperaturePhaseChangeTwoPhaseMixture.C
+
+\*---------------------------------------------------------------------------*/
+
+#ifndef admMixture_H
+#define admMixture_H
+
+#include "typeInfo.H"
+#include "runTimeSelectionTables.H"
+#include "volFields.H"
+#include "dimensionedScalar.H"
+#include "fvMatrices.H"
+
+#include "fvCFD.H"
+#include "upwind.H"
+#include "downwind.H"
+#include "CMULES.H"
+#include "ADMno1.H"
+#include "interfaceProperties.H"
+#include "incompressibleTwoPhaseMixture.H"
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+namespace Foam
+{
+
+/*---------------------------------------------------------------------------*\
+           Class admMixture Declaration
+\*---------------------------------------------------------------------------*/
+
+class admMixture
+:
+    // public IOdictionary
+    public incompressibleTwoPhaseMixture
+{
+
+protected:
+
+    // Protected data
+
+        //- ADMno1 reaction
+        autoPtr<ADMno1> reaction_;
+
+        // //- Keep a reference to the transportProperties dictionary
+        // const dictionary& transportPropertiesDict_;
+
+        //- Surface wettability
+        // higher alphaW means smaller contact angle (more wetting)
+        // dimensionedScalar alphaW_;
+        scalar alphaI_;
+        scalar alphaW_;
+
+        //- Ideal gas constant
+        dimensionedScalar R_;
+
+        //- Henry's coefficient
+        // TODO: maybe remove this eventually?
+        dimensionedScalar H_;
+
+        //- Diffusion coeficient of soluable species in liquid phase
+        dimensionedScalar D1_;
+
+        //- Diffusion coeficient of gaseous species in gas phase
+        dimensionedScalar D2_;
+
+        //- Mean phase diffusion coefficient for soluables in liquid
+        surfaceScalarField D1Eff_;
+
+        //- Mean phase diffusion coefficient for gaseous in gas
+        surfaceScalarField D2Eff_;
+
+        //- Interface mass transfer flux by Henry's Law
+        surfaceScalarField phiHS_;
+
+        // testing ------------------------------------------------------------
+
+        //- Phase corrected concentration
+        PtrList<volScalarField> SiAlpha_;
+        PtrList<volScalarField> GiAlpha_;
+
+        //- Volume fraction threshold to activate inter-phase mass transfer
+        dimensionedScalar alphaInterface_;
+
+        //- Name of patches to activate inter-phase mass transfer
+        wordList actPatch_;
+
+        //- Cells marked as mainly fluid
+        // TODO: use Internal? and .ref()
+        volScalarField isCellsFull_;
+        volScalarField isCellsEmpty_;
+
+        //- Cells marked as activated for inter-phase mass transfer due to interface
+        volScalarField isCellsInterface_;
+
+        //- Cells marked as activated for inter-phase mass transfer due to solid surface
+        volScalarField isCellsActWall_;
+
+        //- Phase change ADMno1 
+        volScalarField kLaCells_;
+
+        volScalarField mDot_;
+        volScalarField mDotAlphal_;
+        volScalarField vDot_;
+        volScalarField vDotAlphal_;
+
+        // DEBUG scalar
+        dimensionedScalar mDotCoeff_;
+        surfaceScalarField phiD_;
+        volScalarField Mflux_;
+
+        // volScalarField divPhi;
+        // volScalarField divPhiSh2;
+        
+
+    // Private Member Functions
+
+        //- No copy construct
+        admMixture
+        (
+            const admMixture&
+        ) = delete;
+
+        //- No copy assignment
+        void operator=(const admMixture&) = delete;
+
+        //- Calculate gas mass transfer rate kLa [s-1]
+        void kLaCells();
+        
+        //- Find isCellsActWall_
+        void findCellsActWall();
+
+        //- Normalizing for MULES
+        void normalizeYi();
+
+        //- Species transport equations
+        void massTransferCoeffs();
+
+        //- Interface compression coefficient 
+        surfaceScalarField compressionCoeff
+        (
+            const volScalarField& Yi
+        );
+
+        //- MULES solver for species
+        void speciesMules
+        (
+            const interfaceProperties& interface
+        );
+
+        //- The inter-phase mass transfer rates as coefficients
+        const volScalarField& mDot();
+
+        //- Return the mass condensation and vaporisation rates as a
+        //  coefficient to multiply (1 - alphal) for the condensation rate
+        //  and a coefficient to multiply  alphal for the vaporisation rate
+        const volScalarField& mDotAlphal();
+
+public:
+
+    //- Runtime type information
+    TypeName("admMixture");
+
+
+    // Declare run-time constructor selection table
+
+        declareRunTimeSelectionTable
+        (
+            autoPtr,
+            admMixture,
+            components,
+            (
+                const volScalarField& Top,
+                const volVectorField& U,
+                const surfaceScalarField& phi
+            ),
+            (
+                Top,
+                U,
+                phi
+            )
+        );
+
+
+    // Selectors
+
+        //- Return a reference to the selected phaseChange model
+        static autoPtr<admMixture> New
+        (
+            const volScalarField& Top,
+            const volVectorField& U,
+            const surfaceScalarField& phi
+        );
+
+
+    // Constructors
+
+        //- Construct from components
+        admMixture
+        (
+            const volScalarField& Top,
+            const volVectorField& U,
+            const surfaceScalarField& phi
+        );
+
+
+    //- Destructor
+    virtual ~admMixture() = default;
+
+
+    // Member Functions
+        //- Correct interface
+        void limit();
+
+        const volScalarField& vDot();
+
+        const volScalarField& vDotAlphal();
+
+        //- Volume fractions limiter
+        void limitAlpha();
+
+        //- Solve mixture 
+        void solvePhase
+        (
+            const interfaceProperties& interface
+        );
+
+        //- Solve ADM reactions
+        void solveReaction
+        (
+            const surfaceScalarField &flux,
+            const volScalarField& Top
+        );
+
+        //- Update Gas Concentration
+        void updateReactionGas
+        (
+            const dimensionedScalar deltaT
+        );
+
+        //- Inline functions
+        inline const volScalarField& alpha() const;
+
+        inline const volScalarField& kLaCells() const;
+
+        inline const surfaceScalarField& DalphaS() const;
+
+        inline const surfaceScalarField& DalphaG() const;
+
+        inline const surfaceScalarField& phiHS() const;
+
+        inline PtrList<volScalarField::Internal>& dSi();
+
+        inline PtrList<volScalarField::Internal>& dGi();
+
+        inline PtrList<volScalarField>& SiAlpha();
+
+        inline PtrList<volScalarField>& GiAlpha();
+
+        // testing ------------------------------------------------------------
+        ADMno1* reaction()
+        {
+            return reaction_;
+        }
+
+
+        void speciesADMCorrect()
+        {
+            dimensionedScalar YiAlphaAverage
+            (
+                dimMass/dimVolume,
+                Zero
+            );
+
+            dimensionedScalar YiAlphaAverageEmpty
+            (
+                dimMass/dimVolume,
+                Zero
+            );
+
+            volScalarField limitedAlpha1
+            (
+                min(max(alpha1_, scalar(1e-6)), scalar(1))
+            );
+
+            forAll(SiAlpha_, i)
+            {
+                if (i == 7)
+                {
+                    continue;
+                }
+
+                volScalarField& Yi = SiAlpha_[i];
+                volScalarField& YiADM = reaction_->Y()[i];
+
+                // Classify cells
+                isCellsEmpty_ = 
+                (
+                    min(zeroField(), limitedAlpha1 - alphaInterface_)
+                  / (limitedAlpha1 - alphaInterface_)
+                );
+
+                isCellsFull_ = 1 - isCellsEmpty_ ;
+
+                // Total mass and volume field
+                volScalarField::Internal massField = Yi.internalField()*U_.mesh().V();
+                volScalarField::Internal volumeField = limitedAlpha1*isCellsFull_.mesh().V();
+                YiAlphaAverage.value() = gSum(massField) / gSum(volumeField);
+
+                // Mass and volume field at interface cells
+                volScalarField::Internal massFieldEmpty = isCellsEmpty_*massField;
+                volScalarField::Internal volumeFieldEmpty = isCellsEmpty_*volumeField;             
+                YiAlphaAverageEmpty.value() = YiAlphaAverage.value();
+                // TODO: fix this
+                if (gSum(isCellsInterface_) < 1)
+                {
+                    YiAlphaAverageEmpty.value() = YiAlphaAverage.value();
+                }
+                else
+                {
+                    YiAlphaAverageEmpty.value() = gSum(massFieldEmpty) / gSum(volumeFieldEmpty);   
+                }
+
+                // Recreate ADM Yi fields
+                YiADM = 
+                (
+                    Yi/limitedAlpha1*isCellsFull_
+                  + YiAlphaAverageEmpty*isCellsEmpty_
+                );
+            }
+
+            // DEBUG ----------------------------------------------------------------------------------------
+            Info<< "DEBUG!!!" << endl;
+
+            // volScalarField::Internal liquidVolume = 0.91*isCellsFull_.mesh().V();
+            volScalarField::Internal liquidVolume = limitedAlpha1*isCellsFull_.mesh().V();
+            volScalarField::Internal SacMassAlpha = SiAlpha_[6].internalField()*liquidVolume;
+            volScalarField::Internal Sch4MassAlpha = SiAlpha_[8].internalField()*liquidVolume;
+
+            Info<< ">>> Sac mass: " << gSum(SacMassAlpha) 
+                << ";  Sch4 mass: " << gSum(Sch4MassAlpha) << endl;
+
+
+            // volScalarField::Internal liquidVolume = limitedAlpha1*isCellsFull_.mesh().V();
+            // Info<< ">>> liquid phase volume: " << gSum(liquidVolume) << endl; 
+
+            // volScalarField::Internal liquidVolume = 0.91*isCellsFull_.mesh().V();
+            // volScalarField::Internal gasVolume = (3.0/37.0)*isCellsFull_.mesh().V();
+            // volScalarField::Internal SacAlpha = reaction_->Y()[6].internalField()*liquidVolume;
+            // volScalarField::Internal Sch4Alpha = reaction_->Y()[8].internalField()*liquidVolume;
+
+            // Info<< ">>> Sac mass: " << gSum(SacAlpha) 
+            //     << ";  Sch4 mass: " << gSum(Sch4Alpha) << endl;
+
+
+            // volScalarField::Internal massFieldADMAlpha = reaction_->Y()[6].internalField()*limitedAlpha1*isCellsFull_.mesh().V();
+            // volScalarField::Internal volumeFieldADM = limitedAlpha1*isCellsFull_.mesh().V();
+            // Info<<   ">>> Sac mass (* alpha): " << gSum(massFieldADMAlpha) 
+            //     << "; liquid phase volume: " << gSum(volumeFieldADM) << endl;
+
+            // volScalarField::Internal massFieldADMcorrected = reaction_->Y()[6].internalField()*0.75*isCellsFull_.mesh().V();
+            // volScalarField::Internal volumeFieldADM = limitedAlpha1*isCellsFull_.mesh().V();
+            // Info<<   ">>> Solution volume (* alpha): " << gSum(reaction_->Y()[6].internalField()) << endl;
+            // volScalarField::Internal massFieldADM = reaction_->Y()[7].internalField();//*limitedAlpha1*isCellsFull_.mesh().V();
+            
+            // Info<<   ">>> Sac mass (* alpha): " << gSum(massFieldADMAlpha)
+            //     << ", Sac mass (w/o alpha): " << gSum(massFieldADMcorrected) << endl;
+        }
+
+
+        // LEGACY -------------------------------------------------------------
+        // TODO: corrected by mesh().V()
+        // dimensionedScalar speciesAlphaAverage
+        // (
+        //     const volScalarField& YiAlpha,
+        //     const volScalarField& alpha
+        // )
+        // {
+        //     volScalarField magAlpha = mag(alpha);
+
+        //     return
+        //     (
+        //         dimensionedScalar
+        //         (
+        //             YiAlpha.dimensions()/alpha.dimensions(),
+        //             gSum(YiAlpha)/gSum(magAlpha)
+        //         )
+        //     );
+        // }
+
+
+        // void speciesAlphaCorrect()
+        // {
+        //     forAll(SiAlpha_, i)
+        //     {
+        //         SiAlpha_[i] = reaction_->Y()[i]*alpha1_;
+        //     }
+
+        //     forAll(GiAlpha_, i)
+        //     {
+        //         GiAlpha_[i] = reaction_->GAve()[i]*alpha2_;
+        //     }
+
+        //     // TODO: for source terms dS and dG too
+        // }
+
+
+        // void printGasGenRate()
+        // {
+        //     // total gas generation rate
+        //     // dimensionedScalar sumGasGen = - gSum(mDot_);
+        //     // sumGasGen.dimensions().reset(mDot_.dimensions());
+        //     Info<< "total gas generation rate [mol * m-3]: " << - mDot_.weightedAverage(alpha1_.mesh().V()).value() << endl;
+
+        //     // forAll(mDot_, i)
+        //     // {
+        //     //     dimensionedScalar sumGasGen = gSum(mDot_[i]);
+        //     //     Info<< "total gas generation rate [mol * m-3]: " << sumGasGen << endl;
+        //     // }
+        // }
+};
+
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+} // End namespace Foam
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#include "admMixtureI.H"
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+#endif
+
+// ************************************************************************* //

@@ -63,7 +63,6 @@ void Foam::admMixture::kLaCells()
     (
         // TODO 05/03/2026: remove isCellsInterface_ mechanism all together
         alphaI_*isCellsInterface_.field() + alphaW_*isCellsActWall_.field()
-        // alphaI*isCellsInterface_.field() + (1/alphaW_.value())*isCellsActWall_.field()
     );
 }
 
@@ -758,6 +757,10 @@ Foam::admMixture::mDot()
         min(max(alpha1_, scalar(1e-6)), scalar(1))
     );
 
+    // scalar conversionRate = gSum(0.8125*alpha1_.mesh().V())/3400;
+    mDotAlphal_.field() = limitedAlpha1 * mDotCoeff_.value() * (-kLaCells_.field());
+
+    // ----------------------------------------------------------------------------------
     // mDot_ = limitedAlpha1 * mDotCoeff_ *
     // (
     //   - reaction_->GR()[0] / 8 - reaction_->GR()[1] / 4
@@ -765,16 +768,16 @@ Foam::admMixture::mDot()
     // );
 
     // ----------------------------------------------------------------------------------
-    mDot_ = limitedAlpha1 * mDotCoeff_ *
-    (
-      - reaction_->GR()[0] - reaction_->GR()[1]
-      -(reaction_->GR()[2] * 44 / 1000) 
-    );
+    // mDot_ = limitedAlpha1 * mDotCoeff_ *
+    // (
+    //   - reaction_->GR()[0] - reaction_->GR()[1]
+    //   -(reaction_->GR()[2] * 44 / 1000) 
+    // );
 
-    // // DEBUG
-    // volScalarField mDotControlled = limitedAlpha1 * mDotCoeff_ * kLaCells_;
-    // Info<< ">>> total gas generation rate [mol * m-3]: " << mDot_.weightedAverage(limitedAlpha1.mesh().V()).value() << " , "<< endl;
-    // Info<< ">>> test gas generation rate [mol * m-3]: " << mDotControlled.weightedAverage(limitedAlpha1.mesh().V()).value() << endl;     
+    // // // DEBUG
+    // // volScalarField mDotControlled = limitedAlpha1 * mDotCoeff_ * kLaCells_;
+    // // Info<< ">>> total gas generation rate [mol * m-3]: " << mDot_.weightedAverage(limitedAlpha1.mesh().V()).value() << " , "<< endl;
+    // // Info<< ">>> test gas generation rate [mol * m-3]: " << mDotControlled.weightedAverage(limitedAlpha1.mesh().V()).value() << endl;     
 
     // ----------------------------------------------------------------------------------
     Info<< ">>> total gas generation rate [mol * m-3]: " << mDot_.weightedAverage(alpha1_.mesh().V()).value() << endl;
@@ -787,6 +790,9 @@ Foam::admMixture::mDot()
 const Foam::volScalarField&
 Foam::admMixture::mDotAlphal()
 {
+    // scalar conversionRate = gSum(0.8125*alpha1_.mesh().V())/3400;
+    mDotAlphal_.field() = mDotCoeff_.value() * (-kLaCells_.field());
+
     // // ----------------------------------------------------------------------------------
     // mDotAlphal_ = mDotCoeff_ *
     // (
@@ -795,11 +801,11 @@ Foam::admMixture::mDotAlphal()
     // );
 
     // ----------------------------------------------------------------------------------
-    mDotAlphal_ = mDotCoeff_ *
-    (
-      - reaction_->GR()[0] - reaction_->GR()[1]
-      -(reaction_->GR()[2] * 44 / 1000) 
-    );
+    // mDotAlphal_ = mDotCoeff_ *
+    // (
+    //   - reaction_->GR()[0] - reaction_->GR()[1]
+    //   -(reaction_->GR()[2] * 44 / 1000) 
+    // );
 
     // ----------------------------------------------------------------------------------
     return mDotAlphal_;

@@ -385,7 +385,8 @@ public:
     PtrList<volScalarField::Internal> GRPtrs_test;
     PtrList<volScalarField::Internal> dGPtrs_test;
 
-    volScalarField vDotGas_test;
+    PtrListDictionary<volScalarField::Internal> vDotList_test;
+    // volScalarField vDotGas_test;
 
     scalar amplifier;
 

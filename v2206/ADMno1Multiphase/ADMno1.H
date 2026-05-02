@@ -279,7 +279,7 @@ public:
   
     //- Species names for particulate
     const wordList namesParticulate = 
-    //    12    13     14     15     16     17
+    //      12    13     14     15     16     17
           {"Xc", "Xch", "Xpr", "Xli", "Xsu", "Xaa",
            "Xfa", "Xc4", "Xpro", "Xac", "Xh2", "XI"};
     //      18     19     20      21     22     23
